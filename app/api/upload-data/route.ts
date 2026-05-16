@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       };
     }).filter(Boolean);
 
-    for (const insertData of inserts) {
+    for (const insertData of inserts) {`n       if (!insertData) continue;
        const { error } = await supabase.from('raw_indicators').upsert(insertData, {
          onConflict: 'kode_bps,tahun'
        });

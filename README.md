@@ -1,34 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DSS FSVA
 
-## Getting Started
+Decision Support System Food Security and Vulnerability Atlas (DSS FSVA) adalah aplikasi web berbasis GIS untuk analisis ketahanan dan kerentanan pangan tingkat desa/kelurahan di Indonesia.
+Aplikasi ini dikembangkan sesuai dengan Petunjuk Teknis FSVA Badan Pangan Nasional 2025 (Juknis No.301.2/2025).
 
-First, run the development server:
+## Fitur Utama
+1. **Peta Interaktif**: Visualisasi kerentanan pangan di setiap desa dengan peta choropleth interaktif (Prioritas 1-6).
+2. **Dashboard Statistik**: Ringkasan jumlah desa per prioritas, distribusi indikator, dan faktor berpengaruh.
+3. **Data Entry**: Upload batas desa (KML/KMZ) dan data indikator (XLSX) dengan kalkulasi otomatis.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Persyaratan Sistem
+- Node.js 18+
+- Supabase Project dengan PostGIS aktif
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Cara Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone & Install**
+   ```bash
+   git clone <repo-url> dss-fsva
+   cd dss-fsva
+   npm install
+   ```
 
-## Learn More
+2. **Supabase Database**
+   Jalankan file `init.sql` (bisa dicari di root project atau via SQL editor Supabase) untuk membuat tabel `geometries`, `raw_indicators`, `fsva_results`, dan view peta.
 
-To learn more about Next.js, take a look at the following resources:
+3. **Environment Variables**
+   Copy file `.env.example` ke `.env.local` dan isi nilainya:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   NEXT_PUBLIC_MAPTILER_KEY=your_maptiler_key
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **Jalankan Aplikasi**
+   ```bash
+   npm run dev
+   ```
+   Akses `http://localhost:3000`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Cara Penggunaan
+1. Buka halaman **Data Entry** (`/entry`).
+2. Upload file KML/KMZ untuk memasukkan batas geometri tiap desa. Pastikan terdapat properti `kode_bps`.
+3. Download template XLSX dari halaman tersebut, isi dengan 11 indikator FSVA sesuai pedoman.
+4. Upload file XLSX yang sudah diisi ke aplikasi.
+5. Klik **Hitung FSVA** untuk menjalankan algoritma kalkulasi komposit dan normalisasi (NCPR, AKE, dll).
+6. Buka halaman **Peta Interaktif** (`/map`) untuk melihat hasilnya secara spasial.
 
-## Deploy on Vercel
+## Algoritma Kalkulasi
+DSS FSVA menggunakan pembobotan dan normalisasi sesuai Tabel 2, Tabel 3, dan Tabel 4 di Juknis 2025. Terdiri dari 11 indikator meliputi aspek Ketersediaan, Keterjangkauan, dan Pemanfaatan.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment Vercel
+Aplikasi ini siap di-deploy ke Vercel. Pastikan environment variables (`NEXT_PUBLIC_SUPABASE_URL`, dll) sudah diatur pada menu Settings > Environment Variables di project Vercel Anda.

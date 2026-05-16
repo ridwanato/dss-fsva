@@ -76,6 +76,15 @@ export default function MapPage() {
         </div>
       )}
 
+      {!loading && geoData && geoData.features && geoData.features.length === 0 && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="bg-red-50 text-red-600 px-6 py-4 rounded-xl shadow-lg border border-red-200 font-medium max-w-md text-center pointer-events-auto">
+            <p className="font-bold text-lg mb-1">Data Peta Kosong</p>
+            <p className="text-sm">Sistem tidak menemukan poligon dengan tahun kalkulasi 2024. Pastikan Anda sudah menekan tombol "Hitung FSVA Sekarang" di Data Entry.</p>
+          </div>
+        </div>
+      )}
+
       {/* Map Container */}
       <div className="flex-1 relative bg-blue-50">
         <MapView 

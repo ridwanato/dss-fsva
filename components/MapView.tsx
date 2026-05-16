@@ -162,5 +162,5 @@ export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: Ma
     }
   }, [geoJsonData, mapLoaded]);
 
-  return <div ref={mapContainer} className="w-full h-full" />;
+  return <div ref={mapContainer} className="absolute inset-0 w-full h-full min-h-[500px]" />;
 }

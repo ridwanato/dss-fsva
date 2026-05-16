@@ -6,13 +6,31 @@ import { PRIORITY_LABELS } from '@/lib/fsva/constants';
 
 interface MapViewProps {
   geoJsonData: any;
+  activeLayer: string;
   onPolygonClick: (properties: any) => void;
 }
 
-export default function MapView({ geoJsonData, onPolygonClick }: MapViewProps) {
+export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded() || !map.current.getLayer('fsva-fill')) return;
+    
+    // Update fill color based on selected layer
+    map.current.setPaintProperty('fsva-fill', 'fill-color', [
+      'match',
+      ['get', activeLayer],
+      1, PRIORITY_LABELS[1].fill,
+      2, PRIORITY_LABELS[2].fill,
+      3, PRIORITY_LABELS[3].fill,
+      4, PRIORITY_LABELS[4].fill,
+      5, PRIORITY_LABELS[5].fill,
+      6, PRIORITY_LABELS[6].fill,
+      '#cccccc' // fallback
+    ]);
+  }, [activeLayer, mapLoaded]);
 
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -48,7 +66,7 @@ export default function MapView({ geoJsonData, onPolygonClick }: MapViewProps) {
         paint: {
           'fill-color': [
             'match',
-            ['get', 'prioritas'],
+            ['get', activeLayer],
             1, PRIORITY_LABELS[1].fill,
             2, PRIORITY_LABELS[2].fill,
             3, PRIORITY_LABELS[3].fill,

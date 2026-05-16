@@ -10,9 +10,10 @@ interface MapViewProps {
   opacity: number;
   showLabels: boolean;
   onPolygonClick: (properties: any) => void;
+  onMapReady?: (map: maplibregl.Map) => void;
 }
 
-export default function MapView({ geoJsonData, activeLayer, opacity, showLabels, onPolygonClick }: MapViewProps) {
+export default function MapView({ geoJsonData, activeLayer, opacity, showLabels, onPolygonClick, onMapReady }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -55,8 +56,13 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       style: styleUrl,
       center: [106.01, -6.02], // Default Cilegon
       zoom: 11,
-      attributionControl: false
+      attributionControl: false,
+      preserveDrawingBuffer: true // Required for exporting to image
     });
+
+    if (onMapReady) {
+      onMapReady(map.current);
+    }
 
 
     map.current.addControl(new maplibregl.AttributionControl({

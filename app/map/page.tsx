@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import MapView from '@/components/MapView';
 import LegendPanel from '@/components/LegendPanel';
 import InfoPanel from '@/components/InfoPanel';
-import { Download } from 'lucide-react';
+import PrintLayout from '@/components/PrintLayout';
+import { Download, Printer } from 'lucide-react';
 
 const LAYERS = [
   { id: 'prioritas', label: 'Komposit (Semua Indikator)' },
@@ -27,6 +28,10 @@ export default function MapPage() {
   const [opacity, setOpacity] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
   const [loading, setLoading] = useState(true);
+  
+  const [mapInstance, setMapInstance] = useState<any>(null);
+  const [mapImage, setMapImage] = useState<string | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     fetch('/api/geojson?tahun=2024')
@@ -41,8 +46,32 @@ export default function MapPage() {
       });
   }, []);
 
+  const handlePrint = () => {
+    if (!mapInstance) return;
+    setIsPrinting(true);
+    setTimeout(() => {
+      try {
+        const dataUrl = mapInstance.getCanvas().toDataURL('image/png');
+        setMapImage(dataUrl);
+        setTimeout(() => {
+          window.print();
+          setIsPrinting(false);
+        }, 500);
+      } catch(e) {
+        console.error(e);
+        setIsPrinting(false);
+        alert("Gagal memproses gambar peta untuk PDF.");
+      }
+    }, 100);
+  };
+
   return (
-    <div className="flex-1 relative flex flex-col">
+    <>
+    <PrintLayout 
+      mapImage={mapImage} 
+      activeLayerName={LAYERS.find(l => l.id === activeLayer)?.label || ''} 
+    />
+    <div className="flex-1 relative flex flex-col no-print h-full">
       {/* Header overlay */}
       <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 flex justify-between items-start">
         <div className="bg-white/95 backdrop-blur px-6 py-4 rounded-xl shadow border border-gray-200 pointer-events-auto max-w-sm mt-16 ml-2">
@@ -101,6 +130,18 @@ export default function MapPage() {
         </div>
         
         <div className="pointer-events-auto flex gap-2">
+          <button 
+            onClick={handlePrint}
+            disabled={isPrinting}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm border border-blue-800 text-sm font-semibold flex items-center gap-2 transition disabled:opacity-50"
+          >
+            {isPrinting ? (
+               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+               <Printer className="w-4 h-4" />
+            )}
+            Cetak PDF
+          </button>
           <a href="/api/export?tahun=2024" className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-sm font-semibold flex items-center gap-2 transition">
             <Download className="w-4 h-4" />
             XLSX Hasil
@@ -134,6 +175,7 @@ export default function MapPage() {
           opacity={opacity}
           showLabels={showLabels}
           onPolygonClick={(props) => setSelectedPolygon(props)} 
+          onMapReady={(m) => setMapInstance(m)}
         />
         <LegendPanel />
         <InfoPanel 
@@ -142,5 +184,6 @@ export default function MapPage() {
         />
       </div>
     </div>
+    </>
   );
 }

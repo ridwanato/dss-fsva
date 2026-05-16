@@ -7,7 +7,7 @@ export default function LegendPanel() {
   const priorities = [1, 2, 3, 4, 5, 6] as const;
 
   return (
-    <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur rounded-lg shadow-xl border border-gray-200 z-10 w-64 overflow-hidden transition-all">
+    <div className="absolute top-20 right-4 bg-white/95 backdrop-blur rounded-lg shadow-xl border border-gray-200 z-10 w-64 overflow-hidden transition-all">
       <div 
         className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setIsOpen(!isOpen)}

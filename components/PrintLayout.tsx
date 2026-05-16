@@ -83,23 +83,23 @@ export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutPr
         <div className="absolute top-0 right-0 bottom-0 w-[30%] flex flex-col bg-white">
           
           {/* Logos Section */}
-          <div className="p-3 border-b-[2px] border-black flex flex-col gap-3 items-center justify-center">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 border border-gray-300 flex items-center justify-center bg-gray-100 rounded-full">
-                <span className="text-[6px] text-center font-bold">LOGO<br/>CILEGON</span>
+          <div className="p-3 border-b-[2px] border-black flex flex-col gap-3 justify-center">
+            <div className="flex items-center gap-2 px-4">
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/logo-cilegon.png" alt="Logo Cilegon" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-black leading-tight">PEMERINTAH</span>
-                <span className="text-[9px] font-black leading-tight">KOTA CILEGON</span>
+                <span className="text-[10px] font-black leading-tight">PEMERINTAH</span>
+                <span className="text-[10px] font-black leading-tight">KOTA CILEGON</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 border border-gray-300 flex items-center justify-center bg-gray-100 rounded-full">
-                <span className="text-[6px] text-center font-bold text-green-700">LOGO<br/>BAPANAS</span>
+            <div className="flex items-center gap-2 px-4">
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/logo-bapanas.png" alt="Logo Bapanas" className="w-full h-full object-contain scale-125" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-[9px] font-black leading-tight text-green-700">BADAN PANGAN</span>
-                <span className="text-[9px] font-black leading-tight text-green-700">NASIONAL</span>
+              <div className="flex flex-col ml-1">
+                <span className="text-[10px] font-black leading-tight text-green-800">BADAN PANGAN</span>
+                <span className="text-[10px] font-black leading-tight text-green-800">NASIONAL</span>
               </div>
             </div>
           </div>

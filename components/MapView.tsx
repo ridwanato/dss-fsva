@@ -57,6 +57,7 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       center: [106.01, -6.02], // Default Cilegon
       zoom: 11,
       attributionControl: false,
+      // @ts-ignore
       preserveDrawingBuffer: true // Required for exporting to image
     });
 

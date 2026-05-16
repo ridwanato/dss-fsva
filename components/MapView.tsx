@@ -12,6 +12,7 @@ interface MapViewProps {
 export default function MapView({ geoJsonData, onPolygonClick }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -36,7 +37,7 @@ export default function MapView({ geoJsonData, onPolygonClick }: MapViewProps) {
 
       map.current.addSource('fsva', {
         type: 'geojson',
-        data: geoJsonData || { type: 'FeatureCollection', features: [] }
+        data: { type: 'FeatureCollection', features: [] }
       });
 
       // Fill layer
@@ -128,18 +129,20 @@ export default function MapView({ geoJsonData, onPolygonClick }: MapViewProps) {
           onPolygonClick(e.features[0].properties);
         }
       });
+      
+      setMapLoaded(true);
     });
-  }, [geoJsonData, onPolygonClick]);
+  }, [onPolygonClick]);
 
-  // Update data when geoJsonData changes
+  // Update data when geoJsonData changes OR map finishes loading
   useEffect(() => {
-    if (map.current && map.current.isStyleLoaded()) {
+    if (mapLoaded && map.current && geoJsonData) {
       const source = map.current.getSource('fsva') as maplibregl.GeoJSONSource;
-      if (source && geoJsonData) {
+      if (source) {
         source.setData(geoJsonData);
       }
     }
-  }, [geoJsonData]);
+  }, [geoJsonData, mapLoaded]);
 
   return <div ref={mapContainer} className="w-full h-full" />;
 }

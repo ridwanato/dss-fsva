@@ -58,6 +58,10 @@ export async function POST(req: NextRequest) {
             const valueNode = dataNodes[j].getElementsByTagName('value')[0];
             if (valueNode && valueNode.textContent) kode_bps = valueNode.textContent.trim();
           }
+          if (nameAttr && nameAttr.toLowerCase().includes('namobj') && !name) {
+            const valueNode = dataNodes[j].getElementsByTagName('value')[0];
+            if (valueNode && valueNode.textContent) name = valueNode.textContent.trim();
+          }
         }
         
         // Format 2: <SimpleData name="KODE_BPS">123</SimpleData>
@@ -68,7 +72,17 @@ export async function POST(req: NextRequest) {
             const textContent = simpleDataNodes[j].textContent;
             if (textContent) kode_bps = textContent.trim();
           }
+          if (nameAttr && nameAttr.toLowerCase().includes('namobj') && !name) {
+            const textContent = simpleDataNodes[j].textContent;
+            if (textContent) name = textContent.trim();
+          }
         }
+      }
+      
+      // FALLBACK SANGAT PENTING: Jika KML sama sekali tidak punya kode BPS, 
+      // gunakan nama desa sebagai kode BPS sementara agar tidak dibuang!
+      if (!kode_bps && name) {
+        kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
       }
       
       if (!kode_bps) {

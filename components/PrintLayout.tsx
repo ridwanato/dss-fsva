@@ -20,7 +20,7 @@ export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutPr
           <img 
             src={mapImage} 
             alt="Map Print View" 
-            className="absolute inset-0 w-full h-full object-cover origin-center scale-110" 
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.1)', zIndex: 0, display: 'block' }}
           />
 
           {/* Coordinate Grids (Top) */}

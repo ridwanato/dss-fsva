@@ -51,12 +51,17 @@ export default function MapPage() {
     setIsPrinting(true);
     setTimeout(() => {
       try {
-        const dataUrl = mapInstance.getCanvas().toDataURL('image/png');
+        // Gunakan JPEG (0.8 quality) agar ukuran base64 jauh lebih kecil (1-2MB) dibanding PNG (bisa >10MB).
+        // Browser sering gagal merender string base64 yang terlalu raksasa saat Print PDF.
+        const dataUrl = mapInstance.getCanvas().toDataURL('image/jpeg', 0.8);
         setMapImage(dataUrl);
+        
         // Give React and browser time to decode and render the large base64 image into the DOM
         setTimeout(() => {
           window.print();
           setIsPrinting(false);
+          // Hapus gambar dari memori setelah print selesai
+          setTimeout(() => setMapImage(null), 1000);
         }, 1200);
       } catch(e) {
         console.error(e);

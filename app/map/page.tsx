@@ -53,10 +53,11 @@ export default function MapPage() {
       try {
         const dataUrl = mapInstance.getCanvas().toDataURL('image/png');
         setMapImage(dataUrl);
+        // Give React and browser time to decode and render the large base64 image into the DOM
         setTimeout(() => {
           window.print();
           setIsPrinting(false);
-        }, 500);
+        }, 1200);
       } catch(e) {
         console.error(e);
         setIsPrinting(false);

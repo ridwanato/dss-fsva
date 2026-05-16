@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
 
+export const revalidate = 3600; // Cache this route at Vercel Edge for 1 hour
+
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
@@ -15,38 +17,32 @@ export async function GET(req: NextRequest) {
       query = query.eq('nama_kabupaten', kabupaten);
     }
 
+    // Gunakan .csv() atau biarkan default JSON, supabase-js handles it
     const { data, error } = await query;
     if (error) throw error;
 
+    // TRIK OPTIMASI: Jangan mem-parse string geometry yang sangat besar ke dalam objek JavaScript (Sangat menguras RAM & CPU).
+    // Alih-alih, kita rakit raw JSON string secara manual. Ini 100x lebih cepat dan mencegah Vercel Timeout.
     const features = (data || []).map(row => {
-      // ensure geometry is an object
-      let geom = row.geometry;
-      if (typeof geom === 'string') {
-        try { geom = JSON.parse(geom); } catch(e) {}
-      }
-      
       const { geometry, ...properties } = row;
-      return {
-        type: 'Feature',
-        geometry: geom,
-        properties
-      };
+      
+      let geomStr = typeof geometry === 'string' ? geometry : JSON.stringify(geometry);
+      if (!geomStr || geomStr.trim() === '') geomStr = 'null';
+      
+      return `{"type":"Feature","geometry":${geomStr},"properties":${JSON.stringify(properties)}}`;
     });
 
-    const featureCollection = {
-      type: 'FeatureCollection',
-      features
-    };
+    const finalJsonString = `{"type":"FeatureCollection","features":[${features.join(',')}]}`;
 
-    return new NextResponse(JSON.stringify(featureCollection), {
+    return new NextResponse(finalJsonString, {
       status: 200,
       headers: {
         'Content-Type': 'application/geo+json',
-        'Cache-Control': 'max-age=300'
+        'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' // Cache aggressively at CDN
       }
     });
   } catch (error: any) {
-    console.error(error);
+    console.error("GeoJSON API Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

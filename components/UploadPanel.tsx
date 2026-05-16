@@ -84,7 +84,7 @@ export default function UploadPanel() {
           2. Upload Data Indikator (XLSX)
         </h2>
         <div className="mb-4">
-          <a href="/api/export?tahun=2024" className="text-sm text-blue-600 hover:underline">Download Template XLSX</a>
+          <a href="/api/template" className="text-sm text-blue-600 hover:underline">Download Template XLSX</a>
         </div>
         <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-8 hover:bg-gray-50 transition flex flex-col items-center justify-center text-center cursor-pointer">
           <input type="file" accept=".xlsx" onChange={handleUploadData} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />

@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     if (fetchError) throw fetchError;
 
     let processed = 0;
+    const errors: string[] = [];
     const summary: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
     
     for (const row of rawData || []) {
@@ -77,10 +78,12 @@ export async function POST(req: NextRequest) {
       if (!upsertError) {
         processed++;
         summary[result.prioritas] = (summary[result.prioritas] || 0) + 1;
+      } else {
+        errors.push(`Desa ${row.kode_bps}: ${upsertError.message}`);
       }
     }
 
-    return NextResponse.json({ success: true, processed, summary });
+    return NextResponse.json({ success: true, processed, summary, errors });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

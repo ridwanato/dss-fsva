@@ -136,6 +136,18 @@ export default function UploadPanel() {
             {calcResult.success ? (
               <>
                 <h3 className="font-bold text-green-700 mb-2">Kalkulasi Selesai ({calcResult.processed} desa)</h3>
+                
+                {calcResult.errors && calcResult.errors.length > 0 && (
+                  <div className="mb-4 text-red-600 font-semibold text-xs border border-red-200 bg-red-50 p-2 rounded">
+                    Pesan Error ({calcResult.errors.length}):
+                    <ul className="list-disc pl-4 mt-1 font-normal max-h-32 overflow-y-auto custom-scrollbar">
+                      {calcResult.errors.map((err: string, i: number) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-6 gap-2 text-center mt-4">
                   {[1,2,3,4,5,6].map(p => (
                     <div key={p} className="bg-white p-2 rounded shadow-sm">

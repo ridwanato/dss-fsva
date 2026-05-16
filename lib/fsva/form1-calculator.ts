@@ -54,6 +54,8 @@ export interface CalculatedIndicators {
 // INDIKATOR 1: NCPR (Rumus 1–15 Juknis)
 // ================================================================
 function calculateNCPR(input: RawIndicatorInput): number {
+  if (input.jumlah_penduduk <= 0) return 99; // Hindari division by zero
+  
   const c = GKG_CONVERSION[input.provinsi] ?? GKG_CONVERSION['Indonesia']
 
   // Padi → Beras konsumsi
@@ -116,6 +118,7 @@ function calculatePctProhe(konsumsi_protein: number): number {
 // INDIKATOR 4: Rasio Cadangan (Rumus 18)
 // ================================================================
 function calculateRasioCadangan(cbpd: number, lpm: number, penduduk: number): number {
+  if (penduduk <= 0) return 0; // Hindari division by zero
   const totalCadangan = (cbpd + lpm) * 1000 // ton → kg
   return totalCadangan / penduduk // kg/kapita
 }

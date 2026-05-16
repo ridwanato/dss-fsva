@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
          onConflict: 'kode_bps,tahun'
        });
        if (error) {
-         errors.push(`Gagal menyimpan desa kode ${insertData.kode_bps}: Pastikan kode kelurahan ada di Peta KMZ`);
+         errors.push(`Gagal menyimpan desa kode ${insertData.kode_bps}: ${error.message}`);
        } else {
          inserted++;
        }

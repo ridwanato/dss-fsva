@@ -73,6 +73,16 @@ export default function UploadPanel() {
         {geomResult && (
           <div className="mt-4 p-3 bg-green-50 text-green-700 text-sm rounded border border-green-200">
             {geomResult.success ? `Berhasil upload ${geomResult.features} polygon desa.` : `Gagal: ${geomResult.error}`}
+            {geomResult.errors && geomResult.errors.length > 0 && (
+              <div className="mt-2 text-red-600 font-semibold text-xs border-t border-green-200 pt-2">
+                Pesan Error Map ({geomResult.errors.length}):
+                <ul className="list-disc pl-4 mt-1 font-normal max-h-32 overflow-y-auto custom-scrollbar">
+                  {geomResult.errors.map((err: string, i: number) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -98,13 +98,21 @@ export async function POST(req: NextRequest) {
       let wkt = '';
       
       if (polygonNodes.length > 0) {
-        const coordsNode = polygonNodes[0].getElementsByTagName('coordinates')[0];
-        if (coordsNode && coordsNode.textContent) {
-          const coords = coordsNode.textContent.trim().split(/\s+/).map(pair => {
-            const [lon, lat] = pair.split(',');
-            return `${lon} ${lat}`;
-          }).join(', ');
-          wkt = `MULTIPOLYGON(((${coords})))`;
+        const polys: string[] = [];
+        for (let k = 0; k < polygonNodes.length; k++) {
+          const coordsNode = polygonNodes[k].getElementsByTagName('coordinates')[0];
+          if (coordsNode && coordsNode.textContent) {
+            const coords = coordsNode.textContent.trim().split(/\s+/).filter(Boolean).map(pair => {
+              const parts = pair.split(',');
+              return `${parts[0]} ${parts[1]}`;
+            }).join(', ');
+            if (coords) {
+              polys.push(`((${coords}))`);
+            }
+          }
+        }
+        if (polys.length > 0) {
+          wkt = `MULTIPOLYGON(${polys.join(', ')})`;
         }
       }
       
@@ -119,21 +127,9 @@ export async function POST(req: NextRequest) {
 
     // Upsert into Supabase using PostGIS
     let inserted = 0;
+    const errors: string[] = [];
+    
     for (const feature of featuresToInsert) {
-      // Assuming a stored procedure or direct SQL insert because ST_GeomFromText needs SQL function,
-      // but via Supabase JS we might need an RPC call.
-      // Wait, we can't do direct ST_GeomFromText via regular insert unless we have a trigger or RPC.
-      // Alternatively, we use raw SQL via RPC. We need to create an RPC in Supabase first.
-      
-      // However, the instructions say: Upsert ke tabel geometries via Supabase dengan ST_GeomFromText
-      // Let's call an RPC for this, or use the postgrest extension. PostgREST doesn't support ST_GeomFromText directly on insert.
-      // Let's assume we have an RPC `upsert_geometry(p_kode_bps, p_nama_desa, p_wkt)` or we just insert GeoJSON.
-      // Wait, postgREST supports GeoJSON insertion directly into geometry columns!
-      // But the prompt specifically said "dengan ST_GeomFromText".
-      // I will write an RPC call and later create the RPC, or insert GeoJSON directly. 
-      // Actually, if I just insert the WKT as string, postgis might auto-cast it? No, postgis casts WKB. 
-      // Supabase supports GeoJSON natively. Let's convert WKT to GeoJSON or just use the RPC.
-      
       const { error } = await supabase.rpc('upsert_geometry', {
         p_kode_bps: feature.kode_bps,
         p_nama_desa: feature.nama_desa,
@@ -141,10 +137,13 @@ export async function POST(req: NextRequest) {
       });
       
       if (!error) inserted++;
-      else console.error(error);
+      else {
+        console.error('Insert geom error:', error);
+        errors.push(`${feature.nama_desa}: ${error.message}`);
+      }
     }
 
-    return NextResponse.json({ success: true, features: inserted });
+    return NextResponse.json({ success: true, features: inserted, errors });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

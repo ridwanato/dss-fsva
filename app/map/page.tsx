@@ -49,26 +49,43 @@ export default function MapPage() {
   const handlePrint = () => {
     if (!mapInstance) return;
     setIsPrinting(true);
-    setTimeout(() => {
+    
+    // Trik paling ampuh untuk WebGL Canvas: Paksa map melakukan render/repaint ulang
+    // lalu tangkap gambarnya tepat saat map selesai merender (event 'idle' atau 'render').
+    // Ini menjamin buffer WebGL sedang penuh (tidak kosong/hitam).
+    // Menggunakan event 'render' lebih aman daripada 'idle' pada beberapa GPU untuk menangkap WebGL buffer
+    mapInstance.once('render', () => {
       try {
-        // Gunakan JPEG (0.8 quality) agar ukuran base64 jauh lebih kecil (1-2MB) dibanding PNG (bisa >10MB).
-        // Browser sering gagal merender string base64 yang terlalu raksasa saat Print PDF.
-        const dataUrl = mapInstance.getCanvas().toDataURL('image/jpeg', 0.8);
+        const mapCanvas = mapInstance.getCanvas();
+        
+        // Trik Bulletproof untuk Windows/Chrome GPU Bug:
+        // Salin isi kanvas WebGL ke kanvas 2D biasa sebelum mengubahnya ke Base64.
+        const hiddenCanvas = document.createElement('canvas');
+        hiddenCanvas.width = mapCanvas.width;
+        hiddenCanvas.height = mapCanvas.height;
+        const ctx = hiddenCanvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(mapCanvas, 0, 0);
+        }
+        
+        const dataUrl = hiddenCanvas.toDataURL('image/png');
+        console.log("Tangkapan Peta Sukses! Ukuran data:", dataUrl.length);
         setMapImage(dataUrl);
         
-        // Give React and browser time to decode and render the large base64 image into the DOM
         setTimeout(() => {
           window.print();
           setIsPrinting(false);
-          // Hapus gambar dari memori setelah print selesai
           setTimeout(() => setMapImage(null), 1000);
-        }, 1200);
+        }, 800);
       } catch(e) {
         console.error(e);
         setIsPrinting(false);
         alert("Gagal memproses gambar peta untuk PDF.");
       }
-    }, 100);
+    });
+
+    // Pancing map agar merender ulang
+    mapInstance.triggerRepaint();
   };
 
   return (

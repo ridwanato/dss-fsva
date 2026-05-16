@@ -196,6 +196,33 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       const source = map.current.getSource('fsva') as maplibregl.GeoJSONSource;
       if (source) {
         source.setData(geoJsonData);
+        
+        // Auto-fit bounds (Otomatis zoom ke tengah kabupaten apapun)
+        if (geoJsonData.features && geoJsonData.features.length > 0) {
+          let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+          
+          geoJsonData.features.forEach((feature: any) => {
+            if (!feature.geometry || !feature.geometry.coordinates) return;
+            // Handle MultiPolygon and Polygon
+            const coords = feature.geometry.type === 'MultiPolygon' 
+              ? feature.geometry.coordinates.flat(2) 
+              : feature.geometry.coordinates.flat(1);
+              
+            coords.forEach((coord: [number, number]) => {
+              if (coord[0] < minLng) minLng = coord[0];
+              if (coord[0] > maxLng) maxLng = coord[0];
+              if (coord[1] < minLat) minLat = coord[1];
+              if (coord[1] > maxLat) maxLat = coord[1];
+            });
+          });
+
+          if (minLng < maxLng && minLat < maxLat) {
+            map.current.fitBounds([
+              [minLng, minLat],
+              [maxLng, maxLat]
+            ], { padding: 40, duration: 1000 });
+          }
+        }
       }
     }
   }, [geoJsonData, mapLoaded]);

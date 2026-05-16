@@ -7,10 +7,12 @@ import { PRIORITY_LABELS } from '@/lib/fsva/constants';
 interface MapViewProps {
   geoJsonData: any;
   activeLayer: string;
+  opacity: number;
+  showLabels: boolean;
   onPolygonClick: (properties: any) => void;
 }
 
-export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: MapViewProps) {
+export default function MapView({ geoJsonData, activeLayer, opacity, showLabels, onPolygonClick }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -30,7 +32,15 @@ export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: Ma
       6, PRIORITY_LABELS[6].fill,
       '#cccccc' // fallback
     ]);
-  }, [activeLayer, mapLoaded]);
+    
+    // Update opacity (0% transparency = 1.0 opacity)
+    map.current.setPaintProperty('fsva-fill', 'fill-opacity', 1 - (opacity / 100));
+    
+    // Update labels visibility
+    if (map.current.getLayer('fsva-labels')) {
+      map.current.setLayoutProperty('fsva-labels', 'visibility', showLabels ? 'visible' : 'none');
+    }
+  }, [activeLayer, opacity, showLabels, mapLoaded]);
 
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -79,7 +89,7 @@ export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: Ma
             6, PRIORITY_LABELS[6].fill,
             '#cccccc' // fallback
           ],
-          'fill-opacity': 0.7
+          'fill-opacity': 1
         }
       });
 
@@ -91,6 +101,24 @@ export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: Ma
         paint: {
           'line-color': '#ffffff',
           'line-width': 1
+        }
+      });
+
+      // Labels layer
+      map.current.addLayer({
+        id: 'fsva-labels',
+        type: 'symbol',
+        source: 'fsva',
+        layout: {
+          'text-field': ['get', 'nama_desa'],
+          'text-size': 11,
+          'text-anchor': 'center'
+        },
+        paint: {
+          'text-color': '#111827',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.5,
+          'text-halo-blur': 0.5
         }
       });
 

@@ -44,11 +44,15 @@ export default function MapView({ geoJsonData, activeLayer, onPolygonClick }: Ma
       container: mapContainer.current,
       style: styleUrl,
       center: [106.01, -6.02], // Default Cilegon
-      zoom: 11
+      zoom: 11,
+      attributionControl: false
     });
 
     map.current.addControl(new maplibregl.NavigationControl(), 'top-left');
     map.current.addControl(new maplibregl.FullscreenControl(), 'top-left');
+    map.current.addControl(new maplibregl.AttributionControl({
+      customAttribution: '© RidwanS'
+    }), 'bottom-right');
 
     map.current.on('load', () => {
       if (!map.current) return;

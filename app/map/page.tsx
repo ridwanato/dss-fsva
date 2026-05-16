@@ -44,7 +44,8 @@ export default function MapPage() {
       {/* Header overlay */}
       <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 flex justify-between items-start">
         <div className="bg-white/95 backdrop-blur px-6 py-3 rounded-xl shadow border border-gray-200 pointer-events-auto max-w-sm">
-          <h1 className="text-xl font-black text-gray-800 tracking-tight mb-2">Peta FSVA 2024</h1>
+          <h1 className="text-xl font-black text-gray-800 tracking-tight mb-0">Peta FSVA 2025 <span className="text-sm font-semibold text-gray-500">(basis data 2024)</span></h1>
+          <p className="text-xs font-bold text-green-700 mb-3 uppercase">11 Indikator Kab/Kota</p>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pilih Layer Peta:</label>
             <select 

@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
         for (let j = 0; j < simpleDataNodes.length; j++) {
           const nameAttr = simpleDataNodes[j].getAttribute('name');
           if (nameAttr && nameAttr.toLowerCase().replace(/_/g, '').includes('kodebps')) {
-            if (simpleDataNodes[j].textContent) kode_bps = simpleDataNodes[j].textContent.trim();
+            const textContent = simpleDataNodes[j].textContent;
+            if (textContent) kode_bps = textContent.trim();
           }
         }
       }

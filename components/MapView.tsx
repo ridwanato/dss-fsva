@@ -58,8 +58,7 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       attributionControl: false
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-left');
-    map.current.addControl(new maplibregl.FullscreenControl(), 'top-left');
+
     map.current.addControl(new maplibregl.AttributionControl({
       customAttribution: '© RidwanS'
     }), 'bottom-right');

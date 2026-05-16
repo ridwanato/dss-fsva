@@ -50,13 +50,22 @@ export async function POST(req: NextRequest) {
       // Extract ExtendedData for kode_bps
       const extendedData = placemark.getElementsByTagName('ExtendedData')[0];
       if (extendedData) {
+        // Format 1: <Data name="KODE_BPS"><value>123</value></Data>
         const dataNodes = extendedData.getElementsByTagName('Data');
         for (let j = 0; j < dataNodes.length; j++) {
-          const dataNode = dataNodes[j];
-          const nameAttr = dataNode.getAttribute('name');
-          if (nameAttr && nameAttr.toLowerCase().includes('kode_bps')) {
-            const valueNode = dataNode.getElementsByTagName('value')[0];
+          const nameAttr = dataNodes[j].getAttribute('name');
+          if (nameAttr && nameAttr.toLowerCase().replace(/_/g, '').includes('kodebps')) {
+            const valueNode = dataNodes[j].getElementsByTagName('value')[0];
             if (valueNode && valueNode.textContent) kode_bps = valueNode.textContent.trim();
+          }
+        }
+        
+        // Format 2: <SimpleData name="KODE_BPS">123</SimpleData>
+        const simpleDataNodes = extendedData.getElementsByTagName('SimpleData');
+        for (let j = 0; j < simpleDataNodes.length; j++) {
+          const nameAttr = simpleDataNodes[j].getAttribute('name');
+          if (nameAttr && nameAttr.toLowerCase().replace(/_/g, '').includes('kodebps')) {
+            if (simpleDataNodes[j].textContent) kode_bps = simpleDataNodes[j].textContent.trim();
           }
         }
       }

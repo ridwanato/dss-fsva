@@ -94,6 +94,16 @@ export default function UploadPanel() {
         {dataResult && (
           <div className="mt-4 p-3 bg-green-50 text-green-700 text-sm rounded border border-green-200">
             {dataResult.success ? `Berhasil menyimpan data untuk ${dataResult.inserted} desa.` : `Gagal: ${dataResult.error}`}
+            {dataResult.errors && dataResult.errors.length > 0 && (
+              <div className="mt-2 text-red-600 font-semibold text-xs border-t border-green-200 pt-2">
+                Pesan Error ({dataResult.errors.length}):
+                <ul className="list-disc pl-4 mt-1 font-normal max-h-32 overflow-y-auto custom-scrollbar">
+                  {dataResult.errors.map((err: string, i: number) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>

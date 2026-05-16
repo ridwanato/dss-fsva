@@ -23,46 +23,74 @@ export async function POST(req: NextRequest) {
     const data = XLSX.utils.sheet_to_json<any>(worksheet, { range: 1 }); // Assuming row 1 is header, row 2 is data
 
     const supabase = getServiceSupabase();
+    
+    // Ambil daftar geometri untuk auto-matching (karena kode Kemendagri vs BPS sering beda)
+    const { data: geomData } = await supabase.from('geometries').select('kode_bps, nama_desa');
+    const geomList = geomData || [];
+    
+    // Helper untuk membersihkan nama desa (hapus kelurahan/desa, spasi, huruf kecil)
+    const cleanName = (name: string) => {
+      if (!name) return '';
+      return String(name).toLowerCase()
+        .replace(/^(kelurahan|kel\.|desa)\s+/i, '')
+        .replace(/[^a-z0-9]/g, '');
+    };
+
     let inserted = 0;
     const errors: string[] = [];
 
-    const rowsToInsert = data.map((row: any) => {
-      // Mapping based on "Format XLSX yang diterima" in the prompt
-      // We'll use the column index or generic keys if headers might change.
-      // Since sheet_to_json with range: 1 uses row 2 as headers, or we can use header: 'A'
-      return null;
-    }).filter(Boolean);
-    
     const rawData = XLSX.utils.sheet_to_json<any>(worksheet);
     
     const inserts = rawData.map(row => {
-      const kodeBps = row['Kode Desa BPS'] || row['KODE BPS'] || row['KODE_BPS'] || row['kode_bps'];
-      if (!kodeBps) return null; // Wajib ada kode_bps
+      const norm: any = {};
+      for (const key in row) {
+        const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        norm[normalizedKey] = row[key];
+      }
+
+      let rawKodeBps = String(norm['kodedesabps'] || norm['kodebps'] || '').trim();
+      let namaDesaExcel = String(norm['namadesakelurahan'] || norm['namadesa'] || '').trim();
+      
+      if (!rawKodeBps && !namaDesaExcel) return null;
+
+      // 1. Coba cari match persis kode_bps
+      let matchedGeom = geomList.find(g => g.kode_bps.replace(/\./g, '') === rawKodeBps.replace(/\./g, ''));
+      
+      // 2. Jika kode BPS beda, coba match berdasarkan nama desa
+      if (!matchedGeom && namaDesaExcel) {
+        const cleanedExcelName = cleanName(namaDesaExcel);
+        matchedGeom = geomList.find(g => cleanName(g.nama_desa) === cleanedExcelName);
+      }
+
+      // Jika tetap tidak ketemu, pakai rawKodeBps (tapi mungkin akan gagal Foreign Key)
+      const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : rawKodeBps;
+      
+      if (!finalKodeBps) return null;
       
       return {
-        kode_bps: String(kodeBps).trim(),
+        kode_bps: finalKodeBps,
         tahun,
-        produksi_padi: Number(row['Produksi Padi (ton)']) || 0,
-        produksi_jagung: Number(row['Produksi Jagung (ton)']) || 0,
-        produksi_ubi_kayu: Number(row['Produksi Ubi Kayu (ton)']) || 0,
-        produksi_ubi_jalar: Number(row['Produksi Ubi Jalar (ton)']) || 0,
-        produksi_sagu: Number(row['Produksi Sagu (ton)']) || 0,
-        produksi_pisang: Number(row['Produksi Pisang (ton)']) || 0,
-        jumlah_penduduk: Number(row['Jumlah Penduduk']) || 0,
-        konsumsi_energi: Number(row['Konsumsi Energi (kkal/kap/hr)']) || 0,
-        konsumsi_protein: Number(row['Konsumsi Protein Hewani (gr/kap/hr)']) || 0,
-        cadangan_cbpd: Number(row['Cadangan CBPD (ton)']) || 0,
-        cadangan_lpm: Number(row['Cadangan LPM (ton)']) || 0,
-        pct_miskin: Number(row['% Penduduk Miskin (desil 1+2)']) || 0,
-        cv_harga_beras: Number(row['CV Harga Beras (%)']) || 0,
-        cv_harga_ayam: Number(row['CV Harga Ayam (%)']) || 0,
-        cv_harga_telur: Number(row['CV Harga Telur (%)']) || 0,
-        cv_harga_minyak: Number(row['CV Harga Minyak (%)']) || 0,
-        pou: Number(row['PoU (%)']) || 0,
-        lama_sekolah_perempuan: Number(row['Rata-rata Lama Sekolah Perempuan (tahun)']) || 0,
-        pct_no_water: Number(row['% RT Tanpa Air Bersih']) || 0,
-        skor_pph: Number(row['Skor PPH Konsumsi']) || 0,
-        pct_stunting: Number(row['% Balita Stunting']) || 0,
+        produksi_padi: Number(norm['produksipaditon'] || norm['produksipadi']) || 0,
+        produksi_jagung: Number(norm['produksijagungton'] || norm['produksijagung']) || 0,
+        produksi_ubi_kayu: Number(norm['produksiubikayuton'] || norm['produksiubikayu']) || 0,
+        produksi_ubi_jalar: Number(norm['produksiubijalarton'] || norm['produksiubijalar']) || 0,
+        produksi_sagu: Number(norm['produksisaguton'] || norm['produksisagu']) || 0,
+        produksi_pisang: Number(norm['produksipisangton'] || norm['produksipisang']) || 0,
+        jumlah_penduduk: Number(norm['jumlahpenduduk']) || 0,
+        konsumsi_energi: Number(norm['konsumsienergikkalkaphr'] || norm['konsumsienergi']) || 0,
+        konsumsi_protein: Number(norm['konsumsiproteinhewanigrkaphr'] || norm['konsumsiprotein']) || 0,
+        cadangan_cbpd: Number(norm['cadangancbpdton'] || norm['cadangancbpd']) || 0,
+        cadangan_lpm: Number(norm['cadanganlpmton'] || norm['cadanganlpm']) || 0,
+        pct_miskin: Number(norm['pendudukmiskindesil12'] || norm['pctmiskin'] || norm['pendudukmiskin']) || 0,
+        cv_harga_beras: Number(norm['cvhargaberas']) || 0,
+        cv_harga_ayam: Number(norm['cvhargaayam']) || 0,
+        cv_harga_telur: Number(norm['cvhargatelur']) || 0,
+        cv_harga_minyak: Number(norm['cvhargaminyak']) || 0,
+        pou: Number(norm['pou']) || 0,
+        lama_sekolah_perempuan: Number(norm['rataratalamasekolahperempuantahun'] || norm['lamasekolah']) || 0,
+        pct_no_water: Number(norm['rttanpaairbersih'] || norm['pctnowater']) || 0,
+        skor_pph: Number(norm['skorpphkonsumsi'] || norm['skorpph']) || 0,
+        pct_stunting: Number(norm['balitastunting'] || norm['pctstunting']) || 0,
       };
     }).filter(Boolean);
 
@@ -72,7 +100,7 @@ export async function POST(req: NextRequest) {
          onConflict: 'kode_bps,tahun'
        });
        if (error) {
-         errors.push(`Row ${insertData?.kode_bps}: ${error.message}`);
+         errors.push(`Gagal menyimpan desa kode ${insertData.kode_bps}: Pastikan kode kelurahan ada di Peta KMZ`);
        } else {
          inserted++;
        }

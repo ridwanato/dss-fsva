@@ -1,11 +1,19 @@
 import { PRIORITY_LABELS } from '@/lib/fsva/constants';
 
+interface PrintConfig {
+  govName: string;
+  title: string;
+  sources: string;
+  footer: string;
+}
+
 interface PrintLayoutProps {
   mapImage: string | null;
   activeLayerName: string;
+  config: PrintConfig;
 }
 
-export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutProps) {
+export default function PrintLayout({ mapImage, activeLayerName, config }: PrintLayoutProps) {
   if (!mapImage) return null;
 
   const priorities = [1, 2, 3, 4, 5, 6] as const;
@@ -82,8 +90,9 @@ export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutPr
                 <img src="/logo-cilegon.png" alt="Logo Cilegon" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black leading-tight">PEMERINTAH</span>
-                <span className="text-[10px] font-black leading-tight">KOTA CILEGON</span>
+                {config.govName.split('\n').map((line, i) => (
+                   <span key={i} className="text-[10px] font-black leading-tight uppercase">{line}</span>
+                ))}
               </div>
             </div>
             <div className="flex items-center gap-2 px-4">
@@ -99,8 +108,9 @@ export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutPr
 
           {/* Title Section */}
           <div className="p-3 border-b-[2px] border-black text-center">
-            <h1 className="font-black text-[12px] tracking-wide leading-tight">FSVA KOTA CILEGON</h1>
-            <h1 className="font-black text-[12px] tracking-wide leading-tight">TAHUN 2025</h1>
+            {config.title.split('\n').map((line, i) => (
+              <h1 key={i} className="font-black text-[12px] tracking-wide leading-tight uppercase">{line}</h1>
+            ))}
           </div>
 
           {/* Subtitle Section */}
@@ -141,29 +151,17 @@ export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutPr
           {/* Sources Section */}
           <div className="p-3 border-b-[2px] border-black text-[7px] leading-tight flex-1">
             <h3 className="font-bold text-center mb-2 text-[9px]">SUMBER DATA</h3>
-            <ol className="list-decimal pl-3 flex flex-col gap-1">
-              <li>Data Penduduk Kota Cilegon (DKB), DISDUKCAPIL, 2024.</li>
-              <li>Data PPH Konsumsi, BAPANAS, 2024.</li>
-              <li>Data CPPD, DKPP Kota Cilegon, 2024.</li>
-              <li>Data DTSEN, Dinas Sosial Kota Cilegon, 2024.</li>
-              <li>Data PoU, BAPANAS, 2024.</li>
-              <li>Data Susenas BPS, Podes, SKI (diolah BAPANAS), 2024.</li>
-              <li>Data Harga Komoditas, Disperindag, 2024.</li>
-              <li>Peta Batas Administrasi BPS & BIG.</li>
-            </ol>
+            <div className="flex flex-col gap-1 whitespace-pre-wrap">
+              {config.sources}
+            </div>
           </div>
 
         </div>
 
         {/* Footer Section */}
         <div className="absolute bottom-0 left-0 w-full bg-white border-t-[2px] border-black p-3 z-10 flex text-[9px]">
-          <div className="w-[70%] pr-4 border-r-[2px] border-black">
-            <p className="mb-1">Disusun oleh:</p>
-            <p className="font-bold">TIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025</p>
-            <p className="font-bold">BIDANG KETAHANAN PANGAN</p>
-            <p className="font-bold">DINAS KETAHANAN PANGAN DAN PERTANIAN KOTA CILEGON</p>
-            <p>Jl. Kubang Laban No. 56 Kel. Sukmajaya, Kec. Jombang, Kota Cilegon</p>
-            <p>Telp: (0254) 390582</p>
+          <div className="w-[70%] pr-4 border-r-[2px] border-black whitespace-pre-wrap leading-snug">
+            {config.footer}
           </div>
           <div className="w-[30%] pl-2 flex items-center justify-center">
             {/* Empty space for signature or QR if needed */}

@@ -33,6 +33,14 @@ export default function MapPage() {
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printConfig, setPrintConfig] = useState({
+    govName: 'PEMERINTAH\nKOTA CILEGON',
+    title: 'FSVA KOTA CILEGON\nTAHUN 2025',
+    sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
+    footer: 'Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN KOTA CILEGON\nJl. Kubang Laban No. 56 Kel. Sukmajaya, Kec. Jombang, Kota Cilegon\nTelp: (0254) 390582'
+  });
+
   useEffect(() => {
     fetch('/api/geojson?tahun=2024')
       .then(res => res.json())
@@ -46,20 +54,14 @@ export default function MapPage() {
       });
   }, []);
 
-  const handlePrint = () => {
+  const executePrint = () => {
+    setShowPrintModal(false);
     if (!mapInstance) return;
     setIsPrinting(true);
     
-    // Trik paling ampuh untuk WebGL Canvas: Paksa map melakukan render/repaint ulang
-    // lalu tangkap gambarnya tepat saat map selesai merender (event 'idle' atau 'render').
-    // Ini menjamin buffer WebGL sedang penuh (tidak kosong/hitam).
-    // Menggunakan event 'render' lebih aman daripada 'idle' pada beberapa GPU untuk menangkap WebGL buffer
     mapInstance.once('render', () => {
       try {
         const mapCanvas = mapInstance.getCanvas();
-        
-        // Trik Bulletproof untuk Windows/Chrome GPU Bug:
-        // Salin isi kanvas WebGL ke kanvas 2D biasa sebelum mengubahnya ke Base64.
         const hiddenCanvas = document.createElement('canvas');
         hiddenCanvas.width = mapCanvas.width;
         hiddenCanvas.height = mapCanvas.height;
@@ -69,7 +71,6 @@ export default function MapPage() {
         }
         
         const dataUrl = hiddenCanvas.toDataURL('image/png');
-        console.log("Tangkapan Peta Sukses! Ukuran data:", dataUrl.length);
         setMapImage(dataUrl);
         
         setTimeout(() => {
@@ -84,7 +85,6 @@ export default function MapPage() {
       }
     });
 
-    // Pancing map agar merender ulang
     mapInstance.triggerRepaint();
   };
 
@@ -93,6 +93,7 @@ export default function MapPage() {
     <PrintLayout 
       mapImage={mapImage} 
       activeLayerName={LAYERS.find(l => l.id === activeLayer)?.label || ''} 
+      config={printConfig}
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       {/* Header overlay */}
@@ -154,7 +155,7 @@ export default function MapPage() {
         
         <div className="pointer-events-auto flex w-full md:w-auto justify-end gap-2">
           <button 
-            onClick={handlePrint}
+            onClick={() => setShowPrintModal(true)}
             disabled={isPrinting}
             className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg shadow-sm border border-blue-800 text-xs md:text-sm font-semibold flex items-center gap-2 transition disabled:opacity-50"
           >
@@ -206,6 +207,74 @@ export default function MapPage() {
           onClose={() => setSelectedPolygon(null)} 
         />
       </div>
+
+      {/* Print Config Modal */}
+      {showPrintModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-full">
+            <div className="p-5 border-b border-gray-100 bg-gray-50">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Printer className="w-5 h-5 text-blue-600" /> Pengaturan Cetak Peta
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">Ubah teks dinamis yang akan tampil di PDF.</p>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Nama Instansi / Pemerintah (Pojok Kanan Atas)</label>
+                <textarea 
+                  rows={2}
+                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  value={printConfig.govName}
+                  onChange={(e) => setPrintConfig({...printConfig, govName: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Judul Peta (Tengah Kanan)</label>
+                <textarea 
+                  rows={2}
+                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  value={printConfig.title}
+                  onChange={(e) => setPrintConfig({...printConfig, title: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Daftar Sumber Data</label>
+                <textarea 
+                  rows={4}
+                  className="w-full text-xs border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
+                  value={printConfig.sources}
+                  onChange={(e) => setPrintConfig({...printConfig, sources: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Catatan Kaki / Tanda Tangan (Bawah)</label>
+                <textarea 
+                  rows={4}
+                  className="w-full text-xs border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
+                  value={printConfig.footer}
+                  onChange={(e) => setPrintConfig({...printConfig, footer: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setShowPrintModal(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={executePrint}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition shadow-md flex items-center gap-2"
+              >
+                Lanjut Cetak PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </>
   );

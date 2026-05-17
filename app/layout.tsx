@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${inter.className} bg-gray-50 h-screen overflow-hidden flex flex-col`}>
-        <div className="absolute top-0 left-0 z-50 pointer-events-none">
+        <div className="absolute top-0 left-0 z-50 pointer-events-none no-print">
           <nav className="inline-flex bg-white shadow-md border-b border-r border-gray-200 rounded-br-2xl pr-8 pl-4 sm:pl-6 h-16 items-center pointer-events-auto">
             <Link href="/" className="flex-shrink-0 flex items-center gap-3">
               <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-black text-xl">

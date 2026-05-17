@@ -48,10 +48,11 @@ export default function MapPage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target?.result) {
+        const result = event.target?.result;
+        if (typeof result === 'string') {
           setPrintConfig(prev => ({
             ...prev,
-            [type === 'pemda' ? 'logoPemda' : 'logoBapanas']: event.target.result as string
+            [type === 'pemda' ? 'logoPemda' : 'logoBapanas']: result
           }));
         }
       };

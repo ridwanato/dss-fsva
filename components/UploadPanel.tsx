@@ -75,15 +75,15 @@ export default function UploadPanel() {
             </div>
           </div>
 
-          <h3 className="font-extrabold text-slate-800 text-xl mb-3 leading-tight">Upload Batas Desa <br/><span className="text-base font-bold text-slate-500">(KML/KMZ)</span></h3>
+          <h3 className="font-extrabold text-slate-800 text-xl mb-3 leading-tight">Upload Batas Desa <br/><span className="text-base font-bold text-slate-500">(ZIP/KML/KMZ)</span></h3>
           <p className="text-slate-500 text-sm mb-8 px-2 flex-grow leading-relaxed">
-            Upload file .kml atau .kmz yang berisi polygon desa/kelurahan. Pastikan terdapat properti <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">kode_bps</code>.
+            Upload <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">.zip</code> (berisi file SHP, DBF, SHX, PRJ) atau <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">.kml/.kmz</code>. Pastikan terdapat atribut <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">kode_bps</code> atau nama desa.
           </p>
 
           <div className="w-full relative">
-            <input type="file" accept=".kml,.kmz" onChange={handleUploadGeometry} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih KML/KMZ" />
+            <input type="file" accept=".kml,.kmz,.zip" onChange={handleUploadGeometry} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih File (ZIP/KML/KMZ)" />
             <div className="w-full py-3.5 px-4 rounded-xl border-2 border-green-600 text-green-700 font-bold flex items-center justify-center gap-2 group-hover:bg-green-50 transition-colors">
-              <UploadCloud className="w-5 h-5" /> Upload KML/KMZ
+              <UploadCloud className="w-5 h-5" /> Upload File Batas
             </div>
           </div>
 

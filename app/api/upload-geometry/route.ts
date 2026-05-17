@@ -26,11 +26,82 @@ export async function POST(req: NextRequest) {
       kmlString = zip.readAsText(kmlEntry);
     } else if (file.name.toLowerCase().endsWith('.kml')) {
       kmlString = buffer.toString('utf-8');
+    } else if (file.name.toLowerCase().endsWith('.zip')) {
+      // Shapefile processing using shpjs
+      const shp = require('shpjs');
+      const wkx = require('wellknown');
+      
+      let geojson: any;
+      try {
+        geojson = await shp(buffer);
+      } catch (e: any) {
+        return NextResponse.json({ success: false, error: 'Gagal membaca Shapefile di dalam ZIP: ' + e.message }, { status: 400 });
+      }
+      
+      const collections = Array.isArray(geojson) ? geojson : [geojson];
+      const featuresToInsert = [];
+      
+      for (const coll of collections) {
+        if (!coll || !coll.features) continue;
+        for (const feature of coll.features) {
+          if (!feature.geometry || !feature.properties) continue;
+          
+          let name = '';
+          let kode_bps = '';
+          
+          // Cari property yang berhubungan dengan KODE_BPS atau KODEBPS
+          for (const key of Object.keys(feature.properties)) {
+            const lowerKey = key.toLowerCase().replace(/_/g, '');
+            if (lowerKey.includes('kodebps')) kode_bps = String(feature.properties[key]).trim();
+            if ((lowerKey.includes('namobj') || lowerKey.includes('desa') || lowerKey.includes('name')) && !name) {
+              name = String(feature.properties[key]).trim();
+            }
+          }
+          
+          if (!kode_bps && name) {
+            kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          }
+          
+          if (!kode_bps) continue;
+          
+          // Konversi GeoJSON geometry ke WKT menggunakan wellknown
+          const wkt = wkx.stringify(feature.geometry);
+          
+          if (wkt) {
+            featuresToInsert.push({
+              kode_bps,
+              nama_desa: name,
+              wkt
+            });
+          }
+        }
+      }
+      
+      // Upsert into Supabase (Zip shapefile logic)
+      let inserted = 0;
+      const errors: string[] = [];
+      const supabase = getServiceSupabase();
+      
+      for (const feature of featuresToInsert) {
+        const { error } = await supabase.rpc('upsert_geometry', {
+          p_kode_bps: feature.kode_bps,
+          p_nama_desa: feature.nama_desa,
+          p_wkt: feature.wkt
+        });
+        
+        if (!error) inserted++;
+        else {
+          console.error('Insert geom error:', error);
+          errors.push(`${feature.nama_desa}: ${error.message}`);
+        }
+      }
+      
+      return NextResponse.json({ success: true, features: inserted, errors });
     } else {
-      return NextResponse.json({ success: false, error: 'Invalid file format. Please upload KML or KMZ' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Invalid file format. Please upload KML, KMZ, or ZIP (Shapefile)' }, { status: 400 });
     }
 
-    // Parse KML
+    // Parse KML (if the flow reaches here, it's KML/KMZ)
     const parser = new DOMParser();
     const doc = parser.parseFromString(kmlString, 'text/xml');
     const placemarks = doc.getElementsByTagName('Placemark');

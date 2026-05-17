@@ -24,15 +24,16 @@ interface LayerPanelProps {
   setOpacity: (val: number) => void;
   showLabels: boolean;
   setShowLabels: (val: boolean) => void;
+  children?: React.ReactNode;
 }
 
 export default function LayerPanel({
-  activeLayer, setActiveLayer, opacity, setOpacity, showLabels, setShowLabels
+  activeLayer, setActiveLayer, opacity, setOpacity, showLabels, setShowLabels, children
 }: LayerPanelProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="absolute top-16 left-4 z-20 w-72 md:w-80 shadow-2xl rounded-lg overflow-hidden flex flex-col pointer-events-auto transition-all duration-300">
+    <div className="absolute top-16 left-4 z-20 w-[280px] md:w-80 shadow-2xl rounded-lg overflow-hidden flex flex-col pointer-events-auto transition-all duration-300">
       
       {/* Header */}
       <div 
@@ -43,14 +44,25 @@ export default function LayerPanel({
         {expanded ? <ChevronUp className="w-6 h-6 text-black font-black" strokeWidth={3} /> : <ChevronDown className="w-6 h-6 text-black font-black" strokeWidth={3} />}
       </div>
 
-      <div className={`transition-all duration-300 ${expanded ? 'max-h-[70vh] md:max-h-[80vh] opacity-100 flex flex-col' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+      <div className={`transition-all duration-300 ${expanded ? 'max-h-[calc(100vh-140px)] opacity-100 flex flex-col' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         
         {/* White Section: Title & Controls */}
-        <div className="bg-white/95 backdrop-blur px-5 py-4 shrink-0 border-b-4" style={{ borderColor: '#6b4c9a' }}>
-          <h1 className="text-lg font-black text-gray-800 tracking-tight leading-tight">
-            Peta FSVA 2026 <br/><span className="text-xs font-semibold text-gray-500">(basis data 2025)</span>
-          </h1>
-          <p className="text-[10px] font-extrabold text-green-700 mt-1 mb-4 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+        <div className="bg-white/95 backdrop-blur px-4 md:px-5 py-4 shrink-0 border-b-4" style={{ borderColor: '#6b4c9a' }}>
+          
+          {/* Title & Buttons Row */}
+          <div className="flex justify-between items-start gap-2 mb-4">
+            <div>
+              <h1 className="text-lg font-black text-gray-800 tracking-tight leading-tight">
+                Peta FSVA 2026 <br/><span className="text-xs font-semibold text-gray-500">(basis data 2025)</span>
+              </h1>
+              <p className="text-[9px] font-extrabold text-green-700 mt-1 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+            </div>
+            
+            {/* Buttons Slot */}
+            <div className="flex flex-col gap-1.5 shrink-0">
+              {children}
+            </div>
+          </div>
           
           <div className="flex flex-row items-center justify-between gap-4">
             <div className="flex-1">

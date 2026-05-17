@@ -109,14 +109,12 @@ export default function MapPage() {
         setOpacity={setOpacity}
         showLabels={showLabels}
         setShowLabels={setShowLabels}
-      />
-      
-      {/* Floating Action Buttons (Top Right) */}
-      <div className="absolute top-16 right-4 z-20 flex flex-col md:flex-row items-end md:items-start gap-2 pointer-events-none">
+      >
+        {/* Buttons (Top Right of LayerPanel) */}
         <button 
           onClick={() => setShowPrintModal(true)}
           disabled={isPrinting}
-          className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-xl border border-blue-800 text-[10px] md:text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50"
+          className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-blue-800 text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition disabled:opacity-50"
         >
           {isPrinting ? (
              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -125,11 +123,11 @@ export default function MapPage() {
           )}
           Cetak PDF
         </button>
-        <a href="/api/export?tahun=2024" className="pointer-events-auto bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg shadow-xl border border-gray-200 text-[10px] md:text-xs font-bold flex items-center gap-1.5 transition">
+        <a href="/api/export?tahun=2024" className="pointer-events-auto bg-white hover:bg-gray-50 text-gray-700 px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-gray-200 text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition">
           <Download className="w-3 h-3" />
           XLSX Hasil
         </a>
-      </div>
+      </LayerPanel>
 
       {loading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/50 backdrop-blur-sm">

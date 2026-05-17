@@ -26,15 +26,15 @@ export default function Navbar() {
         </div>
 
         {/* Links (Expandable) */}
-        <div className={`flex items-center space-x-2 md:space-x-6 whitespace-nowrap transition-all duration-300 ${expanded ? 'max-w-[500px] px-4 opacity-100' : 'max-w-0 px-0 opacity-0'} md:max-w-[500px] md:px-8 md:opacity-100`}>
-          <Link href="/map" className={`border-b-2 text-xs md:text-sm font-semibold transition-colors px-1 py-3 md:py-5 ${isActive('/map') ? 'border-green-500 text-green-700' : 'border-transparent text-gray-500 hover:text-green-700 hover:border-green-300'}`}>
-            Peta Interaktif
+        <div className={`flex items-center space-x-1.5 md:space-x-6 md:whitespace-nowrap transition-all duration-300 ${expanded ? 'max-w-[200px] sm:max-w-[300px] px-2 md:px-4 opacity-100' : 'max-w-0 px-0 opacity-0'} md:max-w-[500px] md:px-8 md:opacity-100`}>
+          <Link href="/map" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-colors px-1 py-2 md:py-5 ${isActive('/map') ? 'border-green-500 text-green-700' : 'border-transparent text-gray-500 hover:text-green-700 hover:border-green-300'}`}>
+            Peta<br className="md:hidden" />Interaktif
           </Link>
-          <Link href="/dashboard" className={`border-b-2 text-xs md:text-sm font-semibold transition-colors px-1 py-3 md:py-5 ${isActive('/dashboard') ? 'border-green-500 text-green-700' : 'border-transparent text-gray-500 hover:text-green-700 hover:border-green-300'}`}>
+          <Link href="/dashboard" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-colors px-1 py-2 md:py-5 ${isActive('/dashboard') ? 'border-green-500 text-green-700' : 'border-transparent text-gray-500 hover:text-green-700 hover:border-green-300'}`}>
             Dashboard
           </Link>
-          <Link href="/entry" className={`border-b-2 text-xs md:text-sm font-semibold transition-colors px-1 py-3 md:py-5 ${isActive('/entry') ? 'border-green-500 text-green-700' : 'border-transparent text-gray-500 hover:text-green-700 hover:border-green-300'}`}>
-            Data Entry
+          <Link href="/entry" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-colors px-1 py-2 md:py-5 ${isActive('/entry') ? 'border-green-500 text-green-700' : 'border-transparent text-gray-500 hover:text-green-700 hover:border-green-300'}`}>
+            Data<br className="md:hidden" />Entry
           </Link>
         </div>
 

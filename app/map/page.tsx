@@ -96,14 +96,14 @@ export default function MapPage() {
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       {/* Header overlay */}
-      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 flex justify-between items-start">
-        <div className="bg-white/95 backdrop-blur px-6 py-4 rounded-xl shadow border border-gray-200 pointer-events-auto max-w-sm mt-16 ml-2">
-          <h1 className="text-xl font-black text-gray-800 tracking-tight mb-0">Peta FSVA 2025 <span className="text-sm font-semibold text-gray-500">(basis data 2024)</span></h1>
-          <p className="text-[11px] font-extrabold text-green-700 mb-4 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-3 md:p-4 mt-16 flex flex-col md:flex-row justify-between items-start gap-3 md:gap-4">
+        <div className="bg-white/95 backdrop-blur px-5 md:px-6 py-4 rounded-xl shadow-lg border border-gray-200 pointer-events-auto w-full md:max-w-sm md:ml-2">
+          <h1 className="text-lg md:text-xl font-black text-gray-800 tracking-tight mb-0">Peta FSVA 2025 <span className="text-xs md:text-sm font-semibold text-gray-500">(basis data 2024)</span></h1>
+          <p className="text-[10px] md:text-[11px] font-extrabold text-green-700 mb-4 uppercase tracking-wider">11 Indikator Kab/Kota</p>
           
-          <div className="flex items-center justify-between mb-4 gap-4">
+          <div className="flex flex-row items-center justify-between mb-4 gap-4">
             <div className="flex-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex justify-between">
+              <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex justify-between">
                 <span>Transparansi Peta</span>
                 <span className="text-gray-400 font-semibold">{opacity}%</span>
               </label>
@@ -124,26 +124,26 @@ export default function MapPage() {
             </div>
             
             <div className="flex items-center gap-3 border-l pl-4 border-gray-100 h-8">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right leading-tight">
-                Nama<br/>Kelurahan
+              <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right leading-tight">
+                Nama<br/>Desa
               </label>
               <button 
                 onClick={() => setShowLabels(!showLabels)}
-                className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors shadow-inner overflow-hidden flex-shrink-0 ${showLabels ? 'bg-green-600' : 'bg-gray-300'}`}
+                className={`relative inline-flex h-6 w-10 md:w-12 items-center rounded-full transition-colors shadow-inner overflow-hidden flex-shrink-0 ${showLabels ? 'bg-green-600' : 'bg-gray-300'}`}
               >
-                <span className={`absolute left-2 text-[9px] font-black text-white transition-opacity ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
-                <span className={`absolute right-1 text-[9px] font-black text-gray-500 transition-opacity ${!showLabels ? 'opacity-100' : 'opacity-0'}`}>OFF</span>
-                <span className={`absolute z-10 inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                <span className={`absolute left-1.5 md:left-2 text-[8px] md:text-[9px] font-black text-white transition-opacity ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                <span className={`absolute right-1 text-[8px] md:text-[9px] font-black text-gray-500 transition-opacity ${!showLabels ? 'opacity-100' : 'opacity-0'}`}>OFF</span>
+                <span className={`absolute z-10 inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-5 md:translate-x-6' : 'translate-x-0.5'}`} />
               </button>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3">
-            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pilih Layer Peta:</label>
+            <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pilih Layer Peta:</label>
             <select 
               value={activeLayer}
               onChange={(e) => setActiveLayer(e.target.value)}
-              className="text-sm border border-gray-300 rounded-lg p-2 bg-gray-50 font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer shadow-sm hover:border-green-400 transition-colors"
+              className="text-xs md:text-sm border border-gray-300 rounded-lg p-2 md:p-2.5 bg-gray-50 font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer shadow-sm hover:border-green-400 transition-colors"
             >
               {LAYERS.map(l => (
                 <option key={l.id} value={l.id}>{l.label}</option>
@@ -152,11 +152,11 @@ export default function MapPage() {
           </div>
         </div>
         
-        <div className="pointer-events-auto flex gap-2">
+        <div className="pointer-events-auto flex w-full md:w-auto justify-end gap-2">
           <button 
             onClick={handlePrint}
             disabled={isPrinting}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm border border-blue-800 text-sm font-semibold flex items-center gap-2 transition disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-lg shadow-sm border border-blue-800 text-xs md:text-sm font-semibold flex items-center gap-2 transition disabled:opacity-50"
           >
             {isPrinting ? (
                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -165,7 +165,7 @@ export default function MapPage() {
             )}
             Cetak PDF
           </button>
-          <a href="/api/export?tahun=2024" className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-sm font-semibold flex items-center gap-2 transition">
+          <a href="/api/export?tahun=2024" className="bg-white hover:bg-gray-50 text-gray-700 px-3 md:px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-xs md:text-sm font-semibold flex items-center gap-2 transition">
             <Download className="w-4 h-4" />
             XLSX Hasil
           </a>

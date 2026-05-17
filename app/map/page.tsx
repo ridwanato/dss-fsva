@@ -4,7 +4,7 @@ import MapView from '@/components/MapView';
 import LegendPanel from '@/components/LegendPanel';
 import InfoPanel from '@/components/InfoPanel';
 import PrintLayout from '@/components/PrintLayout';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, Settings } from 'lucide-react';
 
 const LAYERS = [
   { id: 'prioritas', label: 'Komposit (Semua Indikator)' },
@@ -32,6 +32,7 @@ export default function MapPage() {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showControls, setShowControls] = useState(false);
 
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printConfig, setPrintConfig] = useState({
@@ -116,63 +117,76 @@ export default function MapPage() {
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       {/* Header overlay */}
-      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-3 md:p-4 mt-16 flex flex-col md:flex-row justify-between items-start gap-3 md:gap-4">
-        <div className="bg-white/95 backdrop-blur px-5 md:px-6 py-4 rounded-xl shadow-lg border border-gray-200 pointer-events-auto w-full md:max-w-sm md:ml-2">
-          <h1 className="text-lg md:text-xl font-black text-gray-800 tracking-tight mb-0">Peta FSVA 2025 <span className="text-xs md:text-sm font-semibold text-gray-500">(basis data 2024)</span></h1>
-          <p className="text-[10px] md:text-[11px] font-extrabold text-green-700 mb-4 uppercase tracking-wider">11 Indikator Kab/Kota</p>
-          
-          <div className="flex flex-row items-center justify-between mb-4 gap-4">
-            <div className="flex-1">
-              <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex justify-between">
-                <span>Transparansi Peta</span>
-                <span className="text-gray-400 font-semibold">{opacity}%</span>
-              </label>
-              <div className="relative flex items-center h-2 bg-gray-200 rounded-full">
-                <div className="absolute h-full bg-green-500 rounded-full" style={{ width: `${opacity}%` }}></div>
-                <input 
-                  type="range" 
-                  min="0" max="100" 
-                  value={opacity}
-                  onChange={(e) => setOpacity(parseInt(e.target.value))}
-                  className="absolute w-full h-full opacity-0 cursor-pointer"
-                />
-                <div 
-                  className="absolute h-4 w-4 bg-white border-2 border-green-500 rounded-full shadow-sm pointer-events-none transition-transform"
-                  style={{ left: `calc(${opacity}% - 8px)` }}
-                />
+      <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none p-3 md:p-4 mt-16 flex flex-col items-end md:flex-row md:justify-between md:items-start gap-3 md:gap-4">
+        
+        {/* Mobile Toggle Button */}
+        <button 
+          onClick={() => setShowControls(!showControls)}
+          className="md:hidden pointer-events-auto bg-white/95 backdrop-blur shadow-lg border border-gray-200 p-2.5 rounded-xl text-gray-700 flex items-center gap-2"
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-sm font-bold">Pengaturan Peta</span>
+        </button>
+
+        {/* Controls Block (Hidden on mobile unless toggled) */}
+        <div className={`pointer-events-auto w-full md:max-w-sm md:ml-2 flex flex-col gap-3 transition-all ${showControls ? 'flex' : 'hidden md:flex'}`}>
+          <div className="bg-white/95 backdrop-blur px-5 md:px-6 py-4 rounded-xl shadow-lg border border-gray-200 w-full">
+            <h1 className="text-lg md:text-xl font-black text-gray-800 tracking-tight mb-0">Peta FSVA 2025 <span className="text-xs md:text-sm font-semibold text-gray-500">(basis data 2024)</span></h1>
+            <p className="text-[10px] md:text-[11px] font-extrabold text-green-700 mb-4 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+            
+            <div className="flex flex-row items-center justify-between mb-4 gap-4">
+              <div className="flex-1">
+                <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex justify-between">
+                  <span>Transparansi Peta</span>
+                  <span className="text-gray-400 font-semibold">{opacity}%</span>
+                </label>
+                <div className="relative flex items-center h-2 bg-gray-200 rounded-full">
+                  <div className="absolute h-full bg-green-500 rounded-full" style={{ width: `${opacity}%` }}></div>
+                  <input 
+                    type="range" 
+                    min="0" max="100" 
+                    value={opacity}
+                    onChange={(e) => setOpacity(parseInt(e.target.value))}
+                    className="absolute w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div 
+                    className="absolute h-4 w-4 bg-white border-2 border-green-500 rounded-full shadow-sm pointer-events-none transition-transform"
+                    style={{ left: `calc(${opacity}% - 8px)` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 border-l pl-4 border-gray-100 h-8">
+                <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right leading-tight">
+                  Nama<br/>Desa
+                </label>
+                <button 
+                  onClick={() => setShowLabels(!showLabels)}
+                  className={`relative inline-flex h-6 w-10 md:w-12 items-center rounded-full transition-colors shadow-inner overflow-hidden flex-shrink-0 ${showLabels ? 'bg-green-600' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute left-1.5 md:left-2 text-[8px] md:text-[9px] font-black text-white transition-opacity ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute right-1 text-[8px] md:text-[9px] font-black text-gray-500 transition-opacity ${!showLabels ? 'opacity-100' : 'opacity-0'}`}>OFF</span>
+                  <span className={`absolute z-10 inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-5 md:translate-x-6' : 'translate-x-0.5'}`} />
+                </button>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3 border-l pl-4 border-gray-100 h-8">
-              <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right leading-tight">
-                Nama<br/>Desa
-              </label>
-              <button 
-                onClick={() => setShowLabels(!showLabels)}
-                className={`relative inline-flex h-6 w-10 md:w-12 items-center rounded-full transition-colors shadow-inner overflow-hidden flex-shrink-0 ${showLabels ? 'bg-green-600' : 'bg-gray-300'}`}
-              >
-                <span className={`absolute left-1.5 md:left-2 text-[8px] md:text-[9px] font-black text-white transition-opacity ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
-                <span className={`absolute right-1 text-[8px] md:text-[9px] font-black text-gray-500 transition-opacity ${!showLabels ? 'opacity-100' : 'opacity-0'}`}>OFF</span>
-                <span className={`absolute z-10 inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-5 md:translate-x-6' : 'translate-x-0.5'}`} />
-              </button>
-            </div>
-          </div>
 
-          <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3">
-            <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pilih Layer Peta:</label>
-            <select 
-              value={activeLayer}
-              onChange={(e) => setActiveLayer(e.target.value)}
-              className="text-xs md:text-sm border border-gray-300 rounded-lg p-2 md:p-2.5 bg-gray-50 font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer shadow-sm hover:border-green-400 transition-colors"
-            >
-              {LAYERS.map(l => (
-                <option key={l.id} value={l.id}>{l.label}</option>
-              ))}
-            </select>
+            <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3">
+              <label className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pilih Layer Peta:</label>
+              <select 
+                value={activeLayer}
+                onChange={(e) => setActiveLayer(e.target.value)}
+                className="text-xs md:text-sm border border-gray-300 rounded-lg p-2 md:p-2.5 bg-gray-50 font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer shadow-sm hover:border-green-400 transition-colors"
+              >
+                {LAYERS.map(l => (
+                  <option key={l.id} value={l.id}>{l.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         
-        <div className="pointer-events-auto flex w-full md:w-auto justify-end gap-2">
+        <div className={`pointer-events-auto w-full md:w-auto flex justify-end gap-2 transition-all ${showControls ? 'flex' : 'hidden md:flex'}`}>
           <button 
             onClick={() => setShowPrintModal(true)}
             disabled={isPrinting}

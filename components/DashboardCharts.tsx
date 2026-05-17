@@ -1,17 +1,61 @@
 'use client';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-import { PRIORITY_LABELS } from '@/lib/fsva/constants';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { PRIORITY_LABELS, WEIGHTS } from '@/lib/fsva/constants';
 
-const mockPieData = [
-  { name: 'Prioritas 1', value: 2 },
-  { name: 'Prioritas 2', value: 5 },
-  { name: 'Prioritas 3', value: 12 },
-  { name: 'Prioritas 4', value: 18 },
-  { name: 'Prioritas 5', value: 8 },
-  { name: 'Prioritas 6', value: 3 },
-];
+interface DashboardChartsProps {
+  data: any[];
+}
 
-export default function DashboardCharts() {
+export default function DashboardCharts({ data }: DashboardChartsProps) {
+  // 1. Hitung Distribusi Prioritas (Pie Chart)
+  const priorityCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  data.forEach(row => {
+    if (row.prioritas) priorityCounts[row.prioritas]++;
+  });
+
+  const pieData = Object.keys(priorityCounts)
+    .map(key => ({
+      name: `Prioritas ${key}`,
+      value: priorityCounts[Number(key)],
+      key: Number(key)
+    }))
+    .filter(item => item.value > 0);
+
+  // 2. Hitung Faktor Berpengaruh di Daerah Rentan (P1-P3)
+  // Menjumlahkan bobot jika indikator individu berada di P1-P3
+  const faktorMap = {
+    'NCPR': { sum: 0, weight: WEIGHTS.ncpr, id: 'p_ncpr' },
+    'Energi (AKE)': { sum: 0, weight: WEIGHTS.energy, id: 'p_energy' },
+    'Protein': { sum: 0, weight: WEIGHTS.protein, id: 'p_protein' },
+    'Cadangan': { sum: 0, weight: WEIGHTS.cadangan, id: 'p_cadangan' },
+    'Kemiskinan': { sum: 0, weight: WEIGHTS.poverty, id: 'p_poverty' },
+    'Harga (CV)': { sum: 0, weight: WEIGHTS.cv_harga, id: 'p_cv_harga' },
+    'PoU': { sum: 0, weight: WEIGHTS.pou, id: 'p_pou' },
+    'Lama Sekolah': { sum: 0, weight: WEIGHTS.sekolah, id: 'p_sekolah' },
+    'Akses Air': { sum: 0, weight: WEIGHTS.air, id: 'p_air' },
+    'Skor PPH': { sum: 0, weight: WEIGHTS.pph, id: 'p_pph' },
+    'Stunting': { sum: 0, weight: WEIGHTS.stunting, id: 'p_stunting' },
+  };
+
+  data.forEach(row => {
+    if (row.prioritas <= 3) { // Hanya daerah rentan
+      Object.keys(faktorMap).forEach(key => {
+        const k = key as keyof typeof faktorMap;
+        const p_val = row[faktorMap[k].id];
+        if (p_val <= 3) { // Jika indikator individu juga rentan
+          faktorMap[k].sum += faktorMap[k].weight;
+        }
+      });
+    }
+  });
+
+  const barData = Object.keys(faktorMap)
+    .map(key => ({
+      name: key,
+      'Total Bobot': Math.round(faktorMap[key as keyof typeof faktorMap].sum * 10) / 10
+    }))
+    .filter(item => item['Total Bobot'] > 0)
+    .sort((a, b) => b['Total Bobot'] - a['Total Bobot']);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
       <div className="bg-white p-6 rounded-xl shadow-sm border">
@@ -20,7 +64,7 @@ export default function DashboardCharts() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={mockPieData}
+                data={pieData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -29,22 +73,35 @@ export default function DashboardCharts() {
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
               >
-                {mockPieData.map((entry, index) => {
-                  const prio = index + 1 as keyof typeof PRIORITY_LABELS;
+                {pieData.map((entry, index) => {
+                  const prio = entry.key as keyof typeof PRIORITY_LABELS;
                   return <Cell key={`cell-${index}`} fill={PRIORITY_LABELS[prio].fill} />;
                 })}
               </Pie>
-              <Tooltip />
+              <RechartsTooltip />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
       
       <div className="bg-white p-6 rounded-xl shadow-sm border">
-        <h3 className="font-bold text-gray-700 mb-4">Faktor Berpengaruh P1-P3</h3>
-        <div className="h-64 flex items-center justify-center text-gray-400 text-sm">
-          {/* Mock Bar Chart */}
-          (Area ini akan menampilkan grafik indikator dengan bobot pengaruh terbesar terhadap kerentanan)
+        <h3 className="font-bold text-gray-700 mb-4">Faktor Berpengaruh P1-P3 (Total Bobot)</h3>
+        <div className="h-64">
+          {barData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11 }} />
+                <Tooltip cursor={{ fill: '#f3f4f6' }} />
+                <Bar dataKey="Total Bobot" fill="#ef4444" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-sm text-gray-400">
+              Tidak ada daerah rentan (P1-P3) atau data belum tersedia.
+            </div>
+          )}
         </div>
       </div>
     </div>

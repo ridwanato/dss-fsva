@@ -1,6 +1,15 @@
 import DashboardCharts from '@/components/DashboardCharts';
+import { getServiceSupabase } from '@/lib/supabase';
 
-export default function DashboardPage() {
+export const revalidate = 0;
+
+export default async function DashboardPage() {
+  const supabase = getServiceSupabase();
+  const { data: fsvaData, error } = await supabase
+    .from('fsva_map_view')
+    .select('*')
+    .eq('tahun', 2024);
+
   return (
     <div className="flex-1 bg-gray-50 py-12 pt-24 h-full overflow-y-auto">
       <div className="max-w-6xl mx-auto px-6 mb-8">
@@ -9,7 +18,7 @@ export default function DashboardPage() {
       </div>
       
       <div className="max-w-6xl mx-auto">
-        <DashboardCharts />
+        <DashboardCharts data={fsvaData || []} />
       </div>
     </div>
   );

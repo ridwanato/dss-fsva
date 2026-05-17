@@ -70,6 +70,11 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       customAttribution: '© RidwanS'
     }), 'bottom-right');
 
+    map.current.addControl(new maplibregl.ScaleControl({
+      maxWidth: 150,
+      unit: 'metric'
+    }), 'bottom-left');
+
     map.current.on('load', () => {
       if (!map.current) return;
 
@@ -117,7 +122,7 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
         source: 'fsva',
         layout: {
           'text-field': ['get', 'nama_desa'],
-          'text-size': 11,
+          'text-size': 8.5,
           'text-anchor': 'center'
         },
         paint: {

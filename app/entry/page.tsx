@@ -26,17 +26,8 @@ export default function EntryPage() {
         <UploadPanel />
 
         {/* Footer Banner */}
-        <div className="mt-12 md:mt-20 bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between max-w-4xl mx-auto gap-4 md:gap-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
-            <div className="bg-emerald-100/50 p-3 rounded-xl shrink-0">
-              <ShieldCheck className="w-8 h-8 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-800 mb-1 text-base md:text-lg">Keamanan & Privasi Data Terjamin</h4>
-              <p className="text-sm text-slate-500 font-medium leading-snug">Data Anda aman, hanya digunakan untuk keperluan analisis FSVA.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-emerald-50 px-5 py-3 rounded-xl text-emerald-700 font-bold border border-emerald-100 whitespace-nowrap shadow-sm text-sm">
+        <div className="mt-12 md:mt-20 flex justify-center">
+          <div className="flex items-center gap-2 bg-emerald-50 px-6 py-3 rounded-xl text-emerald-700 font-bold border border-emerald-100 shadow-sm text-sm">
             <CheckCircle2 className="w-5 h-5 text-emerald-500" /> Sesuai Juknis Bapanas
           </div>
         </div>

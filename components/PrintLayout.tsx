@@ -44,14 +44,7 @@ export default function PrintLayout({ mapImage, activeLayerName }: PrintLayoutPr
             <span className="transform rotate-90">-6.120</span>
           </div>
 
-          {/* Inset Map Box */}
-          <div className="absolute top-4 left-6 bg-white border border-black w-[40mm] h-[30mm] p-1 shadow-sm">
-            <div className="w-full h-full border border-gray-300 relative bg-[#e0f3f8] flex items-center justify-center">
-              <span className="text-[8px] text-gray-500 font-bold">PETA INSET<br/>PROVINSI BANTEN</span>
-              {/* Red dot for Cilegon */}
-              <div className="absolute top-2 left-3 w-2 h-2 bg-red-600 rounded-full border border-white"></div>
-            </div>
-          </div>
+          {/* Inset Map Box Removed by Request */}
 
           {/* North Arrow */}
           <div className="absolute top-4 right-4 flex flex-col items-center">

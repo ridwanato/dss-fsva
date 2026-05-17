@@ -19,7 +19,6 @@ export default function MapPage() {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
 
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printConfig, setPrintConfig] = useState({

@@ -35,11 +35,29 @@ export default function MapPage() {
 
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printConfig, setPrintConfig] = useState({
+    logoPemda: '/logo-cilegon.png',
+    logoBapanas: '/logo-bapanas.png',
     govName: 'PEMERINTAH\nKOTA CILEGON',
     title: 'FSVA KOTA CILEGON\nTAHUN 2025',
     sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
     footer: 'Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN KOTA CILEGON\nJl. Kubang Laban No. 56 Kel. Sukmajaya, Kec. Jombang, Kota Cilegon\nTelp: (0254) 390582'
   });
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'pemda' | 'bapanas') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setPrintConfig(prev => ({
+            ...prev,
+            [type === 'pemda' ? 'logoPemda' : 'logoBapanas']: event.target.result as string
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/geojson?tahun=2024')
@@ -220,6 +238,17 @@ export default function MapPage() {
             </div>
             
             <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Logo Pemda (Kiri)</label>
+                  <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, 'pemda')} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Logo Bapanas (Kanan)</label>
+                  <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, 'bapanas')} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" />
+                </div>
+              </div>
+              
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Nama Instansi / Pemerintah (Pojok Kanan Atas)</label>
                 <textarea 

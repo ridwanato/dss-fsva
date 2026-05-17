@@ -1,6 +1,8 @@
 import { PRIORITY_LABELS } from '@/lib/fsva/constants';
 
 interface PrintConfig {
+  logoPemda: string;
+  logoBapanas: string;
   govName: string;
   title: string;
   sources: string;
@@ -63,15 +65,15 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
           </div>
 
           {/* Scale Bar */}
-          <div className="absolute bottom-6 left-6 bg-white/90 px-2 py-1 border border-black text-[10px] font-bold">
+          <div className="absolute bottom-6 left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
             <div className="flex justify-between w-24 mb-1">
               <span>0</span>
               <span>1</span>
               <span>2 km</span>
             </div>
-            <div className="w-24 h-2 border-x-2 border-b-2 border-black flex">
+            <div className="w-24 h-2 border-x-[2px] border-b-[2px] border-black flex">
               <div className="w-1/2 h-full bg-black"></div>
-              <div className="w-1/2 h-full bg-white"></div>
+              <div className="w-1/2 h-full bg-white border-l-[2px] border-black"></div>
             </div>
           </div>
 
@@ -87,7 +89,7 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
           <div className="p-3 border-b-[2px] border-black flex flex-col gap-3 justify-center">
             <div className="flex items-center gap-2 px-4">
               <div className="w-10 h-10 flex items-center justify-center">
-                <img src="/logo-cilegon.png" alt="Logo Cilegon" className="w-full h-full object-contain" />
+                <img src={config.logoPemda} alt="Logo Pemda" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col">
                 {config.govName.split('\n').map((line, i) => (
@@ -97,7 +99,7 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
             </div>
             <div className="flex items-center gap-2 px-4">
               <div className="w-10 h-10 flex items-center justify-center">
-                <img src="/logo-bapanas.png" alt="Logo Bapanas" className="w-full h-full object-contain scale-125" />
+                <img src={config.logoBapanas} alt="Logo Bapanas" className="w-full h-full object-contain scale-125" />
               </div>
               <div className="flex flex-col ml-1">
                 <span className="text-[10px] font-black leading-tight text-green-800">BADAN PANGAN</span>

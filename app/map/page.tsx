@@ -114,7 +114,7 @@ export default function MapPage() {
         <button 
           onClick={() => setShowPrintModal(true)}
           disabled={isPrinting}
-          className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-blue-800 text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition disabled:opacity-50"
+          className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition disabled:opacity-50"
         >
           {isPrinting ? (
              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -123,7 +123,7 @@ export default function MapPage() {
           )}
           Cetak PDF
         </button>
-        <a href="/api/export?tahun=2024" className="pointer-events-auto bg-white hover:bg-gray-50 text-gray-700 px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-gray-200 text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition">
+        <a href="/api/export?tahun=2024" className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition">
           <Download className="w-3 h-3" />
           XLSX Hasil
         </a>

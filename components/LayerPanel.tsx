@@ -44,7 +44,7 @@ export default function LayerPanel({
         {expanded ? <ChevronUp className="w-6 h-6 text-black font-black" strokeWidth={3} /> : <ChevronDown className="w-6 h-6 text-black font-black" strokeWidth={3} />}
       </div>
 
-      <div className={`transition-all duration-300 ${expanded ? 'max-h-[calc(100vh-140px)] opacity-100 flex flex-col' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+      <div className={`transition-all duration-300 ${expanded ? 'max-h-[calc(100vh-240px)] md:max-h-[calc(100vh-140px)] opacity-100 flex flex-col' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         
         {/* White Section: Title & Controls */}
         <div className="bg-white/95 backdrop-blur px-4 md:px-5 py-4 shrink-0 border-b-4" style={{ borderColor: '#6b4c9a' }}>

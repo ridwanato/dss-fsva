@@ -45,26 +45,26 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
         
         {/* Composite Score */}
         <div className="mb-3 md:mb-6 bg-gray-50 rounded p-2 md:p-3 text-center border">
-          <div className="text-[9px] md:text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-wider">Hasil Akhir</div>
+          <div className="text-[9px] md:text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-wider">PRIORITAS</div>
           <div className="text-lg md:text-3xl font-black" style={{ color }}>P{data.prioritas}</div>
           <div className="text-[10px] md:text-sm font-medium leading-tight" style={{ color }}>{label}</div>
           <div className="mt-1 md:mt-2 text-[9px] md:text-xs bg-white py-0.5 md:py-1 rounded shadow-sm border inline-block px-2">
-            Skor: <span className="font-bold">{data.indeks_komposit?.toFixed(2)}</span>
+            IKP: <span className="font-bold">{data.indeks_komposit?.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Aspects */}
         <div className="grid grid-cols-3 gap-1 md:gap-2 mb-3 md:mb-6">
-          <div className="bg-blue-50 p-1 md:p-2 rounded text-center border border-blue-100">
-            <div className="text-[8px] md:text-[10px] text-blue-600 font-semibold mb-0.5 md:mb-1 truncate">Sedia</div>
+          <div className="bg-blue-50 p-1 md:p-2 rounded text-center border border-blue-100 flex flex-col justify-center">
+            <div className="text-[7px] md:text-[9px] text-blue-600 font-bold mb-0.5 md:mb-1 leading-tight whitespace-normal min-h-[20px] flex items-center justify-center">Ketersediaan Pangan</div>
             <div className="text-[10px] md:text-sm font-bold text-blue-800">{data.indeks_ketersediaan?.toFixed(1)}</div>
           </div>
-          <div className="bg-amber-50 p-1 md:p-2 rounded text-center border border-amber-100">
-            <div className="text-[8px] md:text-[10px] text-amber-600 font-semibold mb-0.5 md:mb-1 truncate">Jangkau</div>
+          <div className="bg-amber-50 p-1 md:p-2 rounded text-center border border-amber-100 flex flex-col justify-center">
+            <div className="text-[7px] md:text-[9px] text-amber-600 font-bold mb-0.5 md:mb-1 leading-tight whitespace-normal min-h-[20px] flex items-center justify-center">Akses Pangan</div>
             <div className="text-[10px] md:text-sm font-bold text-amber-800">{data.indeks_keterjangkauan?.toFixed(1)}</div>
           </div>
-          <div className="bg-emerald-50 p-1 md:p-2 rounded text-center border border-emerald-100">
-            <div className="text-[8px] md:text-[10px] text-emerald-600 font-semibold mb-0.5 md:mb-1 truncate">Manfaat</div>
+          <div className="bg-emerald-50 p-1 md:p-2 rounded text-center border border-emerald-100 flex flex-col justify-center">
+            <div className="text-[7px] md:text-[9px] text-emerald-600 font-bold mb-0.5 md:mb-1 leading-tight whitespace-normal min-h-[20px] flex items-center justify-center">Pemanfaatan Pangan</div>
             <div className="text-[10px] md:text-sm font-bold text-emerald-800">{data.indeks_pemanfaatan?.toFixed(1)}</div>
           </div>
         </div>

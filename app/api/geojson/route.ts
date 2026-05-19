@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/geo+json',
-        'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' // Cache aggressively at CDN
+        'Cache-Control': 'no-store, max-age=0'
       }
     });
   } catch (error: any) {

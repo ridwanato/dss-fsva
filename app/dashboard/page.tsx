@@ -6,7 +6,7 @@ export const revalidate = 0;
 export default async function DashboardPage() {
   const supabase = getServiceSupabase();
   const { data: fsvaData, error } = await supabase
-    .from('fsva_data')
+    .from('fsva_results')
     .select('prioritas, p_ncpr, p_energy, p_protein, p_cadangan, p_poverty, p_cv_harga, p_pou, p_sekolah, p_air, p_pph, p_stunting')
     .eq('tahun', 2024);
 

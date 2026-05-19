@@ -4,11 +4,18 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Navbar() {
   const [expanded, setExpanded] = useState(false);
   const [maps, setMaps] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [session, setSession] = useState<any>(null);
   const pathname = usePathname();
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -16,6 +23,16 @@ export default function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   useEffect(() => {
+    // Check auth
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
     fetch('/api/maps')
       .then(res => res.json())
       .then(data => {
@@ -32,7 +49,11 @@ export default function Navbar() {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -93,6 +114,31 @@ export default function Navbar() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Auth Button */}
+        <div className="ml-auto pr-3 md:pr-6 pointer-events-auto h-full flex items-center">
+           {session ? (
+             <button 
+               onClick={async () => {
+                 const { createClient } = await import('@supabase/supabase-js');
+                 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+                 await sb.auth.signOut();
+                 setSession(null);
+                 router.push('/login');
+               }}
+               className="text-[10px] md:text-xs font-bold text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors"
+             >
+               Keluar
+             </button>
+           ) : (
+             <Link 
+               href="/login"
+               className="text-[10px] md:text-xs font-bold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
+             >
+               Masuk / Login
+             </Link>
+           )}
         </div>
 
       </nav>

@@ -8,57 +8,65 @@ import { Download, Printer, Settings } from 'lucide-react';
 
 import LayerPanel, { LAYERS } from '@/components/LayerPanel';
 
-export default function MapPage() {
-  const [geoData, setGeoData] = useState<any>(null);
-  const [selectedPolygon, setSelectedPolygon] = useState<any>(null);
-  const [activeLayer, setActiveLayer] = useState('prioritas');
-  const [opacity, setOpacity] = useState(0);
-  const [showLabels, setShowLabels] = useState(true);
-  const [loading, setLoading] = useState(true);
+  import { useSearchParams } from 'next/navigation';
   
-  const [mapInstance, setMapInstance] = useState<any>(null);
-  const [mapImage, setMapImage] = useState<string | null>(null);
-  const [isPrinting, setIsPrinting] = useState(false);
+  export default function MapPage() {
+    const searchParams = useSearchParams();
+    const kabupaten = searchParams.get('kabupaten') || '';
+    
+    const [geoData, setGeoData] = useState<any>(null);
+    const [selectedPolygon, setSelectedPolygon] = useState<any>(null);
+    const [activeLayer, setActiveLayer] = useState('prioritas');
+    const [opacity, setOpacity] = useState(0);
+    const [showLabels, setShowLabels] = useState(true);
+    const [loading, setLoading] = useState(true);
+    
+    const [mapInstance, setMapInstance] = useState<any>(null);
+    const [mapImage, setMapImage] = useState<string | null>(null);
+    const [isPrinting, setIsPrinting] = useState(false);
 
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printConfig, setPrintConfig] = useState({
-    logoPemda: '/logo-cilegon.png',
-    logoBapanas: '/logo-bapanas.png',
-    govName: 'PEMERINTAH\nKOTA CILEGON',
-    title: 'FSVA KOTA CILEGON\nTAHUN 2025',
-    sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
-    footer: 'Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN KOTA CILEGON\nJl. Kubang Laban No. 56 Kel. Sukmajaya, Kec. Jombang, Kota Cilegon\nTelp: (0254) 390582'
-  });
+    const [showPrintModal, setShowPrintModal] = useState(false);
+    const [printConfig, setPrintConfig] = useState({
+      logoPemda: '/logo-cilegon.png',
+      logoBapanas: '/logo-bapanas.png',
+      govName: 'PEMERINTAH\n' + (kabupaten ? kabupaten.toUpperCase() : 'DAERAH'),
+      title: `FSVA ${kabupaten ? kabupaten.toUpperCase() : 'DAERAH'}\nTAHUN 2025`,
+      sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
+      footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`
+    });
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'pemda' | 'bapanas') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result;
-        if (typeof result === 'string') {
-          setPrintConfig(prev => ({
-            ...prev,
-            [type === 'pemda' ? 'logoPemda' : 'logoBapanas']: result
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'pemda' | 'bapanas') => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result;
+          if (typeof result === 'string') {
+            setPrintConfig(prev => ({
+              ...prev,
+              [type === 'pemda' ? 'logoPemda' : 'logoBapanas']: result
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
 
-  useEffect(() => {
-    fetch('/api/geojson?tahun=2024')
-      .then(res => res.json())
-      .then(data => {
-        setGeoData(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, []);
+    useEffect(() => {
+      let url = '/api/geojson?tahun=2024';
+      if (kabupaten) url += `&kabupaten=${encodeURIComponent(kabupaten)}`;
+      
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          setGeoData(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    }, [kabupaten]);
 
   const executePrint = () => {
     setShowPrintModal(false);
@@ -123,7 +131,7 @@ export default function MapPage() {
           )}
           Cetak PDF
         </button>
-        <a href="/api/export?tahun=2024" className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition">
+        <a href={`/api/export?tahun=2024${kabupaten ? `&kabupaten=${encodeURIComponent(kabupaten)}` : ''}`} className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition">
           <Download className="w-3 h-3" />
           XLSX Hasil
         </a>

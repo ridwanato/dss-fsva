@@ -7,10 +7,20 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
+    const kabupaten = formData.get('kabupaten') as string;
     
-    if (!file) {
-      return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
+    if (!file || !kabupaten) {
+      return NextResponse.json({ success: false, error: 'No file uploaded or missing map name' }, { status: 400 });
     }
+
+    const { createClient } = await import('@/lib/supabase-server');
+    const authClient = await createClient();
+    const { data: { session } } = await authClient.auth.getSession();
+    
+    if (!session || !session.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized. Please login.' }, { status: 401 });
+    }
+    const userId = session.user.id;
 
     const buffer = Buffer.from(await file.arrayBuffer());
     let kmlString = '';
@@ -80,13 +90,14 @@ export async function POST(req: NextRequest) {
       // Upsert into Supabase (Zip shapefile logic)
       let inserted = 0;
       const errors: string[] = [];
-      const supabase = getServiceSupabase();
       
       for (const feature of featuresToInsert) {
-        const { error } = await supabase.rpc('upsert_geometry', {
+        const { error } = await authClient.rpc('upsert_geometry', {
           p_kode_bps: feature.kode_bps,
           p_nama_desa: feature.nama_desa,
-          p_wkt: feature.wkt
+          p_wkt: feature.wkt,
+          p_user_id: userId,
+          p_nama_kabupaten: kabupaten
         });
         
         if (!error) inserted++;
@@ -107,7 +118,6 @@ export async function POST(req: NextRequest) {
     const placemarks = doc.getElementsByTagName('Placemark');
     
     const featuresToInsert = [];
-    const supabase = getServiceSupabase();
 
     for (let i = 0; i < placemarks.length; i++) {
       const placemark = placemarks[i];
@@ -201,10 +211,12 @@ export async function POST(req: NextRequest) {
     const errors: string[] = [];
     
     for (const feature of featuresToInsert) {
-      const { error } = await supabase.rpc('upsert_geometry', {
+      const { error } = await authClient.rpc('upsert_geometry', {
         p_kode_bps: feature.kode_bps,
         p_nama_desa: feature.nama_desa,
-        p_wkt: feature.wkt
+        p_wkt: feature.wkt,
+        p_user_id: userId,
+        p_nama_kabupaten: kabupaten
       });
       
       if (!error) inserted++;

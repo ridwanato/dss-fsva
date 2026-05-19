@@ -22,10 +22,18 @@ export async function POST(req: NextRequest) {
     // Template columns start from row 2
     const data = XLSX.utils.sheet_to_json<any>(worksheet, { range: 1 }); // Assuming row 1 is header, row 2 is data
 
-    const supabase = getServiceSupabase();
+    const { createClient } = await import('@/lib/supabase-server');
+    const authClient = await createClient();
+    const { data: { session } } = await authClient.auth.getSession();
     
-    // Ambil daftar geometri untuk auto-matching (karena kode Kemendagri vs BPS sering beda)
-    const { data: geomData } = await supabase.from('geometries').select('kode_bps, nama_desa');
+    if (!session || !session.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized. Please login.' }, { status: 401 });
+    }
+    
+    const userId = session.user.id;
+
+    // Ambil daftar geometri untuk auto-matching
+    const { data: geomData } = await authClient.from('geometries').select('kode_bps, nama_desa');
     const geomList = geomData || [];
     
     // Helper untuk membersihkan nama desa (hapus kelurahan/desa, spasi, huruf kecil)
@@ -69,6 +77,7 @@ export async function POST(req: NextRequest) {
       
       return {
         kode_bps: finalKodeBps,
+        user_id: userId,
         tahun,
         produksi_padi: Number(norm['produksipaditon'] || norm['produksipadi']) || 0,
         produksi_jagung: Number(norm['produksijagungton'] || norm['produksijagung']) || 0,
@@ -96,7 +105,7 @@ export async function POST(req: NextRequest) {
 
     for (const insertData of inserts) {
        if (!insertData) continue;
-       const { error } = await supabase.from('raw_indicators').upsert(insertData, {
+       const { error } = await authClient.from('raw_indicators').upsert(insertData, {
          onConflict: 'kode_bps,tahun'
        });
        if (error) {

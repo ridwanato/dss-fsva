@@ -4,6 +4,7 @@ import { UploadCloud, FileSpreadsheet, MapPin, Loader2, ArrowRight, ArrowDown, P
 
 export default function UploadPanel() {
   const [loading, setLoading] = useState(false);
+  const [kabupaten, setKabupaten] = useState('');
   const [geomResult, setGeomResult] = useState<any>(null);
   const [dataResult, setDataResult] = useState<any>(null);
   const [calcResult, setCalcResult] = useState<any>(null);
@@ -13,6 +14,7 @@ export default function UploadPanel() {
     setLoading(true);
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
+    formData.append('kabupaten', kabupaten);
     try {
       const res = await fetch('/api/upload-geometry', { method: 'POST', body: formData });
       const data = await res.json();
@@ -57,7 +59,24 @@ export default function UploadPanel() {
 
   return (
     <div className="relative">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">
+      
+      <div className="mb-10 max-w-md mx-auto bg-white p-5 rounded-2xl shadow-md border border-gray-100 relative z-20">
+        <label className="block text-sm font-bold text-gray-700 mb-2">Nama Peta / Kabupaten</label>
+        <input 
+          type="text" 
+          value={kabupaten}
+          onChange={(e) => setKabupaten(e.target.value)}
+          placeholder="Contoh: Kota Cilegon"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-green-500 focus:border-green-500 font-medium"
+        />
+        {!kabupaten && (
+           <p className="text-xs text-amber-600 font-semibold mt-2 flex items-center gap-1">
+             <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi sebelum upload.
+           </p>
+        )}
+      </div>
+
+      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6 transition-opacity duration-300 ${!kabupaten ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         
         {/* Card 1: KML/KMZ */}
         <div className="relative bg-white rounded-3xl shadow-xl shadow-green-900/5 border border-green-50 p-8 pt-12 flex flex-col items-center text-center group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">

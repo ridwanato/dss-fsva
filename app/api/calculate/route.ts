@@ -11,13 +11,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'tahun is required' }, { status: 400 });
     }
 
-    const supabase = getServiceSupabase();
+    const { createClient } = await import('@/lib/supabase-server');
+    const authClient = await createClient();
+    const { data: { session } } = await authClient.auth.getSession();
     
-    // Fetch raw_indicators + geometries info
-    let query = supabase.from('raw_indicators').select(`
+    if (!session || !session.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized. Please login.' }, { status: 401 });
+    }
+    const userId = session.user.id;
+    
+    // Fetch raw_indicators + geometries info for current user
+    let query = authClient.from('raw_indicators').select(`
       *,
       geometries ( nama_kabupaten, nama_provinsi )
-    `).eq('tahun', tahun);
+    `).eq('tahun', tahun).eq('user_id', userId);
 
     if (kab_kota) {
       // Supabase nested filtering is a bit tricky, alternative is to filter after fetch
@@ -67,11 +74,12 @@ export async function POST(req: NextRequest) {
       const upsertData = {
         kode_bps: row.kode_bps,
         tahun: row.tahun,
+        user_id: userId,
         ...indicators,
         ...result,
       };
 
-      const { error: upsertError } = await supabase.from('fsva_results').upsert(upsertData, {
+      const { error: upsertError } = await authClient.from('fsva_results').upsert(upsertData, {
         onConflict: 'kode_bps,tahun'
       });
 

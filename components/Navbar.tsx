@@ -4,12 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase-client';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient();
 
 export default function Navbar() {
   const [expanded, setExpanded] = useState(false);
@@ -121,8 +118,8 @@ export default function Navbar() {
            {session ? (
              <button 
                onClick={async () => {
-                 const { createClient } = await import('@supabase/supabase-js');
-                 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+                 const { createClient } = await import('@/lib/supabase-client');
+                 const sb = createClient();
                  await sb.auth.signOut();
                  setSession(null);
                  router.push('/login');

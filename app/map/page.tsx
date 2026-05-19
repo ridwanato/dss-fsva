@@ -9,8 +9,9 @@ import { Download, Printer, Settings } from 'lucide-react';
 import LayerPanel, { LAYERS } from '@/components/LayerPanel';
 
   import { useSearchParams } from 'next/navigation';
+  import { Suspense } from 'react';
   
-  export default function MapPage() {
+  function MapPageContent() {
     const searchParams = useSearchParams();
     const kabupaten = searchParams.get('kabupaten') || '';
     
@@ -252,5 +253,17 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
       )}
     </div>
     </>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <MapPageContent />
+    </Suspense>
   );
 }

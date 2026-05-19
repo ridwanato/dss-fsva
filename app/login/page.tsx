@@ -136,6 +136,16 @@ export default function LoginPage() {
               {loading ? 'Memproses...' : 'Masuk'}
             </button>
           </div>
+          
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => router.push('/map')}
+              className="w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-bold rounded-xl text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Masuk sebagai Tamu (Read-Only)
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
 
-export const revalidate = 3600; // Cache this route at Vercel Edge for 1 hour
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {

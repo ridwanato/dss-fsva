@@ -28,7 +28,7 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
   ];
 
   return (
-    <div className="absolute top-20 right-4 md:bottom-auto md:top-6 md:right-6 w-[55vw] md:w-80 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-30 flex flex-col max-h-[70vh] md:max-h-[90vh] overflow-hidden transition-all">
+    <div className="absolute top-20 right-4 md:bottom-auto md:top-6 md:right-6 w-[70vw] md:w-80 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-30 flex flex-col max-h-[70vh] md:max-h-[90vh] overflow-hidden transition-all">
       {/* Header */}
       <div className="p-2.5 md:p-4 border-b flex justify-between items-start" style={{ borderBottomColor: color }}>
         <div className="overflow-hidden">

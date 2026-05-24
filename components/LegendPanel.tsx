@@ -7,7 +7,7 @@ export default function LegendPanel() {
   const priorities = [1, 2, 3, 4, 5, 6] as const;
 
   return (
-    <div className="absolute bottom-12 md:bottom-6 right-4 md:right-6 z-20 w-48 md:w-64 flex flex-col pointer-events-auto transition-all duration-300 shadow-xl rounded-t-lg bg-white overflow-hidden">
+    <div id="fsva-legend-panel" className="absolute bottom-12 md:bottom-6 right-4 md:right-6 z-20 w-48 md:w-64 flex flex-col pointer-events-auto transition-all duration-300 shadow-xl rounded-t-lg bg-white overflow-hidden">
       
       {/* Expanded Content (Expands UPWARDS) */}
       <div className={`transition-all duration-300 ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>

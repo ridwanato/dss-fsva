@@ -40,3 +40,51 @@
     pointer-events: none !important;
   }
 }
+
+/* ==========================================================
+   MOBILE RESPONSIVE TWEAKS FOR MAP CONTROLS & LEGEND
+   ========================================================== */
+@media (max-width: 768px) {
+  /* 1. Credit Bar (Very bottom right, above safe area) */
+  .maplibregl-ctrl-bottom-right {
+    bottom: max(5px, env(safe-area-inset-bottom)) !important;
+    right: 5px !important;
+    z-index: 10 !important;
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+    font-size: 8.5px !important;
+    background-color: rgba(255, 255, 255, 0.75) !important;
+    padding: 3px 6px !important;
+    border-radius: 6px !important;
+    max-width: calc(100vw - 10px) !important;
+    text-align: right !important;
+    line-height: 1.3 !important;
+  }
+  
+  /* 2. Scale Bar (Stacked above credit bar, bottom left) */
+  .maplibregl-ctrl-bottom-left {
+    bottom: calc(45px + env(safe-area-inset-bottom)) !important;
+    left: 5px !important;
+    z-index: 11 !important;
+  }
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-scale {
+    width: auto !important;
+    min-width: 80px !important;
+    max-width: 120px !important;
+    font-size: 10px !important;
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    border: 2px solid #333 !important;
+    border-top: none !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+    margin: 0 !important;
+  }
+
+  /* 3. Legend Panel (Stacked above scale bar, bottom right) */
+  #fsva-legend-panel {
+    bottom: calc(75px + env(safe-area-inset-bottom)) !important;
+    right: 5px !important;
+    transform: scale(0.7) !important;
+    transform-origin: bottom right !important;
+    margin-bottom: 0 !important;
+  }
+}

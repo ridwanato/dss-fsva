@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body className={`${inter.className} bg-gray-50 h-screen overflow-hidden flex flex-col`}>
+      <body className={`${inter.className} bg-app-gradient h-screen overflow-hidden flex flex-col text-slate-900`}>
         <Navbar />
         <main className="flex-1 flex flex-col relative w-full h-full">
           {children}

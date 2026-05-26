@@ -1,5 +1,88 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary-light: #8B5CF6;
+  --color-primary: #6D5EF5;
+  --color-primary-dark: #5b4ddb;
+  --color-secondary-purple: #7C3AED;
+  --color-accent-cyan: #14B8A6;
+  --color-bg-soft: #F5F3FF;
+}
+
+@layer utilities {
+  .glass-card {
+    background-color: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(109, 94, 245, 0.15);
+    box-shadow: 0 10px 30px rgba(109, 94, 245, 0.08);
+    transition: all 0.25s ease;
+  }
+  
+  .glass-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(109, 94, 245, 0.12);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: white;
+    border: none;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px rgba(109, 94, 245, 0.1);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(109, 94, 245, 0.25);
+  }
+
+  .btn-secondary {
+    background-color: white;
+    color: var(--color-primary);
+    border: 1px solid rgba(109, 94, 245, 0.3);
+    transition: all 0.25s ease;
+  }
+  
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(109, 94, 245, 0.1);
+    border-color: var(--color-primary-light);
+  }
+
+  .bg-app-gradient {
+    background: linear-gradient(135deg, #F5F3FF 0%, #EFEAFE 35%, #E9E1FF 100%);
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+  .bg-app-gradient::before {
+    content: "";
+    position: fixed;
+    top: -20%;
+    right: -10%;
+    width: 60%;
+    height: 60%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  .bg-app-gradient::after {
+    content: "";
+    position: fixed;
+    bottom: -10%;
+    left: -10%;
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.04) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
 .maplibregl-ctrl-top-left {
   margin-top: 240px !important;
 }

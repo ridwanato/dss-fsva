@@ -58,8 +58,8 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
     .sort((a, b) => b['Total Bobot'] - a['Total Bobot']);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      <div className="bg-white p-6 rounded-xl shadow-sm border">
-        <h3 className="font-bold text-gray-700 mb-4">Distribusi Prioritas FSVA</h3>
+      <div className="glass-card p-6 rounded-2xl">
+        <h3 className="font-bold text-[#1E1B4B] mb-4">Distribusi Prioritas FSVA</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -84,17 +84,17 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
       </div>
       
-      <div className="bg-white p-6 rounded-xl shadow-sm border">
-        <h3 className="font-bold text-gray-700 mb-4">Faktor Berpengaruh P1-P3 (Total Bobot)</h3>
+      <div className="glass-card p-6 rounded-2xl">
+        <h3 className="font-bold text-[#1E1B4B] mb-4">Faktor Berpengaruh P1-P3 (Total Bobot)</h3>
         <div className="h-64">
           {barData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11 }} />
-                <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                <Bar dataKey="Total Bobot" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(109,94,245,0.1)" />
+                <XAxis type="number" stroke="#94a3b8" />
+                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11, fill: '#64748b' }} stroke="#94a3b8" />
+                <Tooltip cursor={{ fill: '#F5F3FF' }} contentStyle={{ borderRadius: '8px', border: '1px solid rgba(109,94,245,0.2)' }} />
+                <Bar dataKey="Total Bobot" fill="#6D5EF5" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

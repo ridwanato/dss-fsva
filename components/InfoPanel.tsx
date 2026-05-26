@@ -28,15 +28,15 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
   ];
 
   return (
-    <div className="absolute top-20 right-4 md:bottom-auto md:top-6 md:right-6 w-[70vw] md:w-80 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-30 flex flex-col max-h-[70vh] md:max-h-[90vh] overflow-hidden transition-all">
+    <div className="absolute top-20 right-4 md:bottom-auto md:top-6 md:right-6 w-[70vw] md:w-80 glass-card rounded-xl z-30 flex flex-col max-h-[70vh] md:max-h-[90vh] overflow-hidden transition-all">
       {/* Header */}
-      <div className="p-2.5 md:p-4 border-b flex justify-between items-start" style={{ borderBottomColor: color }}>
+      <div className="p-2.5 md:p-4 border-b border-[rgba(109,94,245,0.15)] flex justify-between items-start" style={{ borderBottomColor: color }}>
         <div className="overflow-hidden">
-          <h2 className="text-sm md:text-lg font-bold text-gray-800 truncate">{data.nama_desa}</h2>
-          <p className="text-[9px] md:text-xs text-gray-500 uppercase truncate">{data.nama_kecamatan}</p>
+          <h2 className="text-sm md:text-lg font-bold text-[#1E1B4B] truncate">{data.nama_desa}</h2>
+          <p className="text-[9px] md:text-xs text-[#6D5EF5] uppercase truncate">{data.nama_kecamatan}</p>
         </div>
-        <button onClick={onClose} className="p-1 -mr-1 hover:bg-gray-100 rounded-full transition-colors shrink-0">
-          <X className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
+        <button onClick={onClose} className="p-1 -mr-1 hover:bg-[#F5F3FF] rounded-full transition-colors shrink-0">
+          <X className="w-4 h-4 md:w-5 md:h-5 text-slate-400 hover:text-[#6D5EF5]" />
         </button>
       </div>
 
@@ -44,11 +44,11 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
       <div className="p-2.5 md:p-4 overflow-y-auto flex-1 custom-scrollbar">
         
         {/* Composite Score */}
-        <div className="mb-3 md:mb-6 bg-gray-50 rounded p-2 md:p-3 text-center border">
-          <div className="text-[9px] md:text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-wider">PRIORITAS</div>
+        <div className="mb-3 md:mb-6 bg-gradient-to-br from-white to-[#F5F3FF] rounded p-2 md:p-3 text-center border border-[rgba(109,94,245,0.15)] shadow-sm">
+          <div className="text-[9px] md:text-xs text-slate-500 mb-0.5 font-semibold uppercase tracking-wider">PRIORITAS</div>
           <div className="text-lg md:text-3xl font-black" style={{ color }}>P{data.prioritas}</div>
           <div className="text-[10px] md:text-sm font-medium leading-tight" style={{ color }}>{label}</div>
-          <div className="mt-1 md:mt-2 text-[9px] md:text-xs bg-white py-0.5 md:py-1 rounded shadow-sm border inline-block px-2">
+          <div className="mt-1 md:mt-2 text-[9px] md:text-xs bg-white py-0.5 md:py-1 rounded shadow-sm border border-[rgba(109,94,245,0.1)] inline-block px-2">
             IKP: <span className="font-bold">{data.indeks_komposit?.toFixed(2)}</span>
           </div>
         </div>
@@ -71,13 +71,13 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
 
         {/* Indicators List */}
         <div>
-          <h3 className="text-[9px] md:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 md:mb-3">11 Indikator</h3>
+          <h3 className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 md:mb-3">11 Indikator</h3>
           <div className="space-y-1 md:space-y-2">
             {indicators.map((ind, i) => (
-              <div key={i} className="flex items-center justify-between py-0.5 md:py-1 border-b border-gray-100 last:border-0">
+              <div key={i} className="flex items-center justify-between py-0.5 md:py-1 border-b border-[rgba(109,94,245,0.1)] last:border-0 hover:bg-[#F5F3FF]/50 transition-colors px-1 rounded-sm">
                 <div className="flex-1 min-w-0 pr-2">
-                  <div className="text-[8px] md:text-xs text-gray-700 truncate" title={ind.name}>{ind.name}</div>
-                  <div className="text-[9px] md:text-xs font-semibold text-gray-900">{ind.val ?? '-'}</div>
+                  <div className="text-[8px] md:text-xs text-slate-600 truncate" title={ind.name}>{ind.name}</div>
+                  <div className="text-[9px] md:text-xs font-semibold text-[#1E1B4B]">{ind.val ?? '-'}</div>
                 </div>
                 <div 
                   className="w-4 h-4 md:w-6 md:h-6 rounded flex items-center justify-center text-white font-bold text-[9px] md:text-xs shadow-sm shrink-0"

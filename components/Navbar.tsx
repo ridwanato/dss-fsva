@@ -54,7 +54,6 @@ export default function Navbar() {
   }, []);
 
   return (
-  return (
     <div className="absolute top-0 left-0 z-[60] pointer-events-none no-print">
       <nav className="inline-flex bg-white/85 backdrop-blur-md shadow-[0_4px_20px_rgba(109,94,245,0.08)] border-b border-r border-[rgba(109,94,245,0.15)] rounded-br-2xl h-12 md:h-16 items-center pointer-events-auto transition-all duration-300 overflow-visible">
         

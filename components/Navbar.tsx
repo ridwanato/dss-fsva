@@ -81,7 +81,7 @@ export default function Navbar() {
       return (
         <div 
           onClick={() => toggleExpand(true)}
-          className="fixed top-3 right-3 z-50 w-20 h-10 flex items-center justify-center bg-white/95 border border-[rgba(109,94,245,0.15)] shadow-md rounded-xl cursor-pointer pointer-events-auto text-xs font-bold text-[#1E1B4B] uppercase tracking-wider select-none no-print"
+          className="fixed top-3 right-3 z-50 w-20 h-10 flex items-center justify-center bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md border border-emerald-500/30 rounded-xl cursor-pointer pointer-events-auto text-xs font-bold uppercase tracking-wider select-none no-print"
         >
           MENU
         </div>
@@ -89,17 +89,17 @@ export default function Navbar() {
     }
 
     return (
-      <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-[rgba(109,94,245,0.15)] shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
-        <div className="flex items-center justify-between border-b pb-2 border-slate-100 mb-3">
+      <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-emerald-100 shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
+        <div className="flex items-center justify-between border-b pb-3 border-emerald-50/50 mb-3 bg-gradient-to-r from-emerald-800 to-teal-800 -mx-4 -mt-4 p-4 rounded-t-2xl text-white">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.2)]">
+            <div className="w-6 h-6 bg-white text-emerald-800 rounded-lg flex items-center justify-center font-black text-xs">
               F
             </div>
-            <span className="font-bold text-sm text-[#1E1B4B]">DSS FSVA</span>
+            <span className="font-bold text-sm text-white">DSS FSVA</span>
           </div>
           <button 
             onClick={() => toggleExpand(false)} 
-            className="text-xs font-bold text-slate-400 hover:text-slate-600 px-2 py-1 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg transition-colors cursor-pointer"
+            className="text-xs font-bold text-emerald-100 hover:text-white px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
           >
             Tutup
           </button>
@@ -109,27 +109,27 @@ export default function Navbar() {
           <Link 
             href="/map" 
             onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/map') ? 'bg-[#F5F3FF] text-[#5b4ddb]' : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#6D5EF5]'}`}
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/map') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
             Peta Interaktif
           </Link>
           <Link 
             href="/dashboard" 
             onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/dashboard') ? 'bg-[#F5F3FF] text-[#5b4ddb]' : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#6D5EF5]'}`}
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/dashboard') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
             Dashboard
           </Link>
           <Link 
             href="/entry" 
             onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/entry') ? 'bg-[#F5F3FF] text-[#5b4ddb]' : 'text-gray-500 hover:bg-[#F5F3FF] hover:text-[#6D5EF5]'}`}
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/entry') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
             Data Entry
           </Link>
           
           <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan</span>
+            <span className="text-[10px] font-bold text-gray-450 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan</span>
             {maps.length > 0 ? (
               <div className="max-h-32 overflow-y-auto flex flex-col gap-1 pl-2">
                 {maps.map((kab, i) => (
@@ -139,7 +139,7 @@ export default function Navbar() {
                       toggleExpand(false);
                       router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
                     }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:bg-[#F5F3FF] hover:text-[#6D5EF5] transition-colors font-medium truncate rounded cursor-pointer"
+                    className="w-full text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:bg-emerald-50 hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
                   >
                     {kab}
                   </button>
@@ -182,23 +182,23 @@ export default function Navbar() {
 
   return (
     <div className="absolute top-0 left-0 z-[60] pointer-events-none no-print">
-      <nav className="inline-flex bg-white/85 backdrop-blur-md shadow-[0_4px_20px_rgba(109,94,245,0.08)] border-b border-r border-[rgba(109,94,245,0.15)] rounded-br-2xl h-12 md:h-16 items-center pointer-events-auto transition-all duration-300 overflow-visible">
+      <nav className="inline-flex bg-gradient-to-r from-emerald-900 to-teal-850 shadow-[0_4px_20px_rgba(16,185,129,0.15)] border-b border-r border-emerald-700/30 rounded-br-2xl h-12 md:h-16 items-center pointer-events-auto transition-all duration-300 overflow-visible text-white">
         
         {/* Brand Button */}
         <div 
           onClick={() => toggleExpand(!expanded)}
-          className="flex-shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-6 cursor-pointer hover:bg-[#F5F3FF] transition-colors h-full rounded-tl-2xl"
+          className="flex-shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-6 cursor-pointer hover:bg-white/10 transition-colors h-full rounded-tl-2xl"
         >
-          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-[0_2px_10px_rgba(16,185,129,0.25)] flex items-center justify-center text-white font-black text-sm md:text-xl">
+          <div className="w-6 h-6 md:w-8 md:h-8 bg-white text-emerald-800 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.1)] flex items-center justify-center font-black text-sm md:text-xl">
             F
           </div>
-          <span className="font-bold text-sm md:text-xl text-[#1E1B4B] tracking-tight whitespace-nowrap">DSS FSVA</span>
+          <span className="font-bold text-sm md:text-xl text-white tracking-tight whitespace-nowrap">DSS FSVA</span>
         </div>
 
         {/* Minimize/Maximize Button */}
         <button 
           onClick={() => setIsMinimized(!isMinimized)}
-          className="hidden md:flex flex-shrink-0 items-center justify-center w-7 h-7 rounded-full hover:bg-slate-100 text-gray-500 hover:text-gray-800 transition-all border border-slate-200 mr-2 ml-1 cursor-pointer pointer-events-auto shadow-sm"
+          className="hidden md:flex flex-shrink-0 items-center justify-center w-7 h-7 rounded-full hover:bg-white/10 text-emerald-100 hover:text-white transition-all border border-emerald-600/50 mr-2 ml-1 cursor-pointer pointer-events-auto shadow-sm"
           title={isMinimized ? "Tampilkan Menu" : "Sembunyikan Menu"}
         >
           {isMinimized ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -206,13 +206,13 @@ export default function Navbar() {
 
         {/* Links (Expandable) */}
         <div className={`flex items-center space-x-1.5 md:space-x-6 md:whitespace-nowrap transition-all duration-300 ${isMinimized ? 'max-w-0 px-0 opacity-0 overflow-hidden pointer-events-none' : 'max-w-[350px] sm:max-w-[450px] md:max-w-[650px] px-2 md:px-8 opacity-100'}`}>
-          <Link href="/map" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/map') ? 'border-[#6D5EF5] text-[#5b4ddb]' : 'border-transparent text-gray-500 hover:text-[#6D5EF5] hover:border-[#8B5CF6]'}`}>
+          <Link href="/map" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/map') ? 'border-white text-white' : 'border-transparent text-emerald-100 hover:text-white hover:border-emerald-300/50'}`}>
             Peta <br className="md:hidden" />Interaktif
           </Link>
-          <Link href="/dashboard" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/dashboard') ? 'border-[#6D5EF5] text-[#5b4ddb]' : 'border-transparent text-gray-500 hover:text-[#6D5EF5] hover:border-[#8B5CF6]'}`}>
+          <Link href="/dashboard" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/dashboard') ? 'border-white text-white' : 'border-transparent text-emerald-100 hover:text-white hover:border-emerald-300/50'}`}>
             Dashboard
           </Link>
-          <Link href="/entry" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/entry') ? 'border-[#6D5EF5] text-[#5b4ddb]' : 'border-transparent text-gray-500 hover:text-[#6D5EF5] hover:border-[#8B5CF6]'}`}>
+          <Link href="/entry" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/entry') ? 'border-white text-white' : 'border-transparent text-emerald-100 hover:text-white hover:border-emerald-300/50'}`}>
             Data <br className="md:hidden" />Entry
           </Link>
           
@@ -220,14 +220,14 @@ export default function Navbar() {
           <div className="relative h-full flex items-center" ref={dropdownRef}>
             <button 
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1 text-[10px] md:text-sm leading-tight font-semibold text-gray-500 hover:text-[#6D5EF5] px-1 py-2 md:py-5 border-b-2 border-transparent transition-colors"
+              className="flex items-center gap-1 text-[10px] md:text-sm leading-tight font-semibold text-emerald-100 hover:text-white px-1 py-2 md:py-5 border-b-2 border-transparent transition-colors"
             >
-              Peta <br className="md:hidden" />Tersimpan <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+              Peta <br className="md:hidden" />Tersimpan <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-emerald-200" />
             </button>
             
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white/95 backdrop-blur-md shadow-[0_10px_30px_rgba(109,94,245,0.12)] rounded-lg border border-[rgba(109,94,245,0.15)] py-2 z-50 overflow-hidden">
-                <div className="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50 mb-1">Daftar Peta</div>
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white/95 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-lg border border-slate-200 py-2 z-50 overflow-hidden text-slate-800">
+                <div className="px-3 py-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-gray-50 mb-1">Daftar Peta</div>
                 <div className="max-h-60 overflow-y-auto custom-scrollbar">
                   {maps.length > 0 ? maps.map((kab, i) => (
                     <button
@@ -236,7 +236,7 @@ export default function Navbar() {
                         setDropdownOpen(false);
                         router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-[#1E1B4B] hover:bg-[#F5F3FF] hover:text-[#6D5EF5] transition-colors font-medium truncate cursor-pointer"
+                      className="w-full text-left px-4 py-2 text-sm text-[#1E1B4B] hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-medium truncate cursor-pointer"
                     >
                       {kab}
                     </button>
@@ -260,14 +260,14 @@ export default function Navbar() {
                  setSession(null);
                  router.push('/login');
                }}
-               className="text-[10px] md:text-xs font-bold text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+               className="text-[10px] md:text-xs font-bold text-rose-200 border border-rose-700/50 bg-rose-950/40 hover:bg-rose-900/60 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
              >
                Keluar
              </button>
            ) : (
              <Link 
                href="/login"
-               className="text-[10px] md:text-xs font-bold btn-primary px-3 py-1.5 rounded-lg shadow-sm"
+               className="text-[10px] md:text-xs font-bold bg-white text-emerald-800 hover:bg-emerald-50 px-3 py-1.5 rounded-lg shadow-sm transition-colors"
              >
                Masuk / Login
              </Link>

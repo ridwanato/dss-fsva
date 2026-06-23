@@ -81,7 +81,7 @@ export default function Navbar() {
       return (
         <div 
           onClick={() => toggleExpand(true)}
-          className="fixed top-3 right-3 z-50 w-20 h-10 flex items-center justify-center bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md border border-emerald-500/30 rounded-xl cursor-pointer pointer-events-auto text-xs font-bold uppercase tracking-wider select-none no-print"
+          className="fixed top-3 right-3 z-50 w-20 h-10 flex items-center justify-center bg-gradient-to-r from-green-700 to-green-500 text-white shadow-md border border-green-500/30 rounded-xl cursor-pointer pointer-events-auto text-xs font-bold uppercase tracking-wider select-none no-print"
         >
           MENU
         </div>
@@ -89,10 +89,10 @@ export default function Navbar() {
     }
 
     return (
-      <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-emerald-100 shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
-        <div className="flex items-center justify-between border-b pb-3 border-emerald-50/50 mb-3 bg-gradient-to-r from-emerald-800 to-teal-800 -mx-4 -mt-4 p-4 rounded-t-2xl text-white">
+      <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
+        <div className="flex items-center justify-between border-b pb-3 border-green-50/50 mb-3 bg-gradient-to-r from-green-800 via-green-700 to-green-500 -mx-4 -mt-4 p-4 rounded-t-2xl text-white">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-white text-emerald-800 rounded-lg flex items-center justify-center font-black text-xs">
+            <div className="w-6 h-6 bg-white text-green-800 rounded-lg flex items-center justify-center font-black text-xs">
               F
             </div>
             <span className="font-bold text-sm text-white">DSS FSVA</span>
@@ -182,14 +182,14 @@ export default function Navbar() {
 
   return (
     <div className="absolute top-0 left-0 z-[60] pointer-events-none no-print">
-      <nav className="inline-flex bg-gradient-to-r from-emerald-900 to-teal-850 shadow-[0_4px_20px_rgba(16,185,129,0.15)] border-b border-r border-emerald-700/30 rounded-br-2xl h-12 md:h-16 items-center pointer-events-auto transition-all duration-300 overflow-visible text-white">
+      <nav className="inline-flex bg-gradient-to-r from-green-800 via-green-700 to-green-500 shadow-[0_4px_20px_rgba(22,163,74,0.15)] border-b border-r border-green-600/30 rounded-br-2xl h-12 md:h-16 items-center pointer-events-auto transition-all duration-300 overflow-visible text-white">
         
         {/* Brand Button */}
         <div 
           onClick={() => toggleExpand(!expanded)}
           className="flex-shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-6 cursor-pointer hover:bg-white/10 transition-colors h-full rounded-tl-2xl"
         >
-          <div className="w-6 h-6 md:w-8 md:h-8 bg-white text-emerald-800 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.1)] flex items-center justify-center font-black text-sm md:text-xl">
+          <div className="w-6 h-6 md:w-8 md:h-8 bg-white text-green-800 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.1)] flex items-center justify-center font-black text-sm md:text-xl">
             F
           </div>
           <span className="font-bold text-sm md:text-xl text-white tracking-tight whitespace-nowrap">DSS FSVA</span>

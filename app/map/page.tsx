@@ -181,7 +181,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
                     textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.5)'
                   }}
                 >
-                  Drag and scroll mouse untuk menyesuaikan<br />peta yang akan dicetak dalam kotak ini
+                  Geser dan zoom out untuk menyesuaikan peta<br />yang akan dicetak ke dalam kotak panduan ini.
                 </span>
               </div>
               {/* Close Button */}

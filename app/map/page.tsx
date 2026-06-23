@@ -175,7 +175,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
               {/* Text info in 2 lines above the box line */}
               <div className="absolute bottom-full left-0 right-0 mb-3 flex justify-center items-center pointer-events-auto">
                 <span 
-                  className="text-[11px] md:text-sm font-black text-center leading-snug px-6 tracking-wide select-none"
+                  className="text-[10px] font-black text-center leading-snug px-6 tracking-wide select-none"
                   style={{ 
                     color: '#ffffff',
                     textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.5)'

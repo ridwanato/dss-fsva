@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { Map, BarChart3, Database } from 'lucide-react';
+import SeoContent from '@/components/SeoContent';
 
 export default function Home() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 pt-24 text-center overflow-y-auto h-full">
+      <SeoContent />
       <div className="max-w-3xl space-y-8">
         <div className="space-y-4">
           <h1 className="text-5xl font-black text-gray-900 tracking-tight leading-tight">

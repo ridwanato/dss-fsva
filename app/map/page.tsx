@@ -89,10 +89,18 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         const dataUrl = hiddenCanvas.toDataURL('image/png');
         setMapImage(dataUrl);
         
+        const originalTitle = document.title;
+        const indicatorName = LAYERS.find(l => l.id === activeLayer)?.label || '';
+        document.title = `FSVA ${kabupaten} ${indicatorName}`.trim();
+        
         setTimeout(() => {
-          window.print();
-          setIsPrinting(false);
-          setTimeout(() => setMapImage(null), 1000);
+          try {
+            window.print();
+          } finally {
+            setIsPrinting(false);
+            document.title = originalTitle;
+            setTimeout(() => setMapImage(null), 1000);
+          }
         }, 800);
       } catch(e) {
         console.error(e);

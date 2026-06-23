@@ -92,7 +92,7 @@ export default function Navbar() {
       <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-[rgba(109,94,245,0.15)] shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
         <div className="flex items-center justify-between border-b pb-2 border-slate-100 mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-[#6D5EF5] to-[#8B5CF6] rounded-lg flex items-center justify-center text-white font-black text-xs">
+            <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.2)]">
               F
             </div>
             <span className="font-bold text-sm text-[#1E1B4B]">DSS FSVA</span>
@@ -189,7 +189,7 @@ export default function Navbar() {
           onClick={() => toggleExpand(!expanded)}
           className="flex-shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-6 cursor-pointer hover:bg-[#F5F3FF] transition-colors h-full rounded-tl-2xl"
         >
-          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-[#6D5EF5] to-[#8B5CF6] rounded-lg shadow-[0_2px_10px_rgba(109,94,245,0.25)] flex items-center justify-center text-white font-black text-sm md:text-xl">
+          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-[0_2px_10px_rgba(16,185,129,0.25)] flex items-center justify-center text-white font-black text-sm md:text-xl">
             F
           </div>
           <span className="font-bold text-sm md:text-xl text-[#1E1B4B] tracking-tight whitespace-nowrap">DSS FSVA</span>

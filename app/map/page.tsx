@@ -172,8 +172,8 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         {showPrintGuide && (
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
             <div className="relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent aspect-[133/258] h-[80%] max-w-[90%] flex flex-col items-center justify-start pointer-events-none">
-              {/* Text info in 2 lines above the box line */}
-              <div className="absolute bottom-full left-0 right-0 mb-3 flex justify-center items-center pointer-events-auto">
+              {/* Text info in 2 lines inside the top margin of the box */}
+              <div className="absolute top-3 left-0 right-0 flex justify-center items-center pointer-events-auto">
                 <span 
                   className="text-[10px] font-black text-center leading-snug px-6 tracking-wide select-none"
                   style={{ 

@@ -31,6 +31,7 @@ export default function UploadPanel() {
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
     formData.append('tahun', '2024');
+    formData.append('kabupaten', kabupaten);
     try {
       const res = await fetch('/api/upload-data', { method: 'POST', body: formData });
       const data = await res.json();

@@ -8,9 +8,13 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File;
     const tahunStr = formData.get('tahun') as string;
     const tahun = tahunStr ? parseInt(tahunStr) : 2024;
+    const kabupaten = formData.get('kabupaten') as string;
     
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
+    }
+    if (!kabupaten) {
+      return NextResponse.json({ success: false, error: 'Nama peta / kabupaten wajib diisi' }, { status: 400 });
     }
 
     const buffer = await file.arrayBuffer();
@@ -32,8 +36,11 @@ export async function POST(req: NextRequest) {
     
     const userId = session.user.id;
 
-    // Ambil daftar geometri untuk auto-matching
-    const { data: geomData } = await authClient.from('geometries').select('kode_bps, nama_desa');
+    // Ambil daftar geometri untuk kabupaten tertentu saja untuk auto-matching
+    const { data: geomData } = await authClient
+      .from('geometries')
+      .select('kode_bps, nama_desa')
+      .eq('nama_kabupaten', kabupaten);
     const geomList = geomData || [];
     
     // Helper untuk membersihkan nama desa (hapus kelurahan/desa, spasi, huruf kecil)
@@ -77,6 +84,7 @@ export async function POST(req: NextRequest) {
       
       return {
         kode_bps: finalKodeBps,
+        nama_kabupaten: kabupaten,
         user_id: userId,
         tahun,
         produksi_padi: Number(norm['produksipaditon'] || norm['produksipadi']) || 0,
@@ -106,7 +114,7 @@ export async function POST(req: NextRequest) {
     for (const insertData of inserts) {
        if (!insertData) continue;
        const { error } = await authClient.from('raw_indicators').upsert(insertData, {
-         onConflict: 'kode_bps,tahun'
+         onConflict: 'nama_kabupaten,kode_bps,tahun'
        });
        if (error) {
          errors.push(`Gagal menyimpan desa kode ${insertData.kode_bps}: ${error.message}`);

@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
 
       const upsertData = {
         kode_bps: row.kode_bps,
+        nama_kabupaten: row.nama_kabupaten || row.geometries?.nama_kabupaten || 'DAERAH',
         tahun: row.tahun,
         user_id: userId,
         ...indicators,
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
       };
 
       const { error: upsertError } = await authClient.from('fsva_results').upsert(upsertData, {
-        onConflict: 'kode_bps,tahun'
+        onConflict: 'nama_kabupaten,kode_bps,tahun'
       });
 
       if (!upsertError) {

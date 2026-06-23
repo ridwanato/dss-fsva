@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Layers, BarChart2, Zap, Beef, Warehouse, TrendingDown, DollarSign, Activity, GraduationCap, Droplet, Utensils, Baby, ChevronRight } from 'lucide-react';
 
 export const LAYERS = [
@@ -31,14 +31,147 @@ export default function LayerPanel({
   activeLayer, setActiveLayer, opacity, setOpacity, showLabels, setShowLabels, children
 }: LayerPanelProps) {
   const [expanded, setExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    const handleNavbarExpand = () => {
+      setExpanded(false);
+    };
+    window.addEventListener('navbar-expand', handleNavbarExpand);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('navbar-expand', handleNavbarExpand);
+    };
+  }, []);
+
+  const toggleExpand = (val: boolean) => {
+    setExpanded(val);
+    if (val) {
+      window.dispatchEvent(new CustomEvent('layerpanel-expand'));
+    }
+  };
+
+  if (isMobile) {
+    if (!expanded) {
+      return (
+        <div 
+          onClick={() => toggleExpand(true)}
+          className="fixed top-3 left-3 z-40 w-20 h-10 flex items-center justify-center bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] text-white shadow-md rounded-xl cursor-pointer pointer-events-auto text-xs font-black select-none no-print"
+        >
+          LAYER
+        </div>
+      );
+    }
+
+    return (
+      <div className="fixed top-3 left-3 z-40 w-[280px] max-h-[85vh] flex flex-col bg-white border border-[rgba(109,94,245,0.15)] shadow-lg rounded-2xl overflow-hidden pointer-events-auto no-print animate-in slide-in-from-left-2 fade-in duration-200">
+        
+        {/* Header */}
+        <div 
+          className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer"
+          onClick={() => toggleExpand(false)}
+        >
+          <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Pilih Layer Peta:</span>
+          <ChevronUp className="w-6 h-6 text-white font-black" strokeWidth={3} />
+        </div>
+
+        {/* White Section: Title & Controls */}
+        <div className="bg-white/80 backdrop-blur px-4 py-3 shrink-0 border-b border-[rgba(109,94,245,0.15)]">
+          {/* Title & Buttons Row */}
+          <div className="flex justify-between items-start gap-2 mb-3">
+            <div>
+              <h1 className="text-sm font-black text-[#1E1B4B] tracking-tight leading-tight">
+                Peta FSVA 2026 <br/><span className="text-[10px] font-semibold text-slate-500">(basis data 2025)</span>
+              </h1>
+              <p className="text-[8px] font-extrabold text-[#6D5EF5] mt-0.5 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+            </div>
+            
+            {/* Buttons Slot */}
+            <div className="flex flex-col gap-1 shrink-0">
+              {children}
+            </div>
+          </div>
+          
+          <div className="flex flex-row items-center justify-between gap-3">
+            <div className="flex-1">
+              <label className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex justify-between">
+                <span>Transparansi Peta</span>
+                <span className="text-gray-400">{opacity}%</span>
+              </label>
+              <div className="relative flex items-center h-1 bg-gray-200 rounded-full">
+                <div className="absolute h-full bg-[#6D5EF5] rounded-full" style={{ width: `${opacity}%` }}></div>
+                <input 
+                  type="range" min="0" max="100" 
+                  value={opacity} onChange={(e) => setOpacity(parseInt(e.target.value))}
+                  className="absolute w-full h-full opacity-0 cursor-pointer"
+                />
+                <div 
+                  className="absolute h-2.5 w-2.5 bg-white border-2 border-[#6D5EF5] rounded-full pointer-events-none shadow-sm"
+                  style={{ left: `calc(${opacity}% - 5px)` }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-1.5 border-l pl-2 border-[rgba(109,94,245,0.15)]">
+              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">Nama<br/>Desa</label>
+              <button 
+                onClick={() => setShowLabels(!showLabels)}
+                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showLabels ? 'bg-[#6D5EF5]' : 'bg-gray-300'}`}
+              >
+                <span className={`absolute left-0.5 text-[6px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                <span className={`absolute z-10 inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Purple Section: Layers List (Scrollable) */}
+        <div className="bg-white/60 backdrop-blur flex-1 overflow-y-auto max-h-[50vh]">
+          <ul className="flex flex-col py-1">
+            {LAYERS.map(layer => {
+              const Icon = layer.icon;
+              const isActive = activeLayer === layer.id;
+              return (
+                <li key={layer.id}>
+                  <button
+                    onClick={() => {
+                      setActiveLayer(layer.id);
+                      toggleExpand(false); // Collapse on selection in mobile
+                    }}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${isActive ? 'bg-[#6D5EF5] text-white' : 'hover:bg-[#F5F3FF] text-[#1E1B4B]'}`}
+                  >
+                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-white/30 bg-white/10' : 'border-[#6D5EF5]/20 bg-white'}`}>
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#6D5EF5]'}`} />
+                    </div>
+                    <span className={`flex-1 text-[11px] font-semibold tracking-wide`}>
+                      {layer.label}
+                    </span>
+                    <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white/50' : 'text-slate-300'}`} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Rendering
   return (
     <div className="absolute top-16 left-4 z-20 w-[280px] md:w-80 glass-card rounded-xl overflow-hidden flex flex-col pointer-events-auto transition-all duration-300 border-none">
       
       {/* Header */}
       <div 
         className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => toggleExpand(!expanded)}
       >
         <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Pilih Layer Peta:</span>
         {expanded ? <ChevronUp className="w-6 h-6 text-white font-black" strokeWidth={3} /> : <ChevronDown className="w-6 h-6 text-white font-black" strokeWidth={3} />}

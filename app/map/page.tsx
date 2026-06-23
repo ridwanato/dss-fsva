@@ -4,7 +4,7 @@ import MapView from '@/components/MapView';
 import LegendPanel from '@/components/LegendPanel';
 import InfoPanel from '@/components/InfoPanel';
 import PrintLayout from '@/components/PrintLayout';
-import { Download, Printer, Settings } from 'lucide-react';
+import { Download, Printer, Settings, X } from 'lucide-react';
 
 import LayerPanel, { LAYERS } from '@/components/LayerPanel';
 
@@ -27,6 +27,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
     const [isPrinting, setIsPrinting] = useState(false);
 
     const [showPrintModal, setShowPrintModal] = useState(false);
+    const [showPrintGuide, setShowPrintGuide] = useState(true);
     const [printConfig, setPrintConfig] = useState({
       logoPemda: '/logo-cilegon.png',
       logoBapanas: '/logo-bapanas.png',
@@ -166,6 +167,40 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
           onPolygonClick={(props) => setSelectedPolygon(props)} 
           onMapReady={(m) => setMapInstance(m)}
         />
+
+        {/* Print Preview Guide Overlay */}
+        {showPrintGuide && (
+          <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+            <div className="relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent aspect-[133/258] h-[80%] max-w-[90%] flex flex-col items-center justify-start pointer-events-none">
+              {/* Text info and Close Button */}
+              <div className="absolute -top-7 left-0 right-0 flex justify-center items-center pointer-events-auto">
+                <span className="text-[10px] md:text-xs font-bold text-gray-800 text-center drop-shadow-[0_1.5px_1.5px_rgba(255,255,255,1)] px-6">
+                  Drag and scroll mouse untuk menyesuaikan peta yang akan dicetak dalam kotak ini
+                </span>
+                <button 
+                  onClick={() => setShowPrintGuide(false)}
+                  className="absolute right-0 -top-1 text-black font-extrabold text-sm md:text-base hover:text-red-600 transition-colors bg-white/70 hover:bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-200"
+                  title="Tutup Panduan"
+                >
+                  X
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Floating guidance button to reopen */}
+        {!showPrintGuide && (
+          <button
+            onClick={() => setShowPrintGuide(true)}
+            className="absolute top-4 right-4 z-20 bg-white/95 hover:bg-white text-pink-600 p-2.5 rounded-xl shadow-md border border-pink-200 pointer-events-auto transition-all hover:scale-105 flex items-center gap-1.5 animate-in fade-in zoom-in duration-200"
+            title="Tampilkan Panduan Cetak Peta"
+          >
+            <Printer className="w-4 h-4 text-pink-500" />
+            <span className="text-[10px] md:text-xs font-bold text-gray-700">Tampilkan Panduan Cetak</span>
+          </button>
+        )}
+
         <LegendPanel />
         <InfoPanel 
           data={selectedPolygon} 
@@ -176,7 +211,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
       {/* Print Config Modal */}
       {showPrintModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-full">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[70%] md:max-h-full">
             <div className="p-5 border-b border-gray-100 bg-gray-50">
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <Printer className="w-5 h-5 text-blue-600" /> Pengaturan Cetak Peta

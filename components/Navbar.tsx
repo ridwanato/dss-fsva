@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 
 const supabase = createClient();
@@ -14,6 +14,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -194,16 +195,25 @@ export default function Navbar() {
           <span className="font-bold text-sm md:text-xl text-[#1E1B4B] tracking-tight whitespace-nowrap">DSS FSVA</span>
         </div>
 
+        {/* Minimize/Maximize Button */}
+        <button 
+          onClick={() => setIsMinimized(!isMinimized)}
+          className="hidden md:flex flex-shrink-0 items-center justify-center w-7 h-7 rounded-full hover:bg-slate-100 text-gray-500 hover:text-gray-800 transition-all border border-slate-200 mr-2 ml-1 cursor-pointer pointer-events-auto shadow-sm"
+          title={isMinimized ? "Tampilkan Menu" : "Sembunyikan Menu"}
+        >
+          {isMinimized ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+
         {/* Links (Expandable) */}
-        <div className={`flex items-center space-x-1.5 md:space-x-6 md:whitespace-nowrap transition-all duration-300 ${expanded ? 'max-w-[350px] sm:max-w-[450px] px-2 md:px-4 opacity-100' : 'max-w-0 px-0 opacity-0'} md:max-w-[600px] md:px-8 md:opacity-100`}>
+        <div className={`flex items-center space-x-1.5 md:space-x-6 md:whitespace-nowrap transition-all duration-300 ${isMinimized ? 'max-w-0 px-0 opacity-0 overflow-hidden pointer-events-none' : 'max-w-[350px] sm:max-w-[450px] md:max-w-[650px] px-2 md:px-8 opacity-100'}`}>
           <Link href="/map" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/map') ? 'border-[#6D5EF5] text-[#5b4ddb]' : 'border-transparent text-gray-500 hover:text-[#6D5EF5] hover:border-[#8B5CF6]'}`}>
-            Peta<br className="md:hidden" />Interaktif
+            Peta <br className="md:hidden" />Interaktif
           </Link>
           <Link href="/dashboard" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/dashboard') ? 'border-[#6D5EF5] text-[#5b4ddb]' : 'border-transparent text-gray-500 hover:text-[#6D5EF5] hover:border-[#8B5CF6]'}`}>
             Dashboard
           </Link>
           <Link href="/entry" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/entry') ? 'border-[#6D5EF5] text-[#5b4ddb]' : 'border-transparent text-gray-500 hover:text-[#6D5EF5] hover:border-[#8B5CF6]'}`}>
-            Data<br className="md:hidden" />Entry
+            Data <br className="md:hidden" />Entry
           </Link>
           
           {/* Dropdown Peta Tersimpan */}
@@ -212,7 +222,7 @@ export default function Navbar() {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-1 text-[10px] md:text-sm leading-tight font-semibold text-gray-500 hover:text-[#6D5EF5] px-1 py-2 md:py-5 border-b-2 border-transparent transition-colors"
             >
-              Peta<br className="md:hidden" />Tersimpan <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+              Peta <br className="md:hidden" />Tersimpan <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
             </button>
             
             {dropdownOpen && (
@@ -240,7 +250,7 @@ export default function Navbar() {
         </div>
 
         {/* Auth Button */}
-        <div className="ml-auto pr-3 md:pr-6 pointer-events-auto h-full flex items-center">
+        <div className={`ml-auto pr-3 md:pr-6 pointer-events-auto h-full flex items-center transition-all duration-300 ${isMinimized ? 'max-w-0 px-0 opacity-0 overflow-hidden pointer-events-none' : 'max-w-[200px] opacity-100'}`}>
            {session ? (
              <button 
                onClick={async () => {

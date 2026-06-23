@@ -172,19 +172,26 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         {showPrintGuide && (
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
             <div className="relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent aspect-[133/258] h-[80%] max-w-[90%] flex flex-col items-center justify-start pointer-events-none">
-              {/* Text info and Close Button */}
-              <div className="absolute -top-7 left-0 right-0 flex justify-center items-center pointer-events-auto">
-                <span className="text-[10px] md:text-xs font-bold text-gray-800 text-center drop-shadow-[0_1.5px_1.5px_rgba(255,255,255,1)] px-6">
-                  Drag and scroll mouse untuk menyesuaikan peta yang akan dicetak dalam kotak ini
-                </span>
-                <button 
-                  onClick={() => setShowPrintGuide(false)}
-                  className="absolute right-0 -top-1 text-black font-extrabold text-sm md:text-base hover:text-red-600 transition-colors bg-white/70 hover:bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-200"
-                  title="Tutup Panduan"
+              {/* Text info in 2 lines above the box line */}
+              <div className="absolute bottom-full left-0 right-0 mb-3 flex justify-center items-center pointer-events-auto">
+                <span 
+                  className="text-[11px] md:text-sm font-black text-center leading-snug px-6 tracking-wide select-none"
+                  style={{ 
+                    color: '#ffffff',
+                    textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.5)'
+                  }}
                 >
-                  X
-                </button>
+                  Drag and scroll mouse untuk menyesuaikan<br />peta yang akan dicetak dalam kotak ini
+                </span>
               </div>
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowPrintGuide(false)}
+                className="absolute -right-3 -top-3 text-black font-black text-xs md:text-sm hover:text-red-600 transition-colors bg-white hover:bg-slate-100 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-lg shadow-md border border-slate-200 pointer-events-auto"
+                title="Tutup Panduan"
+              >
+                X
+              </button>
             </div>
           </div>
         )}

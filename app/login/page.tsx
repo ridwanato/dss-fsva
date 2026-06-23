@@ -57,11 +57,11 @@ export default function LoginPage() {
     <div className="flex-1 bg-transparent flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 h-full">
       <div className="max-w-md w-full space-y-8 glass-card p-8 rounded-2xl">
         <div>
-          <div className="w-12 h-12 bg-gradient-to-br from-[#6D5EF5] to-[#8B5CF6] rounded-xl flex items-center justify-center text-white font-black text-2xl mx-auto shadow-md">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-700 to-green-500 rounded-xl flex items-center justify-center text-white font-black text-2xl mx-auto shadow-md">
             F
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-[#1E1B4B]">
-            Masuk ke DSS FSVA
+            Masuk ke FSVA
           </h2>
           <p className="mt-2 text-center text-sm text-slate-500">
             Akses dashboard pemetaan untuk kabupaten/kota Anda.

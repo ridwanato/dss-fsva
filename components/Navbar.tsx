@@ -95,7 +95,10 @@ export default function Navbar() {
             <div className="w-6 h-6 bg-white text-green-800 rounded-lg flex items-center justify-center font-black text-xs">
               F
             </div>
-            <span className="font-bold text-sm text-white">DSS FSVA</span>
+            <div className="flex flex-col justify-center leading-none">
+              <span className="font-bold text-xs text-white">FSVA</span>
+              <span className="text-[7px] text-emerald-200/90 font-medium mt-0.5">FSVA.my.id</span>
+            </div>
           </div>
           <button 
             onClick={() => toggleExpand(false)} 
@@ -192,7 +195,10 @@ export default function Navbar() {
           <div className="w-6 h-6 md:w-8 md:h-8 bg-white text-green-800 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.1)] flex items-center justify-center font-black text-sm md:text-xl">
             F
           </div>
-          <span className="font-bold text-sm md:text-xl text-white tracking-tight whitespace-nowrap">DSS FSVA</span>
+          <div className="flex flex-col justify-center select-none leading-none">
+            <span className="font-black text-sm md:text-lg text-white tracking-tight whitespace-nowrap">FSVA</span>
+            <span className="text-[8px] md:text-[10px] text-emerald-200/90 font-medium tracking-wide mt-0.5">FSVA.my.id</span>
+          </div>
         </div>
 
         {/* Minimize/Maximize Button */}

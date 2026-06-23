@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'DSS FSVA - Decision Support System Food Security and Vulnerability Atlas',
+  title: 'FSVA - Food Security and Vulnerability Atlas',
   description: 'Aplikasi Analisis Ketahanan dan Kerentanan Pangan Tingkat Desa/Kelurahan',
   icons: {
     icon: '/icon.svg',

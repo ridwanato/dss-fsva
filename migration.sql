@@ -10,6 +10,7 @@ DECLARE
 BEGIN
     FOR r IN (
         SELECT 
+            tc.table_schema,
             tc.table_name, 
             tc.constraint_name
         FROM 
@@ -23,8 +24,9 @@ BEGIN
         WHERE 
             tc.constraint_type = 'FOREIGN KEY' 
             AND ccu.table_name = 'geometries'
+            AND tc.table_schema = 'public'
     ) LOOP
-        EXECUTE 'ALTER TABLE ' || quote_ident(r.table_name) || ' DROP CONSTRAINT ' || quote_ident(r.constraint_name);
+        EXECUTE 'ALTER TABLE ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' DROP CONSTRAINT IF EXISTS ' || quote_ident(r.constraint_name);
     END LOOP;
 END $$;
 
@@ -54,9 +56,11 @@ ALTER TABLE raw_indicators ALTER COLUMN nama_kabupaten SET NOT NULL;
 ALTER TABLE raw_indicators DROP CONSTRAINT IF EXISTS raw_indicators_kode_bps_tahun_key;
 
 -- Tambah unique constraint baru (komposit)
+ALTER TABLE raw_indicators DROP CONSTRAINT IF EXISTS raw_indicators_kab_bps_tahun_key;
 ALTER TABLE raw_indicators ADD CONSTRAINT raw_indicators_kab_bps_tahun_key UNIQUE (nama_kabupaten, kode_bps, tahun);
 
 -- Pasang kembali Foreign Key yang mengarah ke geometries (komposit)
+ALTER TABLE raw_indicators DROP CONSTRAINT IF EXISTS raw_indicators_geom_fkey;
 ALTER TABLE raw_indicators ADD CONSTRAINT raw_indicators_geom_fkey 
 FOREIGN KEY (nama_kabupaten, kode_bps) REFERENCES geometries(nama_kabupaten, kode_bps) 
 ON UPDATE CASCADE ON DELETE CASCADE;
@@ -78,9 +82,11 @@ ALTER TABLE fsva_results ALTER COLUMN nama_kabupaten SET NOT NULL;
 ALTER TABLE fsva_results DROP CONSTRAINT IF EXISTS fsva_results_kode_bps_tahun_key;
 
 -- Tambah unique constraint baru (komposit)
+ALTER TABLE fsva_results DROP CONSTRAINT IF EXISTS fsva_results_kab_bps_tahun_key;
 ALTER TABLE fsva_results ADD CONSTRAINT fsva_results_kab_bps_tahun_key UNIQUE (nama_kabupaten, kode_bps, tahun);
 
 -- Pasang kembali Foreign Key yang mengarah ke geometries (komposit)
+ALTER TABLE fsva_results DROP CONSTRAINT IF EXISTS fsva_results_geom_fkey;
 ALTER TABLE fsva_results ADD CONSTRAINT fsva_results_geom_fkey 
 FOREIGN KEY (nama_kabupaten, kode_bps) REFERENCES geometries(nama_kabupaten, kode_bps) 
 ON UPDATE CASCADE ON DELETE CASCADE;
@@ -101,6 +107,9 @@ SELECT
   r.ncpr, r.pct_ake, r.pct_prohe, r.rasio_cadangan,
   r.cv_harga, r.pou, r.pct_miskin AS pct_miskin_ref,
   r.indeks_ketersediaan, r.indeks_keterjangkauan, r.indeks_pemanfaatan,
+  r.p_ncpr, r.p_energy, r.p_protein, r.p_cadangan, 
+  r.p_poverty, r.p_cv_harga, r.p_pou, 
+  r.p_sekolah, r.p_air, r.p_pph, r.p_stunting,
   ST_AsGeoJSON(g.geom)::json AS geometry
 FROM geometries g
 LEFT JOIN fsva_results r ON g.kode_bps = r.kode_bps AND g.nama_kabupaten = r.nama_kabupaten;

@@ -18,4 +18,4 @@ SELECT
   r.p_sekolah, r.p_air, r.p_pph, r.p_stunting,
   ST_AsGeoJSON(g.geom)::json AS geometry
 FROM geometries g
-LEFT JOIN fsva_results r ON g.kode_bps = r.kode_bps;
+LEFT JOIN fsva_results r ON g.kode_bps = r.kode_bps AND g.nama_kabupaten = r.nama_kabupaten;

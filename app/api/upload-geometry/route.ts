@@ -37,9 +37,11 @@ export async function POST(req: NextRequest) {
     } else if (file.name.toLowerCase().endsWith('.kml')) {
       kmlString = buffer.toString('utf-8');
     } else if (file.name.toLowerCase().endsWith('.zip')) {
-      // Shapefile processing using shpjs
-      const shp = require('shpjs');
-      const wkx = require('wellknown');
+      // Shapefile processing using shpjs with dynamic import for Node.js compatibility
+      const shpModule = await import('shpjs');
+      const shp = shpModule.default;
+      const wkxModule = require('wellknown');
+      const wkx = wkxModule.default || wkxModule;
       
       let geojson: any;
       try {
@@ -61,13 +63,40 @@ export async function POST(req: NextRequest) {
           
           // Cari property yang berhubungan dengan KODE_BPS atau KODEBPS
           for (const key of Object.keys(feature.properties)) {
-            const lowerKey = key.toLowerCase().replace(/_/g, '');
-            if (lowerKey.includes('kodebps')) kode_bps = String(feature.properties[key]).trim();
-            if ((lowerKey.includes('namobj') || lowerKey.includes('desa') || lowerKey.includes('name')) && !name) {
+            const normalizedKey = key.toLowerCase().replace(/_/g, '').replace(/-/g, '').replace(/\s/g, '');
+            
+            // Kolom kode BPS yang umum di shapefile Indonesia (termasuk KDPPUM dari BIG/Ina-Geoportal)
+            if (
+              normalizedKey.includes('kodebps') || 
+              normalizedKey.includes('kodbps') || 
+              normalizedKey.includes('kdebps') || 
+              normalizedKey.includes('kdppum') || 
+              normalizedKey.includes('iddesa') || 
+              normalizedKey.includes('kodedesa') || 
+              normalizedKey.includes('kodedes') || 
+              normalizedKey.includes('bpscode') ||
+              normalizedKey === 'id'
+            ) {
+              kode_bps = String(feature.properties[key]).trim();
+            }
+            
+            // Kolom nama desa yang umum (termasuk NAMOBJ dari BIG, KELURAHAN, DESA, dll.)
+            if (
+              (normalizedKey.includes('namobj') || 
+               normalizedKey.includes('namadesa') || 
+               normalizedKey.includes('desa') || 
+               normalizedKey.includes('kelurahan') || 
+               normalizedKey.includes('desakelur') || 
+               normalizedKey.includes('nmdesa') || 
+               normalizedKey.includes('nama') || 
+               normalizedKey.includes('name')) && 
+              !name
+            ) {
               name = String(feature.properties[key]).trim();
             }
           }
           
+          // Fallback jika tidak ada kode BPS tapi ada nama desa
           if (!kode_bps && name) {
             kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, '');
           }

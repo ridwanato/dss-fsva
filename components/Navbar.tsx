@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 
 const supabase = createClient();
@@ -68,6 +68,32 @@ export default function Navbar() {
       subscription.unsubscribe();
     };
   }, []);
+
+  const handleDeleteMap = async (e: React.MouseEvent, kabupaten: string) => {
+    e.stopPropagation();
+    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus peta "${kabupaten}" beserta semua data indikator dan kalkulasinya? Tindakan ini tidak dapat dibatalkan.`);
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`/api/maps?kabupaten=${encodeURIComponent(kabupaten)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Peta "${kabupaten}" berhasil dihapus.`);
+        setMaps(prev => prev.filter(m => m !== kabupaten));
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('kabupaten') === kabupaten) {
+          router.push('/map');
+        }
+      } else {
+        alert(`Gagal menghapus peta: ${data.error}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`Terjadi kesalahan saat menghapus peta: ${err.message}`);
+    }
+  };
 
   const toggleExpand = (val: boolean) => {
     setExpanded(val);
@@ -136,16 +162,26 @@ export default function Navbar() {
             {maps.length > 0 ? (
               <div className="max-h-32 overflow-y-auto flex flex-col gap-1 pl-2">
                 {maps.map((kab, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      toggleExpand(false);
-                      router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:bg-emerald-50 hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
-                  >
-                    {kab}
-                  </button>
+                  <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
+                    <button
+                      onClick={() => {
+                        toggleExpand(false);
+                        router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
+                      }}
+                      className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
+                    >
+                      {kab}
+                    </button>
+                    {session && (
+                      <button
+                        onClick={(e) => handleDeleteMap(e, kab)}
+                        className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-3 shrink-0"
+                        title="Hapus Peta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -236,16 +272,26 @@ export default function Navbar() {
                 <div className="px-3 py-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-gray-50 mb-1">Daftar Peta</div>
                 <div className="max-h-60 overflow-y-auto custom-scrollbar">
                   {maps.length > 0 ? maps.map((kab, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-[#1E1B4B] hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-medium truncate cursor-pointer"
-                    >
-                      {kab}
-                    </button>
+                    <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 group">
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
+                        }}
+                        className="flex-1 text-left px-4 py-2 text-sm text-[#1E1B4B] hover:text-emerald-700 transition-colors font-medium truncate cursor-pointer"
+                      >
+                        {kab}
+                      </button>
+                      {session && (
+                        <button
+                          onClick={(e) => handleDeleteMap(e, kab)}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-4 shrink-0"
+                          title="Hapus Peta"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   )) : (
                     <div className="px-4 py-2 text-xs text-gray-500 italic">Belum ada peta</div>
                   )}

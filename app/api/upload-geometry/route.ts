@@ -61,39 +61,64 @@ export async function POST(req: NextRequest) {
           let name = '';
           let kode_bps = '';
           
-          // Cari property yang berhubungan dengan KODE_BPS atau KODEBPS
-          for (const key of Object.keys(feature.properties)) {
-            const normalizedKey = key.toLowerCase().replace(/_/g, '').replace(/-/g, '').replace(/\s/g, '');
-            
-            // Kolom kode BPS yang umum di shapefile Indonesia (termasuk KDPPUM dari BIG/Ina-Geoportal)
-            if (
-              normalizedKey.includes('kodebps') || 
-              normalizedKey.includes('kodbps') || 
-              normalizedKey.includes('kdebps') || 
-              normalizedKey.includes('kdppum') || 
-              normalizedKey.includes('iddesa') || 
-              normalizedKey.includes('kodedesa') || 
-              normalizedKey.includes('kodedes') || 
-              normalizedKey.includes('bpscode') ||
-              normalizedKey === 'id'
-            ) {
-              kode_bps = String(feature.properties[key]).trim();
-            }
-            
-            // Kolom nama desa yang umum (termasuk NAMOBJ dari BIG, KELURAHAN, DESA, dll.)
-            if (
-              (normalizedKey.includes('namobj') || 
-               normalizedKey.includes('namadesa') || 
-               normalizedKey.includes('desa') || 
-               normalizedKey.includes('kelurahan') || 
-               normalizedKey.includes('desakelur') || 
-               normalizedKey.includes('nmdesa') || 
-               normalizedKey.includes('nama') || 
-               normalizedKey.includes('name')) && 
-              !name
-            ) {
-              name = String(feature.properties[key]).trim();
-            }
+          // Extract kode_bps and nama_desa with high-priority matching
+          const bpsKeys = Object.keys(feature.properties);
+          
+          // 1. Cari kode BPS
+          // Priority 1: KODE_BPS / BPS_CODE / KODBPS
+          let foundBpsKey = bpsKeys.find(k => {
+            const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return nk === 'kodebps' || nk === 'kodbps' || nk === 'kdebps' || nk === 'bpscode';
+          });
+          // Priority 2: IDDESA / KODEDESA / KDPPUM
+          if (!foundBpsKey) {
+            foundBpsKey = bpsKeys.find(k => {
+              const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return nk === 'iddesa' || nk === 'kodedesa' || nk === 'kodedes' || nk === 'kdppum';
+            });
+          }
+          // Priority 3: any key containing BPS or ID
+          if (!foundBpsKey) {
+            foundBpsKey = bpsKeys.find(k => {
+              const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return nk.includes('kodebps') || nk.includes('iddesa') || nk.includes('kodedesa') || nk.includes('kdppum') || nk === 'id';
+            });
+          }
+          if (foundBpsKey) {
+            kode_bps = String(feature.properties[foundBpsKey]).trim();
+          }
+
+          // 2. Cari nama desa
+          // Priority 1: NAMOBJ / NAMADESA / NMDESA
+          let foundNameKey = bpsKeys.find(k => {
+            const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return nk === 'namobj' || nk === 'namadesa' || nk === 'namadesakelurahan' || nk === 'nmdesa';
+          });
+          // Priority 2: exact "desa" or "kelurahan"
+          if (!foundNameKey) {
+            foundNameKey = bpsKeys.find(k => {
+              const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return nk === 'desa' || nk === 'kelurahan';
+            });
+          }
+          // Priority 3: "nama" or "name"
+          if (!foundNameKey) {
+            foundNameKey = bpsKeys.find(k => {
+              const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return nk === 'nama' || nk === 'name';
+            });
+          }
+          // Priority 4: any key containing "desa" or "kelurahan" or "nama" or "name" but NOT containing code/id/no/num
+          if (!foundNameKey) {
+            foundNameKey = bpsKeys.find(k => {
+              const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const isNameLike = nk.includes('desa') || nk.includes('kelurahan') || nk.includes('nama') || nk.includes('name');
+              const isCodeLike = nk.includes('code') || nk.includes('kode') || nk.includes('id') || nk.includes('no') || nk.includes('num');
+              return isNameLike && !isCodeLike;
+            });
+          }
+          if (foundNameKey) {
+            name = String(feature.properties[foundNameKey]).trim();
           }
           
           // Fallback jika tidak ada kode BPS tapi ada nama desa

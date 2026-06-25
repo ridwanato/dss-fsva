@@ -5,10 +5,10 @@ export const revalidate = 0;
 
 export async function GET() {
   const supabase = getServiceSupabase();
-  // Fetch distinct kabupaten names from geometries
+  // Fetch distinct kabupaten names and their user_id from geometries
   const { data, error } = await supabase
     .from('geometries')
-    .select('nama_kabupaten')
+    .select('nama_kabupaten, user_id')
     .not('nama_kabupaten', 'is', null);
 
   if (error) {
@@ -17,6 +17,16 @@ export async function GET() {
 
   // Deduplicate and sort
   const mapNames = Array.from(new Set(data.map(d => d.nama_kabupaten))).filter(Boolean).sort() as string[];
+
+  // Map each kabupaten to its owner user_id
+  const mapUserIds: Record<string, string | null> = {};
+  if (data) {
+    for (const item of data) {
+      if (item.nama_kabupaten) {
+        mapUserIds[item.nama_kabupaten] = item.user_id || null;
+      }
+    }
+  }
 
   // Fetch distinct maps and their latest year from fsva_results
   const { data: yearData } = await supabase
@@ -34,7 +44,8 @@ export async function GET() {
 
   const mapDetails = mapNames.map(name => ({
     nama_kabupaten: name,
-    tahun: mapYears[name] || 2025 // Default fallback to 2025
+    tahun: mapYears[name] || 2025, // Default fallback to 2025
+    user_id: mapUserIds[name] || null
   }));
 
   return NextResponse.json({ success: true, maps: mapNames, mapDetails });
@@ -59,6 +70,39 @@ export async function DELETE(req: NextRequest) {
     }
 
     const supabase = getServiceSupabase();
+
+    // Verifikasi kepemilikan peta sebelum dihapus
+    const { data: geoOwner, error: ownerError } = await supabase
+      .from('geometries')
+      .select('user_id')
+      .eq('nama_kabupaten', kabupaten)
+      .limit(1);
+
+    if (ownerError) {
+      return NextResponse.json({ success: false, error: ownerError.message }, { status: 500 });
+    }
+
+    if (!geoOwner || geoOwner.length === 0) {
+      return NextResponse.json({ success: false, error: 'Peta tidak ditemukan.' }, { status: 404 });
+    }
+
+    const mapOwnerId = geoOwner[0].user_id;
+
+    // Jika peta diunggah oleh user lain (user_id tidak cocok)
+    if (mapOwnerId && mapOwnerId !== session.user.id) {
+      return NextResponse.json({
+        success: false,
+        error: 'Anda hanya dapat menghapus peta yang Anda unggah sendiri.'
+      }, { status: 403 });
+    }
+
+    // Jika user_id kosong, kita anggap itu peta publik/sistem, normal user tidak boleh menghapusnya
+    if (!mapOwnerId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Peta sistem/publik tidak dapat dihapus.'
+      }, { status: 403 });
+    }
     
     // Hapus dari geometries (cascade akan otomatis menghapus di raw_indicators dan fsva_results)
     const { error } = await supabase

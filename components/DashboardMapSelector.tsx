@@ -50,7 +50,7 @@ export default function DashboardMapSelector({ maps, currentKabupaten, variant =
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute left-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
             {/* Search Box */}
             <div className="px-3 pb-2 pt-1 border-b border-slate-100">
               <div className="relative flex items-center">

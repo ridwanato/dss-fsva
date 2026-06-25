@@ -79,9 +79,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${inter.className} bg-app-gradient h-screen overflow-hidden flex flex-col text-slate-900`}>
+      <body className={`${inter.className} bg-app-gradient h-screen w-screen overflow-hidden flex flex-col md:flex-row text-slate-900`}>
         <Navbar />
-        <main className="flex-1 flex flex-col relative w-full h-full">
+        <main className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
           {children}
         </main>
       </body>

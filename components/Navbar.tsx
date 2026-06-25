@@ -3,21 +3,23 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { 
+  ChevronDown, ChevronLeft, ChevronRight, Trash2, 
+  Map, BarChart3, Database, BookOpen, User, LogOut, Layers 
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 
 const supabase = createClient();
 
 export default function Navbar() {
-  const [expanded, setExpanded] = useState(false);
-  const [maps, setMaps] = useState<string[]>([]);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false); // Mobile drawer expand state
+  const [maps, setMaps] = useState<any[]>([]); // Array of { nama_kabupaten, tahun, user_id }
   const [session, setSession] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false); // Desktop sidebar collapse state
+  const [sidebarDropdownOpen, setSidebarDropdownOpen] = useState(true); // Desktop sidebar submenu state
   const pathname = usePathname();
   const router = useRouter();
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => pathname === path;
 
@@ -36,8 +38,8 @@ export default function Navbar() {
     fetch('/api/maps')
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.maps) {
-          setMaps(data.maps);
+        if (data.success && data.mapDetails) {
+          setMaps(data.mapDetails);
         }
       })
       .catch(console.error);
@@ -52,19 +54,10 @@ export default function Navbar() {
       setExpanded(false);
     };
     window.addEventListener('layerpanel-expand', handleLayerExpand);
-
-    // Close dropdown on outside click
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
     
     return () => {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('layerpanel-expand', handleLayerExpand);
-      document.removeEventListener("mousedown", handleClickOutside);
       subscription.unsubscribe();
     };
   }, []);
@@ -81,7 +74,7 @@ export default function Navbar() {
       const data = await res.json();
       if (data.success) {
         alert(`Peta "${kabupaten}" berhasil dihapus.`);
-        setMaps(prev => prev.filter(m => m !== kabupaten));
+        setMaps(prev => prev.filter(m => m.nama_kabupaten !== kabupaten));
         const params = new URLSearchParams(window.location.search);
         if (params.get('kabupaten') === kabupaten) {
           router.push('/map');
@@ -95,6 +88,15 @@ export default function Navbar() {
     }
   };
 
+  const handleSignOut = async () => {
+    const { createClient } = await import('@/lib/supabase-client');
+    const sb = createClient();
+    await sb.auth.signOut();
+    setSession(null);
+    if (isMobile) setExpanded(false);
+    router.push('/login');
+  };
+
   const toggleExpand = (val: boolean) => {
     setExpanded(val);
     if (val) {
@@ -102,6 +104,109 @@ export default function Navbar() {
     }
   };
 
+  // Helper component for desktop sidebar links
+  const SidebarLink = ({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) => {
+    if (isMinimized) {
+      return (
+        <Link 
+          href={href} 
+          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
+            active 
+              ? 'bg-white text-emerald-900 shadow-md scale-105' 
+              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          {icon}
+          {/* Tooltip */}
+          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
+            {label}
+          </div>
+        </Link>
+      );
+    }
+
+    return (
+      <Link 
+        href={href} 
+        className={`flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-200 ${
+          active 
+            ? 'bg-white text-emerald-955 shadow-md translate-x-1' 
+            : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+        }`}
+      >
+        <span className="shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
+      </Link>
+    );
+  };
+
+  const renderSavedMapsDropdown = () => {
+    if (isMinimized) {
+      return (
+        <Link 
+          href="/map"
+          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
+            isActive('/map') && pathname !== '/map'
+              ? 'bg-white text-emerald-900 shadow-md' 
+              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <Layers className="w-5 h-5" />
+          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
+            Peta Tersimpan
+          </div>
+        </Link>
+      );
+    }
+
+    return (
+      <div className="flex flex-col border-t border-green-700/30 pt-3 mt-2">
+        <button
+          onClick={() => setSidebarDropdownOpen(!sidebarDropdownOpen)}
+          className="flex items-center justify-between px-3 mb-2 text-xs font-black text-emerald-200 hover:text-white uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+        >
+          <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Peta Tersimpan</span>
+          <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: sidebarDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+        </button>
+
+        {sidebarDropdownOpen && (
+          <div className="pl-2 pr-1 space-y-1 max-h-[200px] overflow-y-auto custom-scrollbar">
+            <button
+              onClick={() => router.push('/map')}
+              className="w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold text-emerald-100 hover:bg-white/5 hover:text-white transition-colors cursor-pointer truncate"
+            >
+              Semua Peta
+            </button>
+            
+            {maps.length > 0 ? maps.map((kab, i) => (
+              <div key={i} className="flex items-center justify-between w-full hover:bg-white/5 rounded-lg group px-1">
+                <button
+                  onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}`)}
+                  className="flex-1 text-left py-1.5 px-2 rounded text-xs font-semibold text-emerald-100 hover:text-white transition-colors cursor-pointer truncate"
+                  title={kab.nama_kabupaten}
+                >
+                  {kab.nama_kabupaten}
+                </button>
+                {session && session.user && kab.user_id === session.user.id && (
+                  <button
+                    onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                    className="p-1 text-emerald-300/40 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                    title="Hapus Peta"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )) : (
+              <div className="px-3 py-2 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // MOBILE VIEW RENDER
   if (isMobile) {
     if (!expanded) {
       return (
@@ -116,8 +221,13 @@ export default function Navbar() {
 
     return (
       <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
+        {/* Mobile Header with link to / */}
         <div className="flex items-center justify-between border-b pb-3 border-green-50/50 mb-3 bg-gradient-to-r from-green-800 via-green-700 to-green-500 -mx-4 -mt-4 p-4 rounded-t-2xl text-white">
-          <div className="flex items-center gap-2">
+          <Link 
+            href="/" 
+            onClick={() => toggleExpand(false)} 
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+          >
             <div className="w-6 h-6 bg-white text-green-800 rounded-lg flex items-center justify-center font-black text-xs">
               F
             </div>
@@ -125,7 +235,7 @@ export default function Navbar() {
               <span className="font-bold text-xs text-white">FSVA</span>
               <span className="text-[7px] text-emerald-200/90 font-medium mt-0.5">FSVA.my.id</span>
             </div>
-          </div>
+          </Link>
           <button 
             onClick={() => toggleExpand(false)} 
             className="text-xs font-bold text-emerald-100 hover:text-white px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
@@ -134,6 +244,7 @@ export default function Navbar() {
           </button>
         </div>
 
+        {/* Mobile Menu Links */}
         <div className="flex flex-col gap-2">
           <Link 
             href="/map" 
@@ -157,9 +268,18 @@ export default function Navbar() {
             Data Entry
           </Link>
           
+          {/* Menu Baru: Petunjuk Penggunaan */}
+          <Link 
+            href="/petunjuk-penggunaan" 
+            onClick={() => toggleExpand(false)} 
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/petunjuk-penggunaan') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
+          >
+            Petunjuk penggunaan
+          </Link>
+          
           <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
             <span className="text-[10px] font-bold text-gray-450 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan</span>
-            <div className="max-h-[280px] overflow-y-auto flex flex-col gap-1 pl-2 custom-scrollbar">
+            <div className="max-h-[220px] overflow-y-auto flex flex-col gap-1 pl-2 custom-scrollbar">
               <div className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
                 <button
                   onClick={() => {
@@ -176,15 +296,15 @@ export default function Navbar() {
                   <button
                     onClick={() => {
                       toggleExpand(false);
-                      router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
+                      router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}`);
                     }}
                     className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
                   >
-                    {kab}
+                    {kab.nama_kabupaten}
                   </button>
-                  {session && (
+                  {session && session.user && kab.user_id === session.user.id && (
                     <button
-                      onClick={(e) => handleDeleteMap(e, kab)}
+                      onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
                       className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-3 shrink-0"
                       title="Hapus Peta"
                     >
@@ -199,17 +319,11 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* Mobile Auth Button */}
         <div className="border-t pt-3 border-slate-100 flex justify-end mt-3">
           {session ? (
             <button 
-              onClick={async () => {
-                const { createClient } = await import('@/lib/supabase-client');
-                const sb = createClient();
-                await sb.auth.signOut();
-                setSession(null);
-                toggleExpand(false);
-                router.push('/login');
-              }}
+              onClick={handleSignOut}
               className="w-full text-center text-xs font-bold text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 py-2 rounded-xl transition-colors cursor-pointer"
             >
               Keluar
@@ -228,125 +342,116 @@ export default function Navbar() {
     );
   }
 
+  // DESKTOP VERTICAL SIDEBAR VIEW RENDER
   return (
-    <div className="absolute top-0 left-0 z-[60] pointer-events-none no-print">
-      <nav className="inline-flex bg-gradient-to-r from-green-800 via-green-700 to-green-500 shadow-[0_4px_20px_rgba(22,163,74,0.15)] border-b border-r border-green-600/30 rounded-br-2xl h-12 md:h-16 items-center pointer-events-auto transition-all duration-300 overflow-visible text-white">
-        
-        {/* Brand Button */}
-        <div 
-          onClick={() => toggleExpand(!expanded)}
-          className="flex-shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-6 cursor-pointer hover:bg-white/10 transition-colors h-full rounded-tl-2xl"
-        >
-          <div className="w-6 h-6 md:w-8 md:h-8 bg-white text-green-800 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.1)] flex items-center justify-center font-black text-sm md:text-xl">
-            F
-          </div>
-          <div className="flex flex-col justify-center select-none leading-none">
-            <span className="font-black text-sm md:text-lg text-white tracking-tight whitespace-nowrap">FSVA</span>
-            <span className="text-[8px] md:text-[10px] text-emerald-200/90 font-medium tracking-wide mt-0.5">FSVA.my.id</span>
-          </div>
-        </div>
-
-        {/* Minimize/Maximize Button */}
-        <button 
-          onClick={() => setIsMinimized(!isMinimized)}
-          className="hidden md:flex flex-shrink-0 items-center justify-center w-7 h-7 rounded-full hover:bg-white/10 text-emerald-100 hover:text-white transition-all border border-emerald-600/50 mr-2 ml-1 cursor-pointer pointer-events-auto shadow-sm"
-          title={isMinimized ? "Tampilkan Menu" : "Sembunyikan Menu"}
-        >
-          {isMinimized ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
-
-        {/* Links (Expandable) */}
-        <div className={`flex items-center space-x-1.5 md:space-x-6 md:whitespace-nowrap transition-all duration-300 ${isMinimized ? 'max-w-0 px-0 opacity-0 overflow-hidden pointer-events-none' : 'max-w-[350px] sm:max-w-[450px] md:max-w-[650px] px-2 md:px-8 opacity-100'}`}>
-          <Link href="/map" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/map') ? 'border-white text-white' : 'border-transparent text-emerald-100 hover:text-white hover:border-emerald-300/50'}`}>
-            Peta <br className="md:hidden" />Interaktif
-          </Link>
-          <Link href="/dashboard" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/dashboard') ? 'border-white text-white' : 'border-transparent text-emerald-100 hover:text-white hover:border-emerald-300/50'}`}>
-            Dashboard
-          </Link>
-          <Link href="/entry" className={`border-b-2 text-[10px] md:text-sm leading-tight text-center font-semibold transition-all px-1 py-2 md:py-5 ${isActive('/entry') ? 'border-white text-white' : 'border-transparent text-emerald-100 hover:text-white hover:border-emerald-300/50'}`}>
-            Data <br className="md:hidden" />Entry
-          </Link>
-          
-          {/* Dropdown Peta Tersimpan */}
-          <div className="relative h-full flex items-center" ref={dropdownRef}>
-            <button 
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1 text-[10px] md:text-sm leading-tight font-semibold text-emerald-100 hover:text-white px-1 py-2 md:py-5 border-b-2 border-transparent transition-colors"
+    <aside 
+      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-green-900 via-emerald-950 to-green-950 border-r border-green-800/30 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
+        isMinimized ? 'w-20' : 'w-64'
+      }`}
+    >
+      {/* Sidebar Header */}
+      <div className={`p-4 flex items-center border-b border-green-800/30 h-20 shrink-0 ${
+        isMinimized ? 'justify-center flex-col gap-2' : 'justify-between'
+      }`}>
+        {!isMinimized ? (
+          <>
+            <Link 
+              href="/" 
+              className="flex items-center gap-3 hover:opacity-90 transition-opacity"
             >
-              Peta <br className="md:hidden" />Tersimpan <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-emerald-200" />
-            </button>
-            
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white/95 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-lg border border-slate-200 py-2 z-50 overflow-hidden text-slate-800">
-                <div className="px-3 py-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-gray-50 mb-1">Daftar Peta</div>
-                <div className="max-h-[380px] overflow-y-auto custom-scrollbar">
-                  <div className="flex items-center justify-between w-full hover:bg-emerald-50 group">
-                    <button
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        router.push('/map');
-                      }}
-                      className="flex-1 text-left px-4 py-2 text-sm text-[#1E1B4B] hover:text-emerald-700 transition-colors font-bold truncate cursor-pointer"
-                    >
-                      Semua Peta
-                    </button>
-                  </div>
-                  {maps.length > 0 ? maps.map((kab, i) => (
-                    <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 group">
-                      <button
-                        onClick={() => {
-                          setDropdownOpen(false);
-                          router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
-                        }}
-                        className="flex-1 text-left px-4 py-2 text-sm text-[#1E1B4B] hover:text-emerald-700 transition-colors font-medium truncate cursor-pointer"
-                      >
-                        {kab}
-                      </button>
-                      {session && (
-                        <button
-                          onClick={(e) => handleDeleteMap(e, kab)}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-4 shrink-0"
-                          title="Hapus Peta"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  )) : (
-                    <div className="px-4 py-2 text-xs text-gray-500 italic">Belum ada peta</div>
-                  )}
-                </div>
+              <div className="w-9 h-9 bg-white text-green-800 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center font-black text-xl">
+                F
               </div>
+              <div className="flex flex-col leading-none">
+                <span className="font-black text-lg tracking-tight text-white">FSVA</span>
+                <span className="text-[9px] text-emerald-300/80 font-semibold tracking-wide mt-0.5">FSVA.my.id</span>
+              </div>
+            </Link>
+            <button 
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-all duration-200 cursor-pointer border border-emerald-800/30"
+              title="Sembunyikan Menu"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            <Link 
+              href="/" 
+              className="w-9 h-9 bg-white text-green-800 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center font-black text-xl hover:opacity-90 transition-opacity"
+            >
+              F
+            </Link>
+            <button 
+              onClick={() => setIsMinimized(false)}
+              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-all duration-200 cursor-pointer border border-emerald-800/30 mt-1"
+              title="Tampilkan Menu"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Auth Button */}
+      <div className="p-4 border-b border-green-800/20 shrink-0">
+        {!isMinimized ? (
+          session ? (
+            <button 
+              onClick={handleSignOut}
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-rose-200 border border-rose-850/40 bg-rose-950/20 hover:bg-rose-900/30 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" /> Keluar
+            </button>
+          ) : (
+            <Link 
+              href="/login"
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-white text-green-800 hover:bg-green-550 hover:scale-[1.02] shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <User className="w-4 h-4" /> Masuk / Login
+            </Link>
+          )
+        ) : (
+          <div className="flex justify-center">
+            {session ? (
+              <button 
+                onClick={handleSignOut}
+                className="p-2.5 rounded-xl text-rose-200 hover:text-white hover:bg-rose-900/20 transition-colors cursor-pointer"
+                title="Keluar"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            ) : (
+              <Link 
+                href="/login"
+                className="p-2.5 rounded-xl text-emerald-250 hover:text-white hover:bg-white/10 transition-colors"
+                title="Masuk / Login"
+              >
+                <User className="w-5 h-5" />
+              </Link>
             )}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Auth Button */}
-        <div className={`ml-auto pr-3 md:pr-6 pointer-events-auto h-full flex items-center transition-all duration-300 ${isMinimized ? 'max-w-0 px-0 opacity-0 overflow-hidden pointer-events-none' : 'max-w-[200px] opacity-100'}`}>
-           {session ? (
-             <button 
-               onClick={async () => {
-                 const { createClient } = await import('@/lib/supabase-client');
-                 const sb = createClient();
-                 await sb.auth.signOut();
-                 setSession(null);
-                 router.push('/login');
-               }}
-               className="text-[10px] md:text-xs font-bold text-rose-200 border border-rose-700/50 bg-rose-950/40 hover:bg-rose-900/60 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-             >
-               Keluar
-             </button>
-           ) : (
-             <Link 
-               href="/login"
-               className="text-[10px] md:text-xs font-bold bg-white text-emerald-800 hover:bg-emerald-50 px-3 py-1.5 rounded-lg shadow-sm transition-colors"
-             >
-               Masuk / Login
-             </Link>
-           )}
-        </div>
+      {/* Menu List */}
+      <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2 custom-scrollbar">
+        {/* Peta Interaktif */}
+        <SidebarLink href="/map" icon={<Map className="w-5 h-5" />} label="Peta Interaktif" active={isActive('/map')} />
+        
+        {/* Dashboard */}
+        <SidebarLink href="/dashboard" icon={<BarChart3 className="w-5 h-5" />} label="Dashboard" active={isActive('/dashboard')} />
+        
+        {/* Data Entry */}
+        <SidebarLink href="/entry" icon={<Database className="w-5 h-5" />} label="Data Entry" active={isActive('/entry')} />
+        
+        {/* Petunjuk Penggunaan */}
+        <SidebarLink href="/petunjuk-penggunaan" icon={<BookOpen className="w-5 h-5" />} label="Petunjuk penggunaan" active={isActive('/petunjuk-penggunaan')} />
 
-      </nav>
-    </div>
+        {/* Peta Tersimpan Dropdown */}
+        {renderSavedMapsDropdown()}
+      </div>
+    </aside>
   );
 }

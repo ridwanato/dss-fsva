@@ -293,15 +293,14 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
           </div>
         )}
 
-        {/* Floating guidance button to reopen */}
+        {/* Floating guidance button to reopen - Minimal round icon at the top center */}
         {!showPrintGuide && (
           <button
             onClick={() => setShowPrintGuide(true)}
-            className="absolute top-4 right-4 z-20 bg-white/95 hover:bg-white text-pink-600 p-2.5 rounded-xl shadow-md border border-pink-200 pointer-events-auto transition-all hover:scale-105 flex items-center gap-1.5 animate-in fade-in zoom-in duration-200"
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-white/95 hover:bg-white text-pink-600 p-3.5 rounded-full shadow-lg border-2 border-pink-400 hover:scale-110 active:scale-95 transition-all cursor-pointer pointer-events-auto flex items-center justify-center animate-in fade-in zoom-in duration-250"
             title="Tampilkan Panduan Cetak Peta"
           >
-            <Printer className="w-4 h-4 text-pink-500" />
-            <span className="text-[10px] md:text-xs font-bold text-gray-700">Tampilkan Panduan Cetak</span>
+            <Printer className="w-4.5 h-4.5 text-pink-500" />
           </button>
         )}
 

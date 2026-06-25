@@ -16,9 +16,28 @@ export async function GET() {
   }
 
   // Deduplicate and sort
-  const mapNames = Array.from(new Set(data.map(d => d.nama_kabupaten))).filter(Boolean).sort();
+  const mapNames = Array.from(new Set(data.map(d => d.nama_kabupaten))).filter(Boolean).sort() as string[];
 
-  return NextResponse.json({ success: true, maps: mapNames });
+  // Fetch distinct maps and their latest year from fsva_results
+  const { data: yearData } = await supabase
+    .from('fsva_results')
+    .select('nama_kabupaten, tahun');
+
+  const mapYears: Record<string, number> = {};
+  if (yearData) {
+    for (const item of yearData) {
+      if (item.nama_kabupaten && item.tahun) {
+        mapYears[item.nama_kabupaten] = Math.max(mapYears[item.nama_kabupaten] || 0, item.tahun);
+      }
+    }
+  }
+
+  const mapDetails = mapNames.map(name => ({
+    nama_kabupaten: name,
+    tahun: mapYears[name] || 2025 // Default fallback to 2025
+  }));
+
+  return NextResponse.json({ success: true, maps: mapNames, mapDetails });
 }
 
 export async function DELETE(req: NextRequest) {

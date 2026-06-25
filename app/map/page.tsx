@@ -8,11 +8,27 @@ import { Download, Printer, Settings, X } from 'lucide-react';
 
 import LayerPanel, { LAYERS } from '@/components/LayerPanel';
 
-  import { useSearchParams } from 'next/navigation';
+  import { useSearchParams, useRouter } from 'next/navigation';
   import { Suspense } from 'react';
   
+  const formatMapTitle = (name: string) => {
+    if (!name) return 'PETA FSVA DAERAH';
+    const upper = name.toUpperCase().trim();
+    if (upper.startsWith('KOTA') || upper.startsWith('KABUPATEN')) {
+      return `PETA FSVA ${upper}`;
+    }
+    if (upper.startsWith('KAB.')) {
+      return `PETA FSVA KAB ${upper.replace('KAB.', '').trim()}`;
+    }
+    if (upper.startsWith('KAB ')) {
+      return `PETA FSVA KAB ${upper.replace('KAB ', '').trim()}`;
+    }
+    return `PETA FSVA KAB/KOTA ${upper}`;
+  };
+
   function MapPageContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const kabupaten = searchParams.get('kabupaten') || '';
     
     const [geoData, setGeoData] = useState<any>(null);
@@ -21,6 +37,9 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
     const [opacity, setOpacity] = useState(0);
     const [showLabels, setShowLabels] = useState(true);
     const [loading, setLoading] = useState(true);
+    const [maps, setMaps] = useState<string[]>([]);
+    const [mapDetails, setMapDetails] = useState<any[]>([]);
+    const [selectedYear, setSelectedYear] = useState(2025);
     
     const [mapInstance, setMapInstance] = useState<any>(null);
     const [mapImage, setMapImage] = useState<string | null>(null);
@@ -54,10 +73,34 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
       }
     };
 
+    // Fetch maps on mount
     useEffect(() => {
-      let url = '/api/geojson?tahun=2024';
+      fetch('/api/maps')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setMaps(data.maps || []);
+            setMapDetails(data.mapDetails || []);
+          }
+        })
+        .catch(console.error);
+    }, []);
+
+    // Fetch GeoJSON with dynamic year based on the selected map
+    useEffect(() => {
+      let year = 2025;
+      if (kabupaten && mapDetails.length > 0) {
+        const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten);
+        if (detail) {
+          year = detail.tahun;
+        }
+      }
+      setSelectedYear(year);
+
+      let url = `/api/geojson?tahun=${year}`;
       if (kabupaten) url += `&kabupaten=${encodeURIComponent(kabupaten)}`;
       
+      setLoading(true);
       fetch(url)
         .then(res => res.json())
         .then(data => {
@@ -68,7 +111,18 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
           console.error(err);
           setLoading(false);
         });
-    }, [kabupaten]);
+    }, [kabupaten, mapDetails]);
+
+    // Re-synchronize printConfig dynamically when map or year changes
+    useEffect(() => {
+      const formattedTitle = formatMapTitle(kabupaten);
+      setPrintConfig(prev => ({
+        ...prev,
+        govName: 'PEMERINTAH\n' + (kabupaten ? kabupaten.toUpperCase() : 'DAERAH'),
+        title: `${formattedTitle}\nTAHUN ${selectedYear}`,
+        footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN ${selectedYear}\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`
+      }));
+    }, [kabupaten, selectedYear]);
 
   const executePrint = () => {
     setShowPrintModal(false);
@@ -128,23 +182,58 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         showLabels={showLabels}
         setShowLabels={setShowLabels}
       >
-        {/* Buttons (Top Right of LayerPanel) */}
-        <button 
-          onClick={() => setShowPrintModal(true)}
-          disabled={isPrinting}
-          className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition disabled:opacity-50"
-        >
-          {isPrinting ? (
-             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-             <Printer className="w-3 h-3" />
-          )}
-          Cetak PDF
-        </button>
-        <a href={`/api/export?tahun=2024${kabupaten ? `&kabupaten=${encodeURIComponent(kabupaten)}` : ''}`} className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 md:px-3 md:py-2 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center gap-1.5 transition">
-          <Download className="w-3 h-3" />
-          XLSX Hasil
-        </a>
+        {/* Dropdown Peta (di atas tombol) */}
+        <div className="pointer-events-auto flex flex-col gap-1 w-full mb-1 border-b border-slate-100 pb-1.5">
+          <label className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">
+            Pilih Peta:
+          </label>
+          <select
+            value={kabupaten || 'semua'}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === 'semua' || val === '') {
+                router.push('/map');
+              } else {
+                router.push(`/map?kabupaten=${encodeURIComponent(val)}`);
+              }
+            }}
+            className="w-full text-[10px] bg-white border border-slate-200 rounded-lg py-1 px-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none text-slate-800 font-extrabold cursor-pointer"
+          >
+            <option value="semua">Semua Peta</option>
+            {maps.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Buttons (Top Right of LayerPanel) - Only visible if a specific map is selected */}
+        {kabupaten && kabupaten !== 'semua' ? (
+          <div className="flex flex-col gap-1 w-full">
+            <button 
+              onClick={() => setShowPrintModal(true)}
+              disabled={isPrinting}
+              className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+            >
+              {isPrinting ? (
+                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                 <Printer className="w-3 h-3" />
+              )}
+              Cetak PDF
+            </button>
+            <a 
+              href={`/api/export?tahun=${selectedYear}&kabupaten=${encodeURIComponent(kabupaten)}`} 
+              className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center justify-center gap-1.5 transition text-center"
+            >
+              <Download className="w-3 h-3" />
+              XLSX Hasil
+            </a>
+          </div>
+        ) : (
+          <div className="text-[8px] text-slate-400 font-semibold italic text-center p-1 bg-slate-50 rounded border border-slate-100 mt-1 leading-tight">
+            Pilih peta untuk mencetak PDF atau ekspor XLSX.
+          </div>
+        )}
       </LayerPanel>
 
       {loading && (

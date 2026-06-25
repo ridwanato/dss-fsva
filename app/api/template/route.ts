@@ -31,9 +31,11 @@ export async function GET() {
       '% Balita Stunting'
     ];
 
-    // Buat data array dengan baris pertama sebagai header, 
-    // tambahkan satu baris kosong (opsional) agar tidak benar-benar kosong
+    // Buat data array dengan baris pertama berisi Tahun Kalkulasi,
+    // baris kedua kosong sebagai pemisah, dan baris ketiga sebagai header.
     const wsData = [
+      ['TAHUN KALKULASI (Silakan Ubah):', 2025],
+      [], // Baris kosong pemisah
       headers,
       // Contoh format baris (kosongkan nilainya kecuali No)
       [1, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']

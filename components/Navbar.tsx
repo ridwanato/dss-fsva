@@ -159,34 +159,43 @@ export default function Navbar() {
           
           <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
             <span className="text-[10px] font-bold text-gray-450 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan</span>
-            {maps.length > 0 ? (
-              <div className="max-h-32 overflow-y-auto flex flex-col gap-1 pl-2">
-                {maps.map((kab, i) => (
-                  <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
-                    <button
-                      onClick={() => {
-                        toggleExpand(false);
-                        router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
-                      }}
-                      className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
-                    >
-                      {kab}
-                    </button>
-                    {session && (
-                      <button
-                        onClick={(e) => handleDeleteMap(e, kab)}
-                        className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-3 shrink-0"
-                        title="Hapus Peta"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+            <div className="max-h-[280px] overflow-y-auto flex flex-col gap-1 pl-2 custom-scrollbar">
+              <div className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
+                <button
+                  onClick={() => {
+                    toggleExpand(false);
+                    router.push('/map');
+                  }}
+                  className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-bold truncate rounded cursor-pointer"
+                >
+                  Semua Peta
+                </button>
               </div>
-            ) : (
-              <div className="px-3 py-1 text-xs text-gray-400 italic">Belum ada peta</div>
-            )}
+              {maps.length > 0 ? maps.map((kab, i) => (
+                <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
+                  <button
+                    onClick={() => {
+                      toggleExpand(false);
+                      router.push(`/map?kabupaten=${encodeURIComponent(kab)}`);
+                    }}
+                    className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
+                  >
+                    {kab}
+                  </button>
+                  {session && (
+                    <button
+                      onClick={(e) => handleDeleteMap(e, kab)}
+                      className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-3 shrink-0"
+                      title="Hapus Peta"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )) : (
+                <div className="px-3 py-1 text-xs text-gray-400 italic">Belum ada peta</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -270,7 +279,18 @@ export default function Navbar() {
             {dropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white/95 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-lg border border-slate-200 py-2 z-50 overflow-hidden text-slate-800">
                 <div className="px-3 py-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-gray-50 mb-1">Daftar Peta</div>
-                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="max-h-[380px] overflow-y-auto custom-scrollbar">
+                  <div className="flex items-center justify-between w-full hover:bg-emerald-50 group">
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        router.push('/map');
+                      }}
+                      className="flex-1 text-left px-4 py-2 text-sm text-[#1E1B4B] hover:text-emerald-700 transition-colors font-bold truncate cursor-pointer"
+                    >
+                      Semua Peta
+                    </button>
+                  </div>
                   {maps.length > 0 ? maps.map((kab, i) => (
                     <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 group">
                       <button

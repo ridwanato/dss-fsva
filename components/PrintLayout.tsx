@@ -88,7 +88,7 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
           {/* Logos Section */}
           <div className="p-3 border-b-[2px] border-black flex flex-col gap-3 justify-center">
             <div className="flex items-center gap-2 px-4">
-              <div className="w-10 h-10 flex items-center justify-center">
+              <div className="w-12 h-12 flex items-center justify-center shrink-0">
                 <img src={config.logoPemda} alt="Logo Pemda" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col">
@@ -98,8 +98,8 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
               </div>
             </div>
             <div className="flex items-center gap-2 px-4">
-              <div className="w-10 h-10 flex items-center justify-center">
-                <img src={config.logoBapanas} alt="Logo Bapanas" className="w-full h-full object-contain scale-125" />
+              <div className="w-12 h-12 flex items-center justify-center shrink-0">
+                <img src={config.logoBapanas} alt="Logo Bapanas" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col ml-1">
                 <span className="text-[10px] font-black leading-tight text-green-800">BADAN PANGAN</span>
@@ -117,7 +117,9 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
 
           {/* Subtitle Section */}
           <div className="p-3 border-b-[2px] border-black text-center py-6">
-            <h2 className="font-bold text-[11px] mb-2 uppercase">{activeLayerName}</h2>
+            <h2 className="font-bold text-[11px] mb-2 uppercase">
+              {activeLayerName.toUpperCase() === 'KOMPOSIT' ? 'INDIKATOR KOMPOSIT' : `INDIKATOR ${activeLayerName.toUpperCase()}`}
+            </h2>
           </div>
 
           {/* Legend Section */}

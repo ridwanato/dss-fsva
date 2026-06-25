@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const tahunStr = formData.get('tahun') as string;
-    const tahun = tahunStr ? parseInt(tahunStr) : 2024;
+    let tahun = tahunStr ? parseInt(tahunStr) : 2025; // Default to 2025
     const kabupaten = formData.get('kabupaten') as string;
     
     if (!file) {
@@ -22,9 +22,42 @@ export async function POST(req: NextRequest) {
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     
-    // Parse to JSON
-    // Template columns start from row 2
-    const data = XLSX.utils.sheet_to_json<any>(worksheet, { range: 1 }); // Assuming row 1 is header, row 2 is data
+    // 1. Temukan baris header secara dinamis (mencari "kode desa", "desa/kelurahan", atau "nama desa")
+    let headerRowIndex = 0;
+    findHeaderLoop: for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 15; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r, c });
+        const val = worksheet[cellRef]?.v;
+        if (val && (
+          String(val).toLowerCase().includes('kode desa') ||
+          String(val).toLowerCase().includes('desa/kelurahan') ||
+          String(val).toLowerCase().includes('nama desa')
+        )) {
+          headerRowIndex = r;
+          break findHeaderLoop;
+        }
+      }
+    }
+
+    // 2. Ekstrak tahun dari sel di atas baris header
+    let foundTahun = false;
+    for (let r = 0; r < headerRowIndex; r++) {
+      for (let c = 0; c < 10; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r, c });
+        const val = worksheet[cellRef]?.v;
+        if (val && String(val).toLowerCase().includes('tahun')) {
+          // Cek sel di sebelahnya (kolom c + 1)
+          const nextCellRef = XLSX.utils.encode_cell({ r, c: c + 1 });
+          const nextVal = worksheet[nextCellRef]?.v;
+          if (nextVal && !isNaN(Number(nextVal))) {
+            tahun = Number(nextVal);
+            foundTahun = true;
+            break;
+          }
+        }
+      }
+      if (foundTahun) break;
+    }
 
     const { createClient } = await import('@/lib/supabase-server');
     const authClient = await createClient();
@@ -74,7 +107,7 @@ export async function POST(req: NextRequest) {
     let inserted = 0;
     const errors: string[] = [];
 
-    const rawData = XLSX.utils.sheet_to_json<any>(worksheet);
+    const rawData = XLSX.utils.sheet_to_json<any>(worksheet, { range: headerRowIndex });
     
     const inserts = rawData.map(row => {
       const norm: any = {};
@@ -167,7 +200,7 @@ export async function POST(req: NextRequest) {
        }
     }
 
-    return NextResponse.json({ success: true, inserted, errors });
+    return NextResponse.json({ success: true, inserted, errors, tahun });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

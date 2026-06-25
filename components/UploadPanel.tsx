@@ -8,6 +8,7 @@ export default function UploadPanel() {
   const [geomResult, setGeomResult] = useState<any>(null);
   const [dataResult, setDataResult] = useState<any>(null);
   const [calcResult, setCalcResult] = useState<any>(null);
+  const [uploadedYear, setUploadedYear] = useState<number | null>(null);
 
   const handleUploadGeometry = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
@@ -30,12 +31,15 @@ export default function UploadPanel() {
     setLoading(true);
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
-    formData.append('tahun', '2024');
+    formData.append('tahun', '2025'); // default fallback
     formData.append('kabupaten', kabupaten);
     try {
       const res = await fetch('/api/upload-data', { method: 'POST', body: formData });
       const data = await res.json();
       setDataResult(data);
+      if (data.success && data.tahun) {
+        setUploadedYear(data.tahun);
+      }
     } catch(err) {
       console.error(err);
     }
@@ -48,7 +52,7 @@ export default function UploadPanel() {
       const res = await fetch('/api/calculate', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tahun: 2024 }) 
+        body: JSON.stringify({ tahun: uploadedYear || 2025 }) 
       });
       const data = await res.json();
       setCalcResult(data);
@@ -176,7 +180,7 @@ export default function UploadPanel() {
                 {dataResult.success ? <CheckCircle2 className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />}
                 <div>
                   <p className={`text-xs font-bold ${dataResult.success ? 'text-[#14B8A6]' : 'text-red-600'}`}>
-                    {dataResult.success ? `Berhasil menyimpan data ${dataResult.inserted} desa.` : 'Gagal Upload'}
+                    {dataResult.success ? `Berhasil menyimpan data ${dataResult.inserted} desa (Tahun: ${dataResult.tahun || uploadedYear}).` : 'Gagal Upload'}
                   </p>
                   {dataResult.errors?.length > 0 && (
                     <ul className="text-[10px] text-red-600 list-disc pl-3 mt-0.5 max-h-20 overflow-y-auto custom-scrollbar">
@@ -218,7 +222,7 @@ export default function UploadPanel() {
 
           <h3 className="font-extrabold text-[#1E1B4B] text-base mb-2 leading-tight">Kalkulasi / Analisis <br/><span className="text-xs font-bold text-slate-500">FSVA</span></h3>
           <p className="text-slate-500 text-[11px] mb-5 px-1 flex-grow leading-relaxed">
-            Jalankan pipeline algoritma FSVA berdasarkan juknis Bapanas untuk data yang sudah diupload.
+            Jalankan pipeline algoritma FSVA berdasarkan juknis Bapanas untuk data tahun {uploadedYear || 'kalkulasi'}.
           </p>
 
           <button 

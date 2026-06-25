@@ -17,7 +17,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-sm sm:text-base md:text-2xl font-semibold text-gray-500">
-            Metode Baru Tahun 2025 (11 Indikator)
+            Metode Baru Tahun 2025 v.2 (Juni 2026)
           </p>
         </div>
         <p className="text-xs sm:text-sm md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">

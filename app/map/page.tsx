@@ -73,18 +73,37 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
       }
     };
 
-    // Fetch maps on mount
+    // Fetch maps on mount & handle auto-selection of last active or first available map
     useEffect(() => {
       fetch('/api/maps')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            setMaps(data.maps || []);
+            const fetchedMaps = data.maps || [];
+            setMaps(fetchedMaps);
             setMapDetails(data.mapDetails || []);
+
+            // Auto-select map if none is selected
+            if (!kabupaten && fetchedMaps.length > 0) {
+              const lastActive = localStorage.getItem('last_active_map');
+              if (lastActive && fetchedMaps.includes(lastActive)) {
+                router.replace(`/map?kabupaten=${encodeURIComponent(lastActive)}`);
+              } else {
+                // Default to the first map in the list
+                router.replace(`/map?kabupaten=${encodeURIComponent(fetchedMaps[0])}`);
+              }
+            }
           }
         })
         .catch(console.error);
-    }, []);
+    }, [kabupaten, router]);
+
+    // Save active map to localStorage
+    useEffect(() => {
+      if (kabupaten) {
+        localStorage.setItem('last_active_map', kabupaten);
+      }
+    }, [kabupaten]);
 
     // Fetch GeoJSON with dynamic year based on the selected map
     useEffect(() => {
@@ -249,7 +268,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="bg-red-50 text-red-600 px-6 py-4 rounded-xl shadow-lg border border-red-200 font-medium max-w-md text-center pointer-events-auto">
             <p className="font-bold text-lg mb-1">Data Peta Kosong</p>
-            <p className="text-sm">Sistem tidak menemukan poligon dengan tahun kalkulasi 2024. Pastikan Anda sudah menekan tombol "Hitung FSVA Sekarang" di Data Entry.</p>
+            <p className="text-sm">Sistem tidak menemukan poligon dengan tahun kalkulasi {selectedYear}. Pastikan Anda sudah menekan tombol "Hitung FSVA Sekarang" di Data Entry.</p>
           </div>
         </div>
       )}

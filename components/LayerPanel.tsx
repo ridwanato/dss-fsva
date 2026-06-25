@@ -166,7 +166,7 @@ export default function LayerPanel({
 
   // Desktop Rendering
   return (
-    <div className="absolute top-16 left-4 z-20 w-[280px] md:w-80 glass-card rounded-xl overflow-hidden flex flex-col pointer-events-auto transition-all duration-300 border-none">
+    <div className="absolute top-4 left-4 z-20 w-[280px] md:w-80 glass-card rounded-xl overflow-hidden flex flex-col pointer-events-auto transition-all duration-300 border-none">
       
       {/* Header */}
       <div 

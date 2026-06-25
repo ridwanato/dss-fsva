@@ -171,3 +171,12 @@
     margin-bottom: 0 !important;
   }
 }
+
+/* Align scale bar vertically with Legend Panel text in desktop */
+@media (min-width: 769px) {
+  .maplibregl-ctrl-bottom-left {
+    bottom: 28px !important;
+    left: 24px !important;
+    z-index: 20 !important;
+  }
+}

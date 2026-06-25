@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { 
   ChevronDown, ChevronLeft, ChevronRight, Trash2, 
   Map, BarChart3, Database, BookOpen, User, LogOut, Layers 
@@ -20,6 +20,8 @@ export default function Navbar() {
   const [sidebarDropdownOpen, setSidebarDropdownOpen] = useState(true); // Desktop sidebar submenu state
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentKabupaten = searchParams.get('kabupaten') || '';
 
   const isActive = (path: string) => pathname === path;
 
@@ -112,7 +114,7 @@ export default function Navbar() {
           href={href} 
           className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
             active 
-              ? 'bg-white text-emerald-900 shadow-md scale-105' 
+              ? 'bg-emerald-100 text-slate-900 shadow-md scale-105' 
               : 'text-emerald-100 hover:bg-white/10 hover:text-white'
           }`}
         >
@@ -128,9 +130,9 @@ export default function Navbar() {
     return (
       <Link 
         href={href} 
-        className={`flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-200 ${
+        className={`flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-extrabold text-sm transition-all duration-200 ${
           active 
-            ? 'bg-white text-emerald-955 shadow-md translate-x-1' 
+            ? 'bg-emerald-100 text-slate-900 shadow-md translate-x-1' 
             : 'text-emerald-100 hover:bg-white/10 hover:text-white'
         }`}
       >
@@ -142,12 +144,13 @@ export default function Navbar() {
 
   const renderSavedMapsDropdown = () => {
     if (isMinimized) {
+      const isAnyMapActive = pathname === '/map' && currentKabupaten !== '';
       return (
         <Link 
           href="/map"
           className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
-            isActive('/map') && pathname !== '/map'
-              ? 'bg-white text-emerald-900 shadow-md' 
+            isAnyMapActive
+              ? 'bg-emerald-100 text-slate-900 shadow-md' 
               : 'text-emerald-100 hover:bg-white/10 hover:text-white'
           }`}
         >
@@ -158,6 +161,8 @@ export default function Navbar() {
         </Link>
       );
     }
+
+    const isSemuaPetaActive = pathname === '/map' && !currentKabupaten;
 
     return (
       <div className="flex flex-col border-t border-green-700/30 pt-3 mt-2">
@@ -173,31 +178,47 @@ export default function Navbar() {
           <div className="pl-2 pr-1 space-y-1 max-h-[200px] overflow-y-auto custom-scrollbar">
             <button
               onClick={() => router.push('/map')}
-              className="w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold text-emerald-100 hover:bg-white/5 hover:text-white transition-colors cursor-pointer truncate"
+              className={`w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
+                isSemuaPetaActive 
+                  ? 'bg-emerald-100 text-slate-900 font-extrabold shadow-sm' 
+                  : 'text-emerald-100 hover:bg-white/5 hover:text-white'
+              }`}
             >
               Semua Peta
             </button>
             
-            {maps.length > 0 ? maps.map((kab, i) => (
-              <div key={i} className="flex items-center justify-between w-full hover:bg-white/5 rounded-lg group px-1">
-                <button
-                  onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}`)}
-                  className="flex-1 text-left py-1.5 px-2 rounded text-xs font-semibold text-emerald-100 hover:text-white transition-colors cursor-pointer truncate"
-                  title={kab.nama_kabupaten}
+            {maps.length > 0 ? maps.map((kab, i) => {
+              const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten;
+              return (
+                <div 
+                  key={i} 
+                  className={`flex items-center justify-between w-full rounded-lg group px-1 transition-colors ${
+                    isMapActive ? 'bg-emerald-100' : 'hover:bg-white/5'
+                  }`}
                 >
-                  {kab.nama_kabupaten}
-                </button>
-                {session && session.user && kab.user_id === session.user.id && (
                   <button
-                    onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
-                    className="p-1 text-emerald-300/40 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
-                    title="Hapus Peta"
+                    onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}`)}
+                    className={`flex-1 text-left py-1.5 px-2 rounded text-xs transition-colors cursor-pointer truncate ${
+                      isMapActive ? 'text-slate-900 font-extrabold' : 'text-emerald-100 hover:text-white'
+                    }`}
+                    title={kab.nama_kabupaten}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    {kab.nama_kabupaten}
                   </button>
-                )}
-              </div>
-            )) : (
+                  {session && session.user && kab.user_id === session.user.id && (
+                    <button
+                      onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                      className={`p-1 transition-colors cursor-pointer shrink-0 ${
+                        isMapActive ? 'text-slate-500 hover:text-rose-650' : 'text-emerald-300/40 hover:text-rose-400'
+                      }`}
+                      title="Hapus Peta"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            }) : (
               <div className="px-3 py-2 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
             )}
           </div>
@@ -345,7 +366,7 @@ export default function Navbar() {
   // DESKTOP VERTICAL SIDEBAR VIEW RENDER
   return (
     <aside 
-      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-green-900 via-emerald-950 to-green-950 border-r border-green-800/30 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
+      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-green-900 via-emerald-955 to-green-955 border-r border-green-800/30 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
         isMinimized ? 'w-20' : 'w-64'
       }`}
     >
@@ -407,7 +428,7 @@ export default function Navbar() {
           ) : (
             <Link 
               href="/login"
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-white text-green-800 hover:bg-green-550 hover:scale-[1.02] shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-white text-green-800 hover:bg-green-50 hover:scale-[1.02] shadow-md transition-all duration-200 flex items-center justify-center gap-2"
             >
               <User className="w-4 h-4" /> Masuk / Login
             </Link>

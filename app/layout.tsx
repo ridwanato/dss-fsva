@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
+import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -80,7 +81,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-app-gradient h-screen w-screen overflow-hidden flex flex-col md:flex-row text-slate-900`}>
-        <Navbar />
+        <Suspense fallback={<div className="hidden md:block w-20 md:w-64 h-screen bg-green-950/20 animate-pulse shrink-0 border-r border-green-800/25" />}>
+          <Navbar />
+        </Suspense>
         <main className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
           {children}
         </main>

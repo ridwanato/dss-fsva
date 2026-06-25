@@ -3,6 +3,19 @@ import { getServiceSupabase } from '@/lib/supabase';
 import AdmZip from 'adm-zip';
 import { DOMParser } from '@xmldom/xmldom';
 
+// Helper to strip Z/M dimensions from GeoJSON coordinates recursively
+function convertTo2D(coordinates: any): any {
+  if (!Array.isArray(coordinates)) return coordinates;
+  
+  // Check if it is a single coordinate pair/triplet (array of numbers)
+  if (coordinates.length >= 2 && typeof coordinates[0] === 'number' && typeof coordinates[1] === 'number') {
+    return [coordinates[0], coordinates[1]]; // Keep only X and Y (longitude and latitude)
+  }
+  
+  // Recursively process nested arrays
+  return coordinates.map(convertTo2D);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -37,7 +50,7 @@ export async function POST(req: NextRequest) {
     } else if (file.name.toLowerCase().endsWith('.kml')) {
       kmlString = buffer.toString('utf-8');
     } else if (file.name.toLowerCase().endsWith('.zip')) {
-      // Shapefile processing using shpjs with dynamic import for Node.js compatibility
+      // Shapefile processing using shpjs
       const shpModule = await import('shpjs');
       const shp = shpModule.default;
       const wkxModule = require('wellknown');
@@ -60,24 +73,21 @@ export async function POST(req: NextRequest) {
           
           let name = '';
           let kode_bps = '';
+          let kecamatan = '';
           
-          // Extract kode_bps and nama_desa with high-priority matching
           const bpsKeys = Object.keys(feature.properties);
           
           // 1. Cari kode BPS
-          // Priority 1: KODE_BPS / BPS_CODE / KODBPS
           let foundBpsKey = bpsKeys.find(k => {
             const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
             return nk === 'kodebps' || nk === 'kodbps' || nk === 'kdebps' || nk === 'bpscode';
           });
-          // Priority 2: IDDESA / KODEDESA / KDPPUM
           if (!foundBpsKey) {
             foundBpsKey = bpsKeys.find(k => {
               const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
               return nk === 'iddesa' || nk === 'kodedesa' || nk === 'kodedes' || nk === 'kdppum';
             });
           }
-          // Priority 3: any key containing BPS or ID
           if (!foundBpsKey) {
             foundBpsKey = bpsKeys.find(k => {
               const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -89,26 +99,22 @@ export async function POST(req: NextRequest) {
           }
 
           // 2. Cari nama desa
-          // Priority 1: NAMOBJ / NAMADESA / NMDESA
           let foundNameKey = bpsKeys.find(k => {
             const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
             return nk === 'namobj' || nk === 'namadesa' || nk === 'namadesakelurahan' || nk === 'nmdesa';
           });
-          // Priority 2: exact "desa" or "kelurahan"
           if (!foundNameKey) {
             foundNameKey = bpsKeys.find(k => {
               const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
               return nk === 'desa' || nk === 'kelurahan';
             });
           }
-          // Priority 3: "nama" or "name"
           if (!foundNameKey) {
             foundNameKey = bpsKeys.find(k => {
               const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
               return nk === 'nama' || nk === 'name';
             });
           }
-          // Priority 4: any key containing "desa" or "kelurahan" or "nama" or "name" but NOT containing code/id/no/num
           if (!foundNameKey) {
             foundNameKey = bpsKeys.find(k => {
               const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -120,6 +126,15 @@ export async function POST(req: NextRequest) {
           if (foundNameKey) {
             name = String(feature.properties[foundNameKey]).trim();
           }
+
+          // 3. Cari nama kecamatan (Subdistrict)
+          let foundKecKey = bpsKeys.find(k => {
+            const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return nk === 'wadmkc' || nk === 'kecamatan' || nk === 'namakecamatan' || nk === 'nmkec' || nk === 'namakec';
+          });
+          if (foundKecKey) {
+            kecamatan = String(feature.properties[foundKecKey]).trim();
+          }
           
           // Fallback jika tidak ada kode BPS tapi ada nama desa
           if (!kode_bps && name) {
@@ -128,13 +143,19 @@ export async function POST(req: NextRequest) {
           
           if (!kode_bps) continue;
           
-          // Konversi GeoJSON geometry ke WKT menggunakan wellknown
+          // CRITICAL FIX: Force geometry coordinates to be 2D (remove Z dimension if exists)
+          if (feature.geometry && feature.geometry.coordinates) {
+            feature.geometry.coordinates = convertTo2D(feature.geometry.coordinates);
+          }
+          
+          // Konversi GeoJSON geometry ke WKT menggunakan wellknown (sekarang dijamin 2D WKT)
           const wkt = wkx.stringify(feature.geometry);
           
           if (wkt) {
             featuresToInsert.push({
               kode_bps,
               nama_desa: name,
+              nama_kecamatan: kecamatan,
               wkt
             });
           }
@@ -154,8 +175,16 @@ export async function POST(req: NextRequest) {
           p_nama_kabupaten: kabupaten
         });
         
-        if (!error) inserted++;
-        else {
+        if (!error) {
+          inserted++;
+          // Update nama_kecamatan in geometries table if it was extracted
+          if (feature.nama_kecamatan) {
+            await authClient
+              .from('geometries')
+              .update({ nama_kecamatan: feature.nama_kecamatan })
+              .eq('kode_bps', feature.kode_bps);
+          }
+        } else {
           console.error('Insert geom error:', error);
           errors.push(`${feature.nama_desa}: ${error.message}`);
         }
@@ -163,124 +192,142 @@ export async function POST(req: NextRequest) {
       
       return NextResponse.json({ success: true, features: inserted, errors });
     } else {
-      return NextResponse.json({ success: false, error: 'Invalid file format. Please upload KML, KMZ, or ZIP (Shapefile)' }, { status: 400 });
-    }
-
-    // Parse KML (if the flow reaches here, it's KML/KMZ)
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(kmlString, 'text/xml');
-    const placemarks = doc.getElementsByTagName('Placemark');
-    
-    const featuresToInsert = [];
-
-    for (let i = 0; i < placemarks.length; i++) {
-      const placemark = placemarks[i];
-      let name = '';
-      let kode_bps = '';
+      // Flow KML/KMZ
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(kmlString, 'text/xml');
+      const placemarks = doc.getElementsByTagName('Placemark');
       
-      // Extract name
-      const nameNode = placemark.getElementsByTagName('name')[0];
-      if (nameNode && nameNode.textContent) name = nameNode.textContent.trim();
-      
-      // Extract ExtendedData for kode_bps
-      const extendedData = placemark.getElementsByTagName('ExtendedData')[0];
-      if (extendedData) {
-        // Format 1: <Data name="KODE_BPS"><value>123</value></Data>
-        const dataNodes = extendedData.getElementsByTagName('Data');
-        for (let j = 0; j < dataNodes.length; j++) {
-          const nameAttr = dataNodes[j].getAttribute('name');
-          if (nameAttr && nameAttr.toLowerCase().replace(/_/g, '').includes('kodebps')) {
-            const valueNode = dataNodes[j].getElementsByTagName('value')[0];
-            if (valueNode && valueNode.textContent) kode_bps = valueNode.textContent.trim();
-          }
-          if (nameAttr && nameAttr.toLowerCase().includes('namobj') && !name) {
-            const valueNode = dataNodes[j].getElementsByTagName('value')[0];
-            if (valueNode && valueNode.textContent) name = valueNode.textContent.trim();
-          }
-        }
+      const featuresToInsert = [];
+
+      for (let i = 0; i < placemarks.length; i++) {
+        const placemark = placemarks[i];
+        let name = '';
+        let kode_bps = '';
+        let kecamatan = '';
         
-        // Format 2: <SimpleData name="KODE_BPS">123</SimpleData>
-        const simpleDataNodes = extendedData.getElementsByTagName('SimpleData');
-        for (let j = 0; j < simpleDataNodes.length; j++) {
-          const nameAttr = simpleDataNodes[j].getAttribute('name');
-          if (nameAttr && nameAttr.toLowerCase().replace(/_/g, '').includes('kodebps')) {
-            const textContent = simpleDataNodes[j].textContent;
-            if (textContent) kode_bps = textContent.trim();
+        // Extract name
+        const nameNode = placemark.getElementsByTagName('name')[0];
+        if (nameNode && nameNode.textContent) name = nameNode.textContent.trim();
+        
+        // Extract ExtendedData/SimpleData
+        const extendedData = placemark.getElementsByTagName('ExtendedData')[0];
+        if (extendedData) {
+          // Format 1: <Data name="KODE_BPS"><value>123</value></Data>
+          const dataNodes = extendedData.getElementsByTagName('Data');
+          for (let j = 0; j < dataNodes.length; j++) {
+            const nameAttr = dataNodes[j].getAttribute('name');
+            if (nameAttr) {
+              const nameAttrLower = nameAttr.toLowerCase().replace(/_/g, '');
+              if (nameAttrLower.includes('kodebps') || nameAttrLower === 'iddesa' || nameAttrLower === 'kodedesa') {
+                const valueNode = dataNodes[j].getElementsByTagName('value')[0];
+                if (valueNode && valueNode.textContent) kode_bps = valueNode.textContent.trim();
+              }
+              if (nameAttrLower.includes('namobj') && !name) {
+                const valueNode = dataNodes[j].getElementsByTagName('value')[0];
+                if (valueNode && valueNode.textContent) name = valueNode.textContent.trim();
+              }
+              // Extract kecamatan
+              if (nameAttrLower === 'wadmkc' || nameAttrLower === 'kecamatan' || nameAttrLower === 'namakec' || nameAttrLower === 'nmkec') {
+                const valueNode = dataNodes[j].getElementsByTagName('value')[0];
+                if (valueNode && valueNode.textContent) kecamatan = valueNode.textContent.trim();
+              }
+            }
           }
-          if (nameAttr && nameAttr.toLowerCase().includes('namobj') && !name) {
-            const textContent = simpleDataNodes[j].textContent;
-            if (textContent) name = textContent.trim();
-          }
-        }
-      }
-      
-      // FALLBACK SANGAT PENTING: Jika KML sama sekali tidak punya kode BPS, 
-      // gunakan nama desa sebagai kode BPS sementara agar tidak dibuang!
-      if (!kode_bps && name) {
-        kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
-      }
-      
-      if (!kode_bps) {
-        // Fallback or skip if kode_bps not found
-        continue;
-      }
-
-      // Extract Coordinates (simplistic approach for Polygon)
-      // WKT MultiPolygon format: MULTIPOLYGON (((10 10, 10 20, 20 20, 20 10, 10 10)))
-      const polygonNodes = placemark.getElementsByTagName('Polygon');
-      const multiPolygonNodes = placemark.getElementsByTagName('MultiGeometry'); // Simplification
-      
-      let wkt = '';
-      
-      if (polygonNodes.length > 0) {
-        const polys: string[] = [];
-        for (let k = 0; k < polygonNodes.length; k++) {
-          const coordsNode = polygonNodes[k].getElementsByTagName('coordinates')[0];
-          if (coordsNode && coordsNode.textContent) {
-            const coords = coordsNode.textContent.trim().split(/\s+/).filter(Boolean).map(pair => {
-              const parts = pair.split(',');
-              return `${parts[0]} ${parts[1]}`;
-            }).join(', ');
-            if (coords) {
-              polys.push(`((${coords}))`);
+          
+          // Format 2: <SimpleData name="KODE_BPS">123</SimpleData>
+          const simpleDataNodes = extendedData.getElementsByTagName('SimpleData');
+          for (let j = 0; j < simpleDataNodes.length; j++) {
+            const nameAttr = simpleDataNodes[j].getAttribute('name');
+            if (nameAttr) {
+              const nameAttrLower = nameAttr.toLowerCase().replace(/_/g, '');
+              if (nameAttrLower.includes('kodebps') || nameAttrLower === 'iddesa' || nameAttrLower === 'kodedesa') {
+                const textContent = simpleDataNodes[j].textContent;
+                if (textContent) kode_bps = textContent.trim();
+              }
+              if (nameAttrLower.includes('namobj') && !name) {
+                const textContent = simpleDataNodes[j].textContent;
+                if (textContent) name = textContent.trim();
+              }
+              // Extract kecamatan
+              if (nameAttrLower === 'wadmkc' || nameAttrLower === 'kecamatan' || nameAttrLower === 'namakec' || nameAttrLower === 'nmkec') {
+                const textContent = simpleDataNodes[j].textContent;
+                if (textContent) kecamatan = textContent.trim();
+              }
             }
           }
         }
-        if (polys.length > 0) {
-          wkt = `MULTIPOLYGON(${polys.join(', ')})`;
+        
+        // Fallback jika tidak ada kode BPS tapi ada nama desa
+        if (!kode_bps && name) {
+          kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+        }
+        
+        if (!kode_bps) continue;
+
+        // Extract Coordinates (simplistic approach for Polygon)
+        const polygonNodes = placemark.getElementsByTagName('Polygon');
+        let wkt = '';
+        
+        if (polygonNodes.length > 0) {
+          const polys: string[] = [];
+          for (let k = 0; k < polygonNodes.length; k++) {
+            const coordsNode = polygonNodes[k].getElementsByTagName('coordinates')[0];
+            if (coordsNode && coordsNode.textContent) {
+              // KML Coordinates are X,Y,Z separated by spaces
+              const coords = coordsNode.textContent.trim().split(/\s+/).filter(Boolean).map(pair => {
+                const parts = pair.split(',');
+                return `${parts[0]} ${parts[1]}`; // Forces 2D coordinate text
+              }).join(', ');
+              if (coords) {
+                polys.push(`((${coords}))`);
+              }
+            }
+          }
+          if (polys.length > 0) {
+            wkt = `MULTIPOLYGON(${polys.join(', ')})`;
+          }
+        }
+        
+        if (wkt && kode_bps) {
+          featuresToInsert.push({
+            kode_bps,
+            nama_desa: name,
+            nama_kecamatan: kecamatan,
+            wkt
+          });
         }
       }
+
+      // Upsert into Supabase
+      let inserted = 0;
+      const errors: string[] = [];
       
-      if (wkt && kode_bps) {
-        featuresToInsert.push({
-          kode_bps,
-          nama_desa: name,
-          wkt
+      for (const feature of featuresToInsert) {
+        const { error } = await authClient.rpc('upsert_geometry', {
+          p_kode_bps: feature.kode_bps,
+          p_nama_desa: feature.nama_desa,
+          p_wkt: feature.wkt,
+          p_user_id: userId,
+          p_nama_kabupaten: kabupaten
         });
+        
+        if (!error) {
+          inserted++;
+          // Update nama_kecamatan in geometries table if it was extracted
+          if (feature.nama_kecamatan) {
+            await authClient
+              .from('geometries')
+              .update({ nama_kecamatan: feature.nama_kecamatan })
+              .eq('kode_bps', feature.kode_bps);
+          }
+        } else {
+          console.error('Insert geom error:', error);
+          errors.push(`${feature.nama_desa}: ${error.message}`);
+        }
       }
-    }
 
-    // Upsert into Supabase using PostGIS
-    let inserted = 0;
-    const errors: string[] = [];
-    
-    for (const feature of featuresToInsert) {
-      const { error } = await authClient.rpc('upsert_geometry', {
-        p_kode_bps: feature.kode_bps,
-        p_nama_desa: feature.nama_desa,
-        p_wkt: feature.wkt,
-        p_user_id: userId,
-        p_nama_kabupaten: kabupaten
-      });
-      
-      if (!error) inserted++;
-      else {
-        console.error('Insert geom error:', error);
-        errors.push(`${feature.nama_desa}: ${error.message}`);
-      }
+      return NextResponse.json({ success: true, features: inserted, errors });
     }
-
-    return NextResponse.json({ success: true, features: inserted, errors });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

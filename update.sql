@@ -50,7 +50,7 @@ DROP POLICY IF EXISTS "User can modify own fsva_results" ON fsva_results;
 CREATE POLICY "User can modify own fsva_results" ON fsva_results 
 FOR ALL USING (auth.uid() = user_id OR auth.role() = 'service_role');
 
--- Perbaiki fungsi upsert_geometry agar menerima user_id
+-- Perbaiki fungsi upsert_geometry agar menerima user_id dan mendukung pembersihan geometri 3D (Z-dimension)
 DROP FUNCTION IF EXISTS upsert_geometry(TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION upsert_geometry(p_kode_bps TEXT, p_nama_desa TEXT, p_wkt TEXT, p_user_id UUID, p_nama_kabupaten TEXT)
 RETURNS void
@@ -59,7 +59,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
   INSERT INTO geometries (kode_bps, nama_desa, geom, user_id, nama_kabupaten)
-  VALUES (p_kode_bps, p_nama_desa, ST_Multi(ST_GeomFromText(p_wkt, 4326)), p_user_id, p_nama_kabupaten)
+  VALUES (p_kode_bps, p_nama_desa, ST_Multi(ST_Force2D(ST_GeomFromText(p_wkt, 4326))), p_user_id, p_nama_kabupaten)
   ON CONFLICT (kode_bps) DO UPDATE
   SET nama_desa = EXCLUDED.nama_desa, 
       geom = EXCLUDED.geom, 

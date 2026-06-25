@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { UploadCloud, FileSpreadsheet, MapPin, Loader2, ArrowRight, ArrowDown, Play, Download, PieChart, CheckCircle2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function UploadPanel() {
   const [loading, setLoading] = useState(false);
@@ -239,9 +240,18 @@ export default function UploadPanel() {
             <div className="absolute top-[105%] left-0 w-full p-3 glass-card rounded-xl text-left z-30 animate-in fade-in slide-in-from-top-4">
               {calcResult.success ? (
                 <>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#14B8A6]" />
-                    <h4 className="font-bold text-[#14B8A6] text-xs">Kalkulasi Selesai <span className="text-[10px] font-medium text-[#14B8A6]/70">({calcResult.processed} desa)</span></h4>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#14B8A6] shrink-0" />
+                      <h4 className="font-bold text-[#14B8A6] text-xs">Kalkulasi Selesai <span className="text-[10px] font-medium text-[#14B8A6]/70">({calcResult.processed} desa)</span></h4>
+                    </div>
+                    
+                    <Link 
+                      href={`/map?kabupaten=${encodeURIComponent(kabupaten)}`}
+                      className="bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black shadow-[0_2px_5px_rgba(219,39,119,0.2)] hover:shadow-[0_4px_10px_rgba(219,39,119,0.3)] transition-all flex items-center gap-1 hover:scale-105 active:scale-95 shrink-0"
+                    >
+                      LIHAT PETA <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </div>
                   
                   {calcResult.errors?.length > 0 && (

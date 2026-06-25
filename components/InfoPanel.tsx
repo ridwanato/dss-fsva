@@ -1,4 +1,4 @@
-import { PRIORITY_LABELS } from '@/lib/fsva/constants';
+import { PRIORITY_LABELS, STUNTING_PRIORITY_LABELS } from '@/lib/fsva/constants';
 import { X } from 'lucide-react';
 
 interface InfoPanelProps {
@@ -73,24 +73,31 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
         <div>
           <h3 className="text-[8px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">11 Indikator</h3>
           <div className="space-y-0.5 sm:space-y-2">
-            {indicators.map((ind, i) => (
-              <div key={i} className="flex items-center justify-between py-0.5 sm:py-1 border-b border-[rgba(109,94,245,0.1)] last:border-0 hover:bg-[#F5F3FF]/50 transition-colors px-1 rounded-sm">
-                <div className="flex-1 min-w-0 pr-2">
-                  <div className="text-[7.5px] sm:text-xs text-slate-600 truncate" title={ind.name}>{ind.name}</div>
-                  <div className="text-[8.5px] sm:text-xs font-semibold text-[#1E1B4B]">{ind.val ?? '-'}</div>
+            {indicators.map((ind, i) => {
+              const isStunting = ind.key === 'stunting';
+              const fill = isStunting 
+                ? (STUNTING_PRIORITY_LABELS[ind.p as keyof typeof STUNTING_PRIORITY_LABELS]?.fill || '#ccc')
+                : (PRIORITY_LABELS[ind.p as keyof typeof PRIORITY_LABELS]?.fill || '#ccc');
+              return (
+                <div key={i} className="flex items-center justify-between py-0.5 sm:py-1 border-b border-[rgba(109,94,245,0.1)] last:border-0 hover:bg-[#F5F3FF]/50 transition-colors px-1 rounded-sm">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="text-[7.5px] sm:text-xs text-slate-600 truncate" title={ind.name}>{ind.name}</div>
+                    <div className="text-[8.5px] sm:text-xs font-semibold text-[#1E1B4B]">{ind.val ?? '-'}</div>
+                  </div>
+                  <div 
+                    className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded flex items-center justify-center text-white font-bold text-[7.5px] sm:text-xs shadow-sm shrink-0"
+                    style={{ backgroundColor: fill }}
+                    title={`Prioritas ${ind.p}`}
+                  >
+                    {ind.p || '-'}
+                  </div>
                 </div>
-                <div 
-                  className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded flex items-center justify-center text-white font-bold text-[7.5px] sm:text-xs shadow-sm shrink-0"
-                  style={{ backgroundColor: PRIORITY_LABELS[ind.p as keyof typeof PRIORITY_LABELS]?.fill || '#ccc' }}
-                  title={`Prioritas ${ind.p}`}
-                >
-                  {ind.p || '-'}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
     </div>
   );
 }
+

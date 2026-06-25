@@ -1,4 +1,4 @@
-import { PRIORITY_LABELS } from '@/lib/fsva/constants';
+import { PRIORITY_LABELS, STUNTING_PRIORITY_LABELS } from '@/lib/fsva/constants';
 
 interface PrintConfig {
   logoPemda: string;
@@ -12,13 +12,16 @@ interface PrintConfig {
 interface PrintLayoutProps {
   mapImage: string | null;
   activeLayerName: string;
+  activeLayer?: string;
   config: PrintConfig;
 }
 
-export default function PrintLayout({ mapImage, activeLayerName, config }: PrintLayoutProps) {
+export default function PrintLayout({ mapImage, activeLayerName, activeLayer = 'prioritas', config }: PrintLayoutProps) {
   if (!mapImage) return null;
 
-  const priorities = [1, 2, 3, 4, 5, 6] as const;
+  const isStunting = activeLayer === 'p_stunting';
+  const priorities = isStunting ? ([1, 2, 3, 4] as const) : ([1, 2, 3, 4, 5, 6] as const);
+  const labels = isStunting ? STUNTING_PRIORITY_LABELS : PRIORITY_LABELS;
 
   return (
     <div className="print-only bg-white w-[210mm] h-[297mm] overflow-hidden p-[10mm] mx-auto text-black font-sans relative">
@@ -130,11 +133,11 @@ export default function PrintLayout({ mapImage, activeLayerName, config }: Print
                 <div key={p} className="flex gap-2 items-start">
                   <div 
                     className="w-5 h-3 border border-black mt-0.5 flex-shrink-0"
-                    style={{ backgroundColor: PRIORITY_LABELS[p].fill }}
+                    style={{ backgroundColor: labels[p as keyof typeof labels].fill }}
                   />
                   <div className="flex flex-col">
                     <span className="text-[9px] font-bold leading-none">Kelurahan Prioritas {p}</span>
-                    <span className="text-[8px] leading-tight">{PRIORITY_LABELS[p].label}</span>
+                    <span className="text-[8px] leading-tight">{labels[p as keyof typeof labels].label}</span>
                   </div>
                 </div>
               ))}

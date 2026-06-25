@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { PRIORITY_LABELS } from '@/lib/fsva/constants';
+import { PRIORITY_LABELS, STUNTING_PRIORITY_LABELS } from '@/lib/fsva/constants';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function LegendPanel() {
+interface LegendPanelProps {
+  activeLayer?: string;
+}
+
+export default function LegendPanel({ activeLayer = 'prioritas' }: LegendPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const priorities = [1, 2, 3, 4, 5, 6] as const;
+  const isStunting = activeLayer === 'p_stunting';
+  const priorities = isStunting ? ([1, 2, 3, 4] as const) : ([1, 2, 3, 4, 5, 6] as const);
+  const labels = isStunting ? STUNTING_PRIORITY_LABELS : PRIORITY_LABELS;
 
   return (
     <div id="fsva-legend-panel" className="absolute bottom-12 md:bottom-6 right-4 md:right-6 z-20 w-48 md:w-64 flex flex-col pointer-events-auto transition-all duration-300 shadow-xl rounded-t-lg bg-white overflow-hidden">
@@ -17,17 +23,18 @@ export default function LegendPanel() {
               <div key={p} className="flex items-center gap-3">
                 <div 
                   className="w-5 h-5 rounded flex-shrink-0"
-                  style={{ backgroundColor: PRIORITY_LABELS[p].fill }}
+                  style={{ backgroundColor: labels[p as keyof typeof labels].fill }}
                 />
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-gray-800 leading-none">Prioritas {p}</span>
-                  <span className="text-[9px] text-gray-500 leading-tight mt-0.5">{PRIORITY_LABELS[p].label}</span>
+                  <span className="text-[9px] text-gray-500 leading-tight mt-0.5">{labels[p as keyof typeof labels].label}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
 
       {/* Header (Always visible, Purple background, at bottom) */}
       <div 

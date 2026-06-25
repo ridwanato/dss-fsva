@@ -41,7 +41,7 @@ export const INDICATOR_RANGES = {
   sekolah:  { breaks: [6.0,  6.5,  7.5,  8.5,  9.0],  inverse: false, min: 1,  max: 12 },
   air:      { breaks: [30,   40,   50,   60,   70],   inverse: true,  min: 0,  max: 100 },
   pph:      { breaks: [70,   75,   80,   85,   90],   inverse: false, min: 40, max: 100 },
-  stunting: { breaks: [20,   25,   30,   35,   40],   inverse: true,  min: 0,  max: 75 },
+  stunting: { breaks: [10,   20,   30],            inverse: true,  min: 0,  max: 75 },
 }
 
 // Konversi GKG → Beras per Provinsi (Gambar 1 Juknis, Sumber BPS 2018)
@@ -131,12 +131,20 @@ export const CV_HARGA_WEIGHTS = {
   minyak: 0.15,
 }
 
-// Label prioritas untuk UI
+// Label prioritas untuk UI (Tabel 5 Juknis - 6 prioritas)
 export const PRIORITY_LABELS = {
-  1: { label: 'Sangat Rentan',  color: '#8B0000', fill: '#CC0000' },
-  2: { label: 'Rentan',         color: '#CC3300', fill: '#FF6600' },
-  3: { label: 'Agak Rentan',    color: '#CC7700', fill: '#FFAA00' },
-  4: { label: 'Agak Tahan',     color: '#668800', fill: '#AACC00' },
-  5: { label: 'Tahan',          color: '#336600', fill: '#55AA00' },
-  6: { label: 'Sangat Tahan',   color: '#004400', fill: '#007700' },
-}
+  1: { label: 'Sangat Rentan',  color: '#6e1f1f', fill: '#6e1f1f' },
+  2: { label: 'Rentan',         color: '#e85961', fill: '#e85961' },
+  3: { label: 'Agak Rentan',    color: '#f4a1a7', fill: '#f4a1a7' },
+  4: { label: 'Agak Tahan',     color: '#c9e077', fill: '#c9e077' },
+  5: { label: 'Tahan',          color: '#94c945', fill: '#94c945' },
+  6: { label: 'Sangat Tahan',   color: '#3b703b', fill: '#3b703b' },
+} as const
+
+// Label prioritas khusus stunting (Tabel 6 Juknis - 4 prioritas)
+export const STUNTING_PRIORITY_LABELS = {
+  1: { label: 'Sangat Tinggi',  color: '#6e1f1f', fill: '#6e1f1f' },
+  2: { label: 'Tinggi',         color: '#f4a1a7', fill: '#f4a1a7' },
+  3: { label: 'Sedang',         color: '#c9e077', fill: '#c9e077' },
+  4: { label: 'Rendah',         color: '#3b703b', fill: '#3b703b' },
+} as const

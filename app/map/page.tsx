@@ -190,6 +190,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
     <PrintLayout 
       mapImage={mapImage} 
       activeLayerName={LAYERS.find(l => l.id === activeLayer)?.label || ''} 
+      activeLayer={activeLayer}
       config={printConfig}
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
@@ -323,7 +324,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
           </button>
         )}
 
-        <LegendPanel />
+        <LegendPanel activeLayer={activeLayer} />
         <InfoPanel 
           data={selectedPolygon} 
           onClose={() => setSelectedPolygon(null)} 

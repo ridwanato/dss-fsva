@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { PRIORITY_LABELS } from '@/lib/fsva/constants';
+import { PRIORITY_LABELS, STUNTING_PRIORITY_LABELS } from '@/lib/fsva/constants';
 
 interface MapViewProps {
   geoJsonData: any;
@@ -22,7 +22,16 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
     if (!map.current || !map.current.isStyleLoaded() || !map.current.getLayer('fsva-fill')) return;
     
     // Update fill color based on selected layer
-    map.current.setPaintProperty('fsva-fill', 'fill-color', [
+    const isStunting = activeLayer === 'p_stunting';
+    const fillColors = isStunting ? [
+      'match',
+      ['get', activeLayer],
+      1, STUNTING_PRIORITY_LABELS[1].fill,
+      2, STUNTING_PRIORITY_LABELS[2].fill,
+      3, STUNTING_PRIORITY_LABELS[3].fill,
+      4, STUNTING_PRIORITY_LABELS[4].fill,
+      '#cccccc' // fallback
+    ] : [
       'match',
       ['get', activeLayer],
       1, PRIORITY_LABELS[1].fill,
@@ -32,7 +41,9 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       5, PRIORITY_LABELS[5].fill,
       6, PRIORITY_LABELS[6].fill,
       '#cccccc' // fallback
-    ]);
+    ];
+
+    map.current.setPaintProperty('fsva-fill', 'fill-color', fillColors as any);
     
     // Update opacity (0% transparency = 1.0 opacity)
     map.current.setPaintProperty('fsva-fill', 'fill-opacity', 1 - (opacity / 100));
@@ -84,22 +95,33 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       });
 
       // Fill layer
+      const isStunting = activeLayer === 'p_stunting';
+      const fillColors = isStunting ? [
+        'match',
+        ['get', activeLayer],
+        1, STUNTING_PRIORITY_LABELS[1].fill,
+        2, STUNTING_PRIORITY_LABELS[2].fill,
+        3, STUNTING_PRIORITY_LABELS[3].fill,
+        4, STUNTING_PRIORITY_LABELS[4].fill,
+        '#cccccc' // fallback
+      ] : [
+        'match',
+        ['get', activeLayer],
+        1, PRIORITY_LABELS[1].fill,
+        2, PRIORITY_LABELS[2].fill,
+        3, PRIORITY_LABELS[3].fill,
+        4, PRIORITY_LABELS[4].fill,
+        5, PRIORITY_LABELS[5].fill,
+        6, PRIORITY_LABELS[6].fill,
+        '#cccccc' // fallback
+      ];
+
       map.current.addLayer({
         id: 'fsva-fill',
         type: 'fill',
         source: 'fsva',
         paint: {
-          'fill-color': [
-            'match',
-            ['get', activeLayer],
-            1, PRIORITY_LABELS[1].fill,
-            2, PRIORITY_LABELS[2].fill,
-            3, PRIORITY_LABELS[3].fill,
-            4, PRIORITY_LABELS[4].fill,
-            5, PRIORITY_LABELS[5].fill,
-            6, PRIORITY_LABELS[6].fill,
-            '#cccccc' // fallback
-          ],
+          'fill-color': fillColors as any,
           'fill-opacity': 1
         }
       });

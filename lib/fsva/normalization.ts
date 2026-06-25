@@ -2,31 +2,31 @@ import { INDICATOR_RANGES } from './constants'
 
 type IndicatorKey = keyof typeof INDICATOR_RANGES
 
-// Tentukan prioritas individu (1-6) berdasarkan range Tabel 2 Juknis
+// Tentukan prioritas individu berdasarkan range breaks di Tabel 2/6 Juknis
 export function getPriorityIndividual(key: IndicatorKey, value: number): number {
   const range = INDICATOR_RANGES[key]
   const { breaks, inverse } = range
+  const N = breaks.length
 
-  let priority: number
   if (inverse) {
-    // Nilai besar = lebih buruk = prioritas rendah (1)
-    if (value >= breaks[4]) priority = 1
-    else if (value >= breaks[3]) priority = 2
-    else if (value >= breaks[2]) priority = 3
-    else if (value >= breaks[1]) priority = 4
-    else if (value >= breaks[0]) priority = 5
-    else priority = 6
+    // Nilai besar = lebih buruk = prioritas rendah (angka prioritas kecil, e.g., 1)
+    for (let i = N - 1; i >= 0; i--) {
+      if (value >= breaks[i]) {
+        return N - i;
+      }
+    }
+    return N + 1;
   } else {
-    // Nilai kecil = lebih buruk = prioritas rendah (1)
-    if (value < breaks[0]) priority = 1
-    else if (value < breaks[1]) priority = 2
-    else if (value < breaks[2]) priority = 3
-    else if (value < breaks[3]) priority = 4
-    else if (value < breaks[4]) priority = 5
-    else priority = 6
+    // Nilai kecil = lebih buruk = prioritas rendah (angka prioritas kecil, e.g., 1)
+    for (let i = 0; i < N; i++) {
+      if (value < breaks[i]) {
+        return i + 1;
+      }
+    }
+    return N + 1;
   }
-  return priority
 }
+
 
 // Normalisasi nilai ke skala 0-1 berdasarkan min-max range
 // Min = nilai terburuk, Max = nilai terbaik

@@ -24,15 +24,19 @@ export async function GET(req: NextRequest) {
       if (geomError) throw geomError;
 
       if (geomData && geomData.length > 0) {
-        // 2. Ambil data hasil kalkulasi FSVA untuk kode_bps tersebut pada tahun yang dipilih
+        // 2. Ambil data hasil kalkulasi FSVA dan data indikator mentah (raw_indicators) secara paralel
         const codes = geomData.map(g => g.kode_bps);
-        const { data: resData, error: resError } = await supabase
-          .from('fsva_results')
-          .select('*')
-          .eq('tahun', tahun)
-          .in('kode_bps', codes);
+        
+        const [resPromise, rawPromise] = await Promise.all([
+          supabase.from('fsva_results').select('*').eq('tahun', tahun).in('kode_bps', codes),
+          supabase.from('raw_indicators').select('*').eq('tahun', tahun).in('kode_bps', codes)
+        ]);
 
-        if (resError) throw resError;
+        if (resPromise.error) throw resPromise.error;
+        if (rawPromise.error) throw rawPromise.error;
+
+        const resData = resPromise.data;
+        const rawData = rawPromise.data;
 
         // Petakan hasil kalkulasi berdasarkan kode_bps untuk pencarian cepat O(1)
         const resMap: Record<string, any> = {};
@@ -42,12 +46,21 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // 3. Gabungkan geometri dengan hasil kalkulasi di sisi server (jika ada)
+        // Petakan indikator mentah berdasarkan kode_bps untuk pencarian cepat O(1)
+        const rawMap: Record<string, any> = {};
+        if (rawData) {
+          for (const r of rawData) {
+            rawMap[r.kode_bps] = r;
+          }
+        }
+
+        // 3. Gabungkan geometri dengan hasil kalkulasi & indikator mentah di sisi server
         features = geomData.map(row => {
           const { geom, ...geoProps } = row;
           const fsvaRes = resMap[row.kode_bps] || {};
+          const rawInd = rawMap[row.kode_bps] || {};
           
-          // Gabungkan seluruh properti indikator dan hasil akhir
+          // Gabungkan seluruh properti indikator mentah dan hasil akhir
           const properties = {
             ...geoProps,
             tahun: fsvaRes.tahun || tahun,
@@ -60,6 +73,13 @@ export async function GET(req: NextRequest) {
             cv_harga: fsvaRes.cv_harga || null,
             pou: fsvaRes.pou || null,
             pct_miskin_ref: fsvaRes.pct_miskin || null,
+            
+            // Raw values dari tabel raw_indicators untuk 4 indikator yang sebelumnya kosong
+            lama_sekolah: rawInd.lama_sekolah_perempuan !== undefined ? rawInd.lama_sekolah_perempuan : null,
+            pct_no_water: rawInd.pct_no_water !== undefined ? rawInd.pct_no_water : null,
+            skor_pph: rawInd.skor_pph !== undefined ? rawInd.skor_pph : null,
+            pct_stunting: rawInd.pct_stunting !== undefined ? rawInd.pct_stunting : null,
+
             indeks_ketersediaan: fsvaRes.indeks_ketersediaan || null,
             indeks_keterjangkauan: fsvaRes.indeks_keterjangkauan || null,
             indeks_pemanfaatan: fsvaRes.indeks_pemanfaatan || null,

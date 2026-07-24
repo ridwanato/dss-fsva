@@ -87,18 +87,6 @@ export default function PrintLayout({
             <span className="transform rotate-90">-6.120</span>
           </div>
 
-          {/* Scale Bar */}
-          <div className="absolute bottom-[40px] left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
-            <div className="flex justify-between w-24 mb-1">
-              <span>0</span>
-              <span>1</span>
-              <span>2 km</span>
-            </div>
-            <div className="w-24 h-2 border-x-[2px] border-b-[2px] border-black flex">
-              <div className="w-1/2 h-full bg-black"></div>
-              <div className="w-1/2 h-full bg-white border-l-[2px] border-black"></div>
-            </div>
-          </div>
 
           <div className="absolute top-1/3 left-10 text-gray-500/50 font-bold text-xs italic tracking-widest">
             SELAT SUNDA
@@ -175,6 +163,19 @@ export default function PrintLayout({
             </div>
           </div>
 
+          {/* Scale Bar — between Legend and Sources per mockup */}
+          <div className="px-4 py-2 border-b-[2px] border-black shrink-0">
+            <div className="flex justify-between w-28 mb-1 text-[9px] font-bold">
+              <span>0</span>
+              <span>1</span>
+              <span>2 km</span>
+            </div>
+            <div className="w-28 h-2 border-x-[2px] border-b-[2px] border-black flex">
+              <div className="w-1/2 h-full bg-black"></div>
+              <div className="w-1/2 h-full bg-white border-l-[2px] border-black"></div>
+            </div>
+          </div>
+
           {/* Sources Section */}
           <div className="p-3 leading-tight flex-1 flex flex-col text-[14px]">
             <h3 className="font-bold text-center mb-2 text-[10px]">SUMBER DATA</h3>
@@ -182,6 +183,7 @@ export default function PrintLayout({
               {config.sources}
             </div>
           </div>
+
 
         </div>
 

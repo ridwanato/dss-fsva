@@ -147,7 +147,7 @@ function FontToolbar({
     const [showPrintGuide, setShowPrintGuide] = useState(true);
     const [printConfig, setPrintConfig] = useState({
       logoPemda: '/logo-cilegon.png',
-      logoBapanas: '/logo-bapanas.png',
+      logoBapanas: '/bapanas logo.png',
       govName: 'PEMERINTAH\n' + (kabupaten ? kabupaten.toUpperCase() : 'DAERAH'),
       title: `FSVA ${kabupaten ? kabupaten.toUpperCase() : 'DAERAH'}\nTAHUN 2025`,
       sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',

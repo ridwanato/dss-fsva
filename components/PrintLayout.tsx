@@ -9,19 +9,49 @@ interface PrintConfig {
   footer: string;
 }
 
+interface FontStyle {
+  fontFamily: string;
+  fontSize: number;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  align: 'left' | 'center' | 'right' | 'justify';
+}
+
 interface PrintLayoutProps {
   mapImage: string | null;
   activeLayerName: string;
   activeLayer?: string;
   config: PrintConfig;
+  fontStyles?: Record<string, FontStyle>;
 }
 
-export default function PrintLayout({ mapImage, activeLayerName, activeLayer = 'prioritas', config }: PrintLayoutProps) {
+export default function PrintLayout({ 
+  mapImage, 
+  activeLayerName, 
+  activeLayer = 'prioritas', 
+  config,
+  fontStyles
+}: PrintLayoutProps) {
   if (!mapImage) return null;
 
   const isStunting = activeLayer === 'p_stunting';
   const priorities = isStunting ? ([1, 2, 3, 4] as const) : ([1, 2, 3, 4, 5, 6] as const);
   const labels = isStunting ? STUNTING_PRIORITY_LABELS : PRIORITY_LABELS;
+
+  // Helper to convert FontStyle to inline CSS style object
+  const getTextStyle = (style?: FontStyle) => {
+    if (!style) return {};
+    return {
+      fontFamily: style.fontFamily,
+      fontSize: `${style.fontSize}pt`,
+      fontWeight: style.bold ? 'bold' : 'normal',
+      fontStyle: style.italic ? 'italic' : 'normal',
+      textDecoration: style.underline ? 'underline' : 'none',
+      textAlign: style.align,
+      whiteSpace: 'pre-wrap' as const
+    };
+  };
 
   return (
     <div className="print-only bg-white w-[210mm] h-[297mm] overflow-hidden p-[10mm] mx-auto text-black font-sans relative">
@@ -57,16 +87,6 @@ export default function PrintLayout({ mapImage, activeLayerName, activeLayer = '
             <span className="transform rotate-90">-6.120</span>
           </div>
 
-          {/* Inset Map Box Removed by Request */}
-
-          {/* North Arrow */}
-          <div className="absolute top-4 right-4 flex flex-col items-center">
-            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[20px] border-b-blue-800"></div>
-            <div className="w-6 h-6 bg-white/80 rounded-full border border-blue-800 flex items-center justify-center -mt-2">
-              <span className="text-blue-800 font-bold text-[10px]">U</span>
-            </div>
-          </div>
-
           {/* Scale Bar */}
           <div className="absolute bottom-[130px] left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
             <div className="flex justify-between w-24 mb-1">
@@ -94,9 +114,9 @@ export default function PrintLayout({ mapImage, activeLayerName, activeLayer = '
               <div className="w-12 h-12 flex items-center justify-center shrink-0">
                 <img src={config.logoPemda} alt="Logo Pemda" className="w-full h-full object-contain" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col w-full" style={getTextStyle(fontStyles?.govName)}>
                 {config.govName.split('\n').map((line, i) => (
-                   <span key={i} className="text-[10px] font-black leading-tight uppercase">{line}</span>
+                   <span key={i} className="leading-tight uppercase">{line}</span>
                 ))}
               </div>
             </div>
@@ -112,9 +132,9 @@ export default function PrintLayout({ mapImage, activeLayerName, activeLayer = '
           </div>
 
           {/* Title Section */}
-          <div className="p-3 border-b-[2px] border-black text-center">
+          <div className="p-3 border-b-[2px] border-black text-center flex flex-col justify-center items-center">
             {config.title.split('\n').map((line, i) => (
-              <h1 key={i} className="font-black text-[12px] tracking-wide leading-tight uppercase">{line}</h1>
+              <h1 key={i} style={getTextStyle(fontStyles?.title)} className="tracking-wide leading-tight uppercase">{line}</h1>
             ))}
           </div>
 
@@ -156,9 +176,9 @@ export default function PrintLayout({ mapImage, activeLayerName, activeLayer = '
           </div>
 
           {/* Sources Section */}
-          <div className="p-3 border-b-[2px] border-black text-[7px] leading-tight flex-1">
+          <div className="p-3 border-b-[2px] border-black leading-tight flex-1 flex flex-col">
             <h3 className="font-bold text-center mb-2 text-[9px]">SUMBER DATA</h3>
-            <div className="flex flex-col gap-1 whitespace-pre-wrap">
+            <div className="flex flex-col gap-1 whitespace-pre-wrap flex-1" style={getTextStyle(fontStyles?.sources)}>
               {config.sources}
             </div>
           </div>
@@ -167,7 +187,7 @@ export default function PrintLayout({ mapImage, activeLayerName, activeLayer = '
 
         {/* Footer Section */}
         <div className="absolute bottom-0 left-0 w-full bg-white border-t-[2px] border-black p-3 z-10 flex text-[9px]">
-          <div className="w-[70%] pr-4 border-r-[2px] border-black whitespace-pre-wrap leading-snug">
+          <div className="w-[70%] pr-4 border-r-[2px] border-black whitespace-pre-wrap leading-snug" style={getTextStyle(fontStyles?.footer)}>
             {config.footer}
           </div>
           <div className="w-[30%] pl-2 flex items-center justify-center">

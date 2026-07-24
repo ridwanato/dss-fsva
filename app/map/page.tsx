@@ -11,6 +11,103 @@ import LayerPanel, { getLayersForLevel } from '@/components/LayerPanel';
   import { useSearchParams, useRouter } from 'next/navigation';
   import { Suspense } from 'react';
   
+interface FontStyle {
+  fontFamily: string;
+  fontSize: number;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  align: 'left' | 'center' | 'right' | 'justify';
+}
+
+function FontToolbar({ 
+  value, 
+  onChange 
+}: { 
+  value: FontStyle; 
+  onChange: (val: FontStyle) => void 
+}) {
+  const fontFamilies = ['Arial', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Trebuchet MS'];
+  const fontSizes = [6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24];
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 border border-slate-200 border-b-0 p-2 rounded-t-xl text-xs z-10 relative">
+      {/* Font Family Dropdown */}
+      <select
+        value={value.fontFamily}
+        onChange={(e) => onChange({ ...value, fontFamily: e.target.value })}
+        className="bg-white border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 focus:outline-none cursor-pointer"
+      >
+        {fontFamilies.map(f => <option key={f} value={f}>{f}</option>)}
+      </select>
+
+      {/* Font Size Dropdown */}
+      <select
+        value={value.fontSize}
+        onChange={(e) => onChange({ ...value, fontSize: Number(e.target.value) })}
+        className="bg-white border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 focus:outline-none cursor-pointer"
+      >
+        {fontSizes.map(s => <option key={s} value={s}>{s} pt</option>)}
+      </select>
+
+      <span className="w-px h-4 bg-slate-200 mx-1"></span>
+
+      {/* Bold (B) Button */}
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, bold: !value.bold })}
+        className={`w-6 h-6 rounded flex items-center justify-center font-black transition-colors ${
+          value.bold ? 'bg-slate-200 text-slate-900 border border-slate-350' : 'text-slate-500 hover:bg-slate-100'
+        }`}
+        title="Tebal (Bold)"
+      >
+        B
+      </button>
+
+      {/* Italic (I) Button */}
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, italic: !value.italic })}
+        className={`w-6 h-6 rounded flex items-center justify-center font-serif italic transition-colors ${
+          value.italic ? 'bg-slate-200 text-slate-900 border border-slate-350' : 'text-slate-500 hover:bg-slate-100'
+        }`}
+        title="Miring (Italic)"
+      >
+        I
+      </button>
+
+      {/* Underline (U) Button */}
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, underline: !value.underline })}
+        className={`w-6 h-6 rounded flex items-center justify-center underline transition-colors ${
+          value.underline ? 'bg-slate-200 text-slate-900 border border-slate-350' : 'text-slate-500 hover:bg-slate-100'
+        }`}
+        title="Garis Bawah (Underline)"
+      >
+        U
+      </button>
+
+      <span className="w-px h-4 bg-slate-200 mx-1"></span>
+
+      {/* Alignment Buttons */}
+      {(['left', 'center', 'right', 'justify'] as const).map(align => (
+        <button
+          key={align}
+          type="button"
+          onClick={() => onChange({ ...value, align })}
+          className={`w-6 h-6 rounded flex items-center justify-center transition-colors font-bold text-[10px] ${
+            value.align === align ? 'bg-slate-200 text-slate-900 border border-slate-350' : 'text-slate-500 hover:bg-slate-100'
+          }`}
+          title={`Rata ${align === 'left' ? 'Kiri' : align === 'center' ? 'Tengah' : align === 'right' ? 'Kanan' : 'Kiri Kanan'}`}
+        >
+          {align === 'left' ? 'L' : align === 'center' ? 'C' : align === 'right' ? 'R' : 'J'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
   const formatMapTitle = (name: string) => {
     if (!name) return 'PETA FSVA DAERAH';
     const upper = name.toUpperCase().trim();
@@ -55,6 +152,41 @@ import LayerPanel, { getLayersForLevel } from '@/components/LayerPanel';
       title: `FSVA ${kabupaten ? kabupaten.toUpperCase() : 'DAERAH'}\nTAHUN 2025`,
       sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
       footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`
+    });
+
+    const [fontStyles, setFontStyles] = useState<Record<string, FontStyle>>({
+      govName: {
+        fontFamily: 'Times New Roman',
+        fontSize: 10,
+        bold: true,
+        italic: false,
+        underline: false,
+        align: 'left'
+      },
+      title: {
+        fontFamily: 'Times New Roman',
+        fontSize: 12,
+        bold: true,
+        italic: false,
+        underline: false,
+        align: 'center'
+      },
+      sources: {
+        fontFamily: 'Arial',
+        fontSize: 7,
+        bold: false,
+        italic: false,
+        underline: false,
+        align: 'left'
+      },
+      footer: {
+        fontFamily: 'Arial',
+        fontSize: 9,
+        bold: false,
+        italic: false,
+        underline: false,
+        align: 'left'
+      }
     });
 
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'pemda' | 'bapanas') => {
@@ -243,6 +375,7 @@ import LayerPanel, { getLayersForLevel } from '@/components/LayerPanel';
       activeLayerName={getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || ''} 
       activeLayer={activeLayer}
       config={printConfig}
+      fontStyles={fontStyles}
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       <LayerPanel 
@@ -411,36 +544,40 @@ import LayerPanel, { getLayersForLevel } from '@/components/LayerPanel';
               
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Nama Instansi / Pemerintah (Pojok Kanan Atas)</label>
+                <FontToolbar value={fontStyles.govName} onChange={(val) => setFontStyles({ ...fontStyles, govName: val })} />
                 <textarea 
                   rows={2}
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-sm border border-gray-300 rounded-b-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   value={printConfig.govName}
                   onChange={(e) => setPrintConfig({...printConfig, govName: e.target.value})}
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Judul Peta (Tengah Kanan)</label>
+                <FontToolbar value={fontStyles.title} onChange={(val) => setFontStyles({ ...fontStyles, title: val })} />
                 <textarea 
                   rows={2}
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-sm border border-gray-300 rounded-b-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   value={printConfig.title}
                   onChange={(e) => setPrintConfig({...printConfig, title: e.target.value})}
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Daftar Sumber Data</label>
+                <FontToolbar value={fontStyles.sources} onChange={(val) => setFontStyles({ ...fontStyles, sources: val })} />
                 <textarea 
                   rows={4}
-                  className="w-full text-xs border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
+                  className="w-full text-xs border border-gray-300 rounded-b-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
                   value={printConfig.sources}
                   onChange={(e) => setPrintConfig({...printConfig, sources: e.target.value})}
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Catatan Kaki / Tanda Tangan (Bawah)</label>
+                <FontToolbar value={fontStyles.footer} onChange={(val) => setFontStyles({ ...fontStyles, footer: val })} />
                 <textarea 
                   rows={4}
-                  className="w-full text-xs border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
+                  className="w-full text-xs border border-gray-300 rounded-b-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed"
                   value={printConfig.footer}
                   onChange={(e) => setPrintConfig({...printConfig, footer: e.target.value})}
                 />

@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const kabupaten = formData.get('kabupaten') as string;
+    const level = (formData.get('level') as string) || 'kab_kota';
     
     if (!file || !kabupaten) {
       return NextResponse.json({ success: false, error: 'No file uploaded or missing map name' }, { status: 400 });
@@ -172,7 +173,8 @@ export async function POST(req: NextRequest) {
           p_nama_desa: feature.nama_desa,
           p_wkt: feature.wkt,
           p_user_id: userId,
-          p_nama_kabupaten: kabupaten
+          p_nama_kabupaten: kabupaten,
+          p_level: level
         });
         
         if (!error) {
@@ -182,7 +184,9 @@ export async function POST(req: NextRequest) {
             await authClient
               .from('geometries')
               .update({ nama_kecamatan: feature.nama_kecamatan })
-              .eq('kode_bps', feature.kode_bps);
+              .eq('kode_bps', feature.kode_bps)
+              .eq('nama_kabupaten', kabupaten)
+              .eq('level', level);
           }
         } else {
           console.error('Insert geom error:', error);
@@ -308,7 +312,8 @@ export async function POST(req: NextRequest) {
           p_nama_desa: feature.nama_desa,
           p_wkt: feature.wkt,
           p_user_id: userId,
-          p_nama_kabupaten: kabupaten
+          p_nama_kabupaten: kabupaten,
+          p_level: level
         });
         
         if (!error) {
@@ -318,7 +323,9 @@ export async function POST(req: NextRequest) {
             await authClient
               .from('geometries')
               .update({ nama_kecamatan: feature.nama_kecamatan })
-              .eq('kode_bps', feature.kode_bps);
+              .eq('kode_bps', feature.kode_bps)
+              .eq('nama_kabupaten', kabupaten)
+              .eq('level', level);
           }
         } else {
           console.error('Insert geom error:', error);

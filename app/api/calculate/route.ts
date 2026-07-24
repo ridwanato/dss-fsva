@@ -5,7 +5,7 @@ import { calculateFSVAResult } from '@/lib/fsva/composite-score';
 
 export async function POST(req: NextRequest) {
   try {
-    const { tahun, kab_kota } = await req.json();
+    const { tahun, kab_kota, level = 'kab_kota' } = await req.json();
 
     if (!tahun) {
       return NextResponse.json({ success: false, error: 'tahun is required' }, { status: 400 });
@@ -23,13 +23,8 @@ export async function POST(req: NextRequest) {
     // Fetch raw_indicators + geometries info for current user
     let query = authClient.from('raw_indicators').select(`
       *,
-      geometries ( nama_kabupaten, nama_provinsi )
-    `).eq('tahun', tahun).eq('user_id', userId);
-
-    if (kab_kota) {
-      // Supabase nested filtering is a bit tricky, alternative is to filter after fetch
-      // or use inner join if supported
-    }
+      geometries ( nama_kabupaten, nama_provinsi, level )
+    `).eq('tahun', tahun).eq('user_id', userId).eq('level', level);
 
     const { data: rawData, error: fetchError } = await query;
     if (fetchError) throw fetchError;
@@ -66,29 +61,38 @@ export async function POST(req: NextRequest) {
         pct_no_water: row.pct_no_water,
         skor_pph: row.skor_pph,
         pct_stunting: row.pct_stunting,
+        // Prov level
+        cbpp: row.cbpp,
+        jumlah_penduduk_prov: row.jumlah_penduduk_prov,
+        cbpk: row.cbpk,
+        jumlah_penduduk_kab: row.jumlah_penduduk_kab,
+        cbp_kec: row.cbp_kec,
+        segar: row.segar,
+        siap_saji: row.siap_saji,
       };
 
-      const indicators = calculateAllIndicators(input);
-      const result = calculateFSVAResult(indicators);
+      const indicators = calculateAllIndicators(input, level as any);
+      const result = calculateFSVAResult(indicators, level as any);
 
       const upsertData = {
         kode_bps: row.kode_bps,
         nama_kabupaten: row.nama_kabupaten || row.geometries?.nama_kabupaten || 'DAERAH',
         tahun: row.tahun,
         user_id: userId,
+        level,
         ...indicators,
         ...result,
       };
 
       const { error: upsertError } = await authClient.from('fsva_results').upsert(upsertData, {
-        onConflict: 'nama_kabupaten,kode_bps,tahun'
+        onConflict: 'level,nama_kabupaten,kode_bps,tahun'
       });
 
       if (!upsertError) {
         processed++;
         summary[result.prioritas] = (summary[result.prioritas] || 0) + 1;
       } else {
-        errors.push(`Desa ${row.kode_bps}: ${upsertError.message}`);
+        errors.push(`Desa/Kec ${row.kode_bps}: ${upsertError.message}`);
       }
     }
 

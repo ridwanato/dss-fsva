@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { 
   ChevronDown, ChevronLeft, ChevronRight, Trash2, 
-  Map, BarChart3, Database, BookOpen, User, LogOut, Layers 
+  Map, BarChart3, Database, BookOpen, User, LogOut, Layers,
+  Home, Printer, Download
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 
@@ -13,15 +14,18 @@ const supabase = createClient();
 
 export default function Navbar() {
   const [expanded, setExpanded] = useState(false); // Mobile drawer expand state
-  const [maps, setMaps] = useState<any[]>([]); // Array of { nama_kabupaten, tahun, user_id }
+  const [maps, setMaps] = useState<any[]>([]); // Array of { nama_kabupaten, tahun, user_id, level }
   const [session, setSession] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false); // Desktop sidebar collapse state
-  const [sidebarDropdownOpen, setSidebarDropdownOpen] = useState(true); // Desktop sidebar submenu state
+  const [petunjukDropdownOpen, setPetunjukDropdownOpen] = useState(true);
+  const [savedKabDropdownOpen, setSavedKabDropdownOpen] = useState(true);
+  const [savedProvDropdownOpen, setSavedProvDropdownOpen] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentKabupaten = searchParams.get('kabupaten') || '';
+  const activeLevel = searchParams.get('level') || 'kab_kota';
 
   const isActive = (path: string) => pathname === path;
 
@@ -66,17 +70,17 @@ export default function Navbar() {
 
   const handleDeleteMap = async (e: React.MouseEvent, kabupaten: string) => {
     e.stopPropagation();
-    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus peta "${kabupaten}" beserta semua data indikator dan kalkulasinya? Tindakan ini tidak dapat dibatalkan.`);
+    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus peta "${kabupaten}" (${activeLevel}) beserta semua data indikator dan kalkulasinya? Tindakan ini tidak dapat dibatalkan.`);
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`/api/maps?kabupaten=${encodeURIComponent(kabupaten)}`, {
+      const res = await fetch(`/api/maps?kabupaten=${encodeURIComponent(kabupaten)}&level=${activeLevel}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {
         alert(`Peta "${kabupaten}" berhasil dihapus.`);
-        setMaps(prev => prev.filter(m => m.nama_kabupaten !== kabupaten));
+        setMaps(prev => prev.filter(m => !(m.nama_kabupaten === kabupaten && m.level === activeLevel)));
         const params = new URLSearchParams(window.location.search);
         if (params.get('kabupaten') === kabupaten) {
           router.push('/map');
@@ -106,6 +110,28 @@ export default function Navbar() {
     }
   };
 
+  const handleCetakPeta = () => {
+    if (pathname !== '/map') {
+      const url = currentKabupaten 
+        ? `/map?kabupaten=${encodeURIComponent(currentKabupaten)}&level=${activeLevel}&triggerPrint=true` 
+        : `/map?triggerPrint=true`;
+      router.push(url);
+    } else {
+      window.dispatchEvent(new CustomEvent('trigger-print-pdf'));
+    }
+  };
+
+  const handleDownloadHasil = () => {
+    if (pathname !== '/map') {
+      const url = currentKabupaten 
+        ? `/map?kabupaten=${encodeURIComponent(currentKabupaten)}&level=${activeLevel}&triggerDownload=true` 
+        : `/map?triggerDownload=true`;
+      router.push(url);
+    } else {
+      window.dispatchEvent(new CustomEvent('trigger-download-xlsx'));
+    }
+  };
+
   // Helper component for desktop sidebar links
   const SidebarLink = ({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) => {
     if (isMinimized) {
@@ -114,7 +140,7 @@ export default function Navbar() {
           href={href} 
           className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
             active 
-              ? 'bg-emerald-100 text-slate-900 shadow-md scale-105' 
+              ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md scale-105 border border-[#14B8A6]/30' 
               : 'text-emerald-100 hover:bg-white/10 hover:text-white'
           }`}
         >
@@ -132,13 +158,102 @@ export default function Navbar() {
         href={href} 
         className={`flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-extrabold text-sm transition-all duration-200 ${
           active 
-            ? 'bg-emerald-100 text-slate-900 shadow-md translate-x-1' 
+            ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md translate-x-1 border border-[#14B8A6]/30' 
             : 'text-emerald-100 hover:bg-white/10 hover:text-white'
         }`}
       >
         <span className="shrink-0">{icon}</span>
-        <span className="truncate">{label}</span>
+        <span className="whitespace-normal leading-snug">{label}</span>
       </Link>
+    );
+  };
+
+  const SidebarAction = ({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) => {
+    if (isMinimized) {
+      return (
+        <button 
+          onClick={onClick} 
+          className="flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative text-emerald-100 hover:bg-white/10 hover:text-white cursor-pointer w-full"
+        >
+          {icon}
+          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
+            {label}
+          </div>
+        </button>
+      );
+    }
+
+    return (
+      <button 
+        onClick={onClick} 
+        className="flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-extrabold text-sm transition-all duration-200 text-emerald-100 hover:bg-white/10 hover:text-white cursor-pointer w-full text-left"
+      >
+        <span className="shrink-0">{icon}</span>
+        <span className="whitespace-normal leading-snug">{label}</span>
+      </button>
+    );
+  };
+
+  const renderPetunjukDropdown = () => {
+    if (isMinimized) {
+      return (
+        <Link 
+          href="/petunjuk-penggunaan" 
+          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
+            isActive('/petunjuk-penggunaan') 
+              ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md scale-105 border border-[#14B8A6]/30' 
+              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <BookOpen className="w-5 h-5" />
+          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
+            Petunjuk penggunaan
+          </div>
+        </Link>
+      );
+    }
+
+    const isPetunjukActive = pathname === '/petunjuk-penggunaan';
+
+    return (
+      <div className="flex flex-col">
+        <button
+          onClick={() => setPetunjukDropdownOpen(!petunjukDropdownOpen)}
+          className={`flex items-center justify-between px-4 py-2.5 text-sm font-extrabold transition-all duration-200 cursor-pointer w-full text-left rounded-xl ${
+            isPetunjukActive 
+              ? 'text-[#2DD4BF] bg-[#14B8A6]/5' 
+              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-3.5"><BookOpen className="w-5 h-5 shrink-0" /> Petunjuk penggunaan</span>
+          <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: petunjukDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+        </button>
+
+        {petunjukDropdownOpen && (
+          <div className="pl-9 space-y-1.5 mt-1">
+            <Link 
+              href="/petunjuk-penggunaan?type=kab_kota"
+              className={`block py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all ${
+                pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota'
+                  ? 'bg-[#14B8A6]/20 text-[#2DD4BF]'
+                  : 'text-emerald-200 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Peta Kab/Kota
+            </Link>
+            <Link 
+              href="/petunjuk-penggunaan?type=provinsi"
+              className={`block py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all ${
+                pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi'
+                  ? 'bg-[#14B8A6]/20 text-[#2DD4BF]'
+                  : 'text-emerald-200 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Peta Provinsi
+            </Link>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -150,7 +265,7 @@ export default function Navbar() {
           href="/map"
           className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
             isAnyMapActive
-              ? 'bg-emerald-100 text-slate-900 shadow-md' 
+              ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md border border-[#14B8A6]/30' 
               : 'text-emerald-100 hover:bg-white/10 hover:text-white'
           }`}
         >
@@ -163,66 +278,132 @@ export default function Navbar() {
     }
 
     const isSemuaPetaActive = pathname === '/map' && !currentKabupaten;
+    const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
+    const provinsiMaps = maps.filter(m => m.level === 'provinsi');
 
     return (
-      <div className="flex flex-col border-t border-green-700/30 pt-3 mt-2">
-        <button
-          onClick={() => setSidebarDropdownOpen(!sidebarDropdownOpen)}
-          className="flex items-center justify-between px-3 mb-2 text-xs font-black text-emerald-200 hover:text-white uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
-        >
-          <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Peta Tersimpan</span>
-          <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: sidebarDropdownOpen ? 'rotate(180deg)' : 'none' }} />
-        </button>
+      <div className="flex flex-col border-t border-green-750/30 pt-3 mt-2 space-y-3">
+        {/* Dropdown 1: Kab/Kota */}
+        <div className="flex flex-col">
+          <button
+            onClick={() => setSavedKabDropdownOpen(!savedKabDropdownOpen)}
+            className="flex items-center justify-between px-3 mb-2 text-xs font-black text-emerald-200 hover:text-white uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+          >
+            <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Peta Kab/Kota</span>
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: savedKabDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
 
-        {sidebarDropdownOpen && (
-          <div className="pl-2 pr-1 space-y-1 max-h-[200px] overflow-y-auto custom-scrollbar">
-            <button
-              onClick={() => router.push('/map')}
-              className={`w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
-                isSemuaPetaActive 
-                  ? 'bg-emerald-100 text-slate-900 font-extrabold shadow-sm' 
-                  : 'text-emerald-100 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              Semua Peta
-            </button>
-            
-            {maps.length > 0 ? maps.map((kab, i) => {
-              const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten;
-              return (
-                <div 
-                  key={i} 
-                  className={`flex items-center justify-between w-full rounded-lg group px-1 transition-colors ${
-                    isMapActive ? 'bg-emerald-100' : 'hover:bg-white/5'
-                  }`}
-                >
-                  <button
-                    onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}`)}
-                    className={`flex-1 text-left py-1.5 px-2 rounded text-xs transition-colors cursor-pointer truncate ${
-                      isMapActive ? 'text-slate-900 font-extrabold' : 'text-emerald-100 hover:text-white'
+          {savedKabDropdownOpen && (
+            <div className="pl-2 pr-1 space-y-1 max-h-[130px] overflow-y-auto custom-scrollbar">
+              <button
+                onClick={() => router.push('/map?level=kab_kota')}
+                className={`w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
+                  isSemuaPetaActive && activeLevel === 'kab_kota'
+                    ? 'bg-[#14B8A6]/20 text-[#2DD4BF] font-extrabold shadow-sm' 
+                    : 'text-emerald-100 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                Semua Peta Kab/Kota
+              </button>
+              
+              {kabKotaMaps.length > 0 ? kabKotaMaps.map((kab, i) => {
+                const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'kab_kota';
+                return (
+                  <div 
+                    key={i} 
+                    className={`flex items-center justify-between w-full rounded-lg group px-1 transition-colors ${
+                      isMapActive ? 'bg-[#14B8A6]/20 border border-[#14B8A6]/25' : 'hover:bg-white/5'
                     }`}
-                    title={kab.nama_kabupaten}
                   >
-                    {kab.nama_kabupaten}
-                  </button>
-                  {session && session.user && kab.user_id === session.user.id && (
                     <button
-                      onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
-                      className={`p-1 transition-colors cursor-pointer shrink-0 ${
-                        isMapActive ? 'text-slate-500 hover:text-rose-650' : 'text-emerald-300/40 hover:text-rose-400'
+                      onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota`)}
+                      className={`flex-1 text-left py-1.5 px-2 rounded text-xs transition-colors cursor-pointer truncate ${
+                        isMapActive ? 'text-[#2DD4BF] font-extrabold' : 'text-emerald-100 hover:text-white'
                       }`}
-                      title="Hapus Peta"
+                      title={kab.nama_kabupaten}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {kab.nama_kabupaten}
                     </button>
-                  )}
-                </div>
-              );
-            }) : (
-              <div className="px-3 py-2 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
-            )}
-          </div>
-        )}
+                    {session && session.user && kab.user_id === session.user.id && (
+                      <button
+                        onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                        className={`p-1 transition-colors cursor-pointer shrink-0 ${
+                          isMapActive ? 'text-slate-500 hover:text-rose-650' : 'text-emerald-300/40 hover:text-rose-400'
+                        }`}
+                        title="Hapus Peta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              }) : (
+                <div className="px-3 py-1.5 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Dropdown 2: Provinsi */}
+        <div className="flex flex-col">
+          <button
+            onClick={() => setSavedProvDropdownOpen(!savedProvDropdownOpen)}
+            className="flex items-center justify-between px-3 mb-2 text-xs font-black text-emerald-250 hover:text-white uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+          >
+            <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Peta Provinsi</span>
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: savedProvDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+
+          {savedProvDropdownOpen && (
+            <div className="pl-2 pr-1 space-y-1 max-h-[130px] overflow-y-auto custom-scrollbar">
+              <button
+                onClick={() => router.push('/map?level=provinsi')}
+                className={`w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
+                  isSemuaPetaActive && activeLevel === 'provinsi'
+                    ? 'bg-[#14B8A6]/20 text-[#2DD4BF] font-extrabold shadow-sm' 
+                    : 'text-emerald-100 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                Semua Peta Provinsi
+              </button>
+              
+              {provinsiMaps.length > 0 ? provinsiMaps.map((kab, i) => {
+                const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'provinsi';
+                return (
+                  <div 
+                    key={i} 
+                    className={`flex items-center justify-between w-full rounded-lg group px-1 transition-colors ${
+                      isMapActive ? 'bg-[#14B8A6]/20 border border-[#14B8A6]/25' : 'hover:bg-white/5'
+                    }`}
+                  >
+                    <button
+                      onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi`)}
+                      className={`flex-1 text-left py-1.5 px-2 rounded text-xs transition-colors cursor-pointer truncate ${
+                        isMapActive ? 'text-[#2DD4BF] font-extrabold' : 'text-emerald-100 hover:text-white'
+                      }`}
+                      title={kab.nama_kabupaten}
+                    >
+                      {kab.nama_kabupaten}
+                    </button>
+                    {session && session.user && kab.user_id === session.user.id && (
+                      <button
+                        onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                        className={`p-1 transition-colors cursor-pointer shrink-0 ${
+                          isMapActive ? 'text-slate-500 hover:text-rose-650' : 'text-emerald-300/40 hover:text-rose-400'
+                        }`}
+                        title="Hapus Peta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              }) : (
+                <div className="px-3 py-1.5 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -240,9 +421,12 @@ export default function Navbar() {
       );
     }
 
+    const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
+    const provinsiMaps = maps.filter(m => m.level === 'provinsi');
+
     return (
       <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
-        {/* Mobile Header with link to / */}
+        {/* Mobile Header */}
         <div className="flex items-center justify-between border-b pb-3 border-green-50/50 mb-3 bg-gradient-to-r from-green-800 via-green-700 to-green-500 -mx-4 -mt-4 p-4 rounded-t-2xl text-white">
           <Link 
             href="/" 
@@ -268,56 +452,68 @@ export default function Navbar() {
         {/* Mobile Menu Links */}
         <div className="flex flex-col gap-2">
           <Link 
-            href="/map" 
+            href="/" 
             onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/map') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
-            Peta Interaktif
-          </Link>
-          <Link 
-            href="/dashboard" 
-            onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/dashboard') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-          >
-            Dashboard
+            Beranda
           </Link>
           <Link 
             href="/entry" 
             onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/entry') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/entry') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
             Data Entry
           </Link>
-          
-          {/* Menu Baru: Petunjuk Penggunaan */}
           <Link 
-            href="/petunjuk-penggunaan" 
+            href="/dashboard" 
             onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/petunjuk-penggunaan') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/dashboard') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
-            Petunjuk penggunaan
+            Faktor yang Berpengaruh
           </Link>
+          <button 
+            onClick={() => { toggleExpand(false); handleCetakPeta(); }} 
+            className="text-left text-xs font-semibold py-2 px-3 rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer"
+          >
+            Cetak Peta FSVA
+          </button>
+          <button 
+            onClick={() => { toggleExpand(false); handleDownloadHasil(); }} 
+            className="text-left text-xs font-semibold py-2 px-3 rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer"
+          >
+            Download Hasil Analisis FSVA
+          </button>
+          
+          <div className="flex flex-col border-t pt-2 border-slate-100">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Petunjuk penggunaan</span>
+            <div className="flex flex-col gap-1 pl-4">
+              <Link 
+                href="/petunjuk-penggunaan?type=kab_kota" 
+                onClick={() => toggleExpand(false)} 
+                className={`text-xs py-1.5 px-2 rounded transition-colors ${pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:text-emerald-600'}`}
+              >
+                Peta Kab/Kota
+              </Link>
+              <Link 
+                href="/petunjuk-penggunaan?type=provinsi" 
+                onClick={() => toggleExpand(false)} 
+                className={`text-xs py-1.5 px-2 rounded transition-colors ${pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:text-emerald-600'}`}
+              >
+                Peta Provinsi
+              </Link>
+            </div>
+          </div>
           
           <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
-            <span className="text-[10px] font-bold text-gray-450 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan</span>
-            <div className="max-h-[220px] overflow-y-auto flex flex-col gap-1 pl-2 custom-scrollbar">
-              <div className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
-                <button
-                  onClick={() => {
-                    toggleExpand(false);
-                    router.push('/map');
-                  }}
-                  className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-bold truncate rounded cursor-pointer"
-                >
-                  Semua Peta
-                </button>
-              </div>
-              {maps.length > 0 ? maps.map((kab, i) => (
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan Kab/Kota</span>
+            <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1 pl-4 custom-scrollbar">
+              {kabKotaMaps.length > 0 ? kabKotaMaps.map((kab, i) => (
                 <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
                   <button
                     onClick={() => {
                       toggleExpand(false);
-                      router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}`);
+                      router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota`);
                     }}
                     className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
                   >
@@ -327,6 +523,36 @@ export default function Navbar() {
                     <button
                       onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
                       className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-3 shrink-0"
+                      title="Hapus Peta"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )) : (
+                <div className="px-3 py-1 text-xs text-gray-400 italic">Belum ada peta</div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan Provinsi</span>
+            <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1 pl-4 custom-scrollbar">
+              {provinsiMaps.length > 0 ? provinsiMaps.map((kab, i) => (
+                <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
+                  <button
+                    onClick={() => {
+                      toggleExpand(false);
+                      router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi`);
+                    }}
+                    className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
+                  >
+                    {kab.nama_kabupaten}
+                  </button>
+                  {session && session.user && kab.user_id === session.user.id && (
+                    <button
+                      onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                      className="p-1 text-slate-400 hover:text-rose-650 transition-colors cursor-pointer pr-3 shrink-0"
                       title="Hapus Peta"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -366,7 +592,7 @@ export default function Navbar() {
   // DESKTOP VERTICAL SIDEBAR VIEW RENDER
   return (
     <aside 
-      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-green-900 via-emerald-955 to-green-955 border-r border-green-800/30 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
+      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-[#0F2E23] via-[#0A261D] to-[#041A14] border-r border-[#14B8A6]/10 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
         isMinimized ? 'w-20' : 'w-64'
       }`}
     >
@@ -385,12 +611,12 @@ export default function Navbar() {
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-black text-lg tracking-tight text-white">FSVA</span>
-                <span className="text-[9px] text-emerald-300/80 font-semibold tracking-wide mt-0.5">FSVA.my.id</span>
+                <span className="text-[9px] text-emerald-350 font-semibold tracking-wide mt-0.5">FSVA.my.id</span>
               </div>
             </Link>
             <button 
               onClick={() => setIsMinimized(true)}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-all duration-200 cursor-pointer border border-emerald-800/30"
+              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-250 hover:text-white transition-all duration-200 cursor-pointer border border-[#14B8A6]/10"
               title="Sembunyikan Menu"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -406,7 +632,7 @@ export default function Navbar() {
             </Link>
             <button 
               onClick={() => setIsMinimized(false)}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-all duration-200 cursor-pointer border border-emerald-800/30 mt-1"
+              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-250 hover:text-white transition-all duration-200 cursor-pointer border border-[#14B8A6]/10 mt-1"
               title="Tampilkan Menu"
             >
               <ChevronRight className="w-4 h-4" />
@@ -457,18 +683,24 @@ export default function Navbar() {
       </div>
 
       {/* Menu List */}
-      <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2 custom-scrollbar">
-        {/* Peta Interaktif */}
-        <SidebarLink href="/map" icon={<Map className="w-5 h-5" />} label="Peta Interaktif" active={isActive('/map')} />
-        
-        {/* Dashboard */}
-        <SidebarLink href="/dashboard" icon={<BarChart3 className="w-5 h-5" />} label="Dashboard" active={isActive('/dashboard')} />
-        
+      <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2.5 custom-scrollbar">
+        {/* Beranda */}
+        <SidebarLink href="/" icon={<Home className="w-5 h-5" />} label="Beranda" active={isActive('/')} />
+
         {/* Data Entry */}
         <SidebarLink href="/entry" icon={<Database className="w-5 h-5" />} label="Data Entry" active={isActive('/entry')} />
-        
-        {/* Petunjuk Penggunaan */}
-        <SidebarLink href="/petunjuk-penggunaan" icon={<BookOpen className="w-5 h-5" />} label="Petunjuk penggunaan" active={isActive('/petunjuk-penggunaan')} />
+
+        {/* Faktor yang Berpengaruh */}
+        <SidebarLink href="/dashboard" icon={<BarChart3 className="w-5 h-5" />} label="Faktor yang Berpengaruh" active={isActive('/dashboard')} />
+
+        {/* Cetak Peta FSVA */}
+        <SidebarAction onClick={handleCetakPeta} icon={<Printer className="w-5 h-5" />} label="Cetak Peta FSVA" />
+
+        {/* Download Hasil Analisis FSVA */}
+        <SidebarAction onClick={handleDownloadHasil} icon={<Download className="w-5 h-5" />} label="Download Hasil Analisis" />
+
+        {/* Petunjuk Penggunaan Dropdown */}
+        {renderPetunjukDropdown()}
 
         {/* Peta Tersimpan Dropdown */}
         {renderSavedMapsDropdown()}

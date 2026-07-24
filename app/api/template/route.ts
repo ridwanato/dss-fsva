@@ -1,8 +1,73 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
+import path from 'path';
+import fs from 'fs';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const level = searchParams.get('level') || 'kab_kota';
+
+    if (level === 'provinsi') {
+      const headersProv = [
+        'No',
+        'Nama Kecamatan',
+        'Kode BPS Kecamatan',
+        'Produksi Padi (ton)',
+        'Produksi Jagung (ton)',
+        'Produksi Ubi Kayu (ton)',
+        'Produksi Ubi Jalar (ton)',
+        'Produksi Sagu (ton)',
+        'Produksi Pisang (ton)',
+        'Jumlah Penduduk',
+        'Konsumsi Energi (kkal/kap/hr)',
+        'Konsumsi Protein Hewani (gr/kap/hr)',
+        'Stok Cadangan Pangan Provinsi (ton)',
+        'Jumlah Penduduk Provinsi',
+        'Stok Cadangan Pangan Kab/Kota (ton)',
+        'Jumlah Penduduk Kab/Kota',
+        'Stok Cadangan Pangan Kecamatan (ton)',
+        '% Penduduk Miskin',
+        'CV Harga Beras (%)',
+        'CV Harga Ayam (%)',
+        'CV Harga Telur (%)',
+        'CV Harga Minyak (%)',
+        'PoU (%)',
+        'Rata-rata Lama Sekolah Perempuan (tahun)',
+        '% RT Tanpa Air Bersih',
+        'Keamanan Pangan Segar (%)',
+        'Keamanan Pangan Siap Saji (%)',
+        'Skor PPH Konsumsi',
+        '% Balita Stunting'
+      ];
+
+      const wsData = [
+        ['TAHUN KALKULASI (Silakan Ubah):', 2025],
+        [], // Baris kosong pemisah
+        headersProv,
+        // Contoh format baris (kosongkan nilainya kecuali No)
+        [1, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+      
+      const colWidths = headersProv.map(h => ({ wch: Math.max(15, h.length) }));
+      worksheet['!cols'] = colWidths;
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Indikator FSVA Prov');
+
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      return new NextResponse(buffer, {
+        status: 200,
+        headers: {
+          'Content-Disposition': `attachment; filename="Template_Data_Indikator_FSVA_Prov.xlsx"`,
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+      });
+    }
+
     const headers = [
       'No',
       'Nama Kecamatan',

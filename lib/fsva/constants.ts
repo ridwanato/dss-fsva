@@ -17,6 +17,22 @@ export const WEIGHTS = {
   stunting:  8.0,
 } as const
 
+// Bobot indikator tingkat provinsi (12 Indikator)
+export const WEIGHTS_PROV = {
+  ncpr:        9.5,
+  energy:      8.0,
+  protein:     8.0,
+  cadangan:    8.0,
+  poverty:     11.8,
+  cv_harga:    11.3,
+  pou:         9.9,
+  sekolah:     5.0,
+  air:         7.5,
+  food_safety: 6.0,
+  pph:         7.8,
+  stunting:    7.2,
+} as const
+
 // Cut off komposit (Tabel 4 Juknis) — sudah fixed, tidak dihitung ulang
 export const COMPOSITE_CUTOFF = {
   p1_max: 46.37,   // <46.37 = Prioritas 1 (Sangat rentan)
@@ -25,6 +41,15 @@ export const COMPOSITE_CUTOFF = {
   p4_max: 69.71,   // 61.83–69.71 = Prioritas 4 (Agak tahan)
   p5_max: 77.29,   // 69.71–77.29 = Prioritas 5 (Tahan)
                    // >77.29      = Prioritas 6 (Sangat tahan)
+}
+
+// Cut off komposit tingkat provinsi
+export const COMPOSITE_CUTOFF_PROV = {
+  p1_max: 45.76482182069139,
+  p2_max: 53.47550897170462,
+  p3_max: 61.41346884999059,
+  p4_max: 69.35142872827656,
+  p5_max: 77.06211587928979,
 }
 
 // Range indikator individu (Tabel 2 Juknis)
@@ -42,6 +67,22 @@ export const INDICATOR_RANGES = {
   air:      { breaks: [30,   40,   50,   60,   70],   inverse: true,  min: 0,  max: 100 },
   pph:      { breaks: [70,   75,   80,   85,   90],   inverse: false, min: 40, max: 100 },
   stunting: { breaks: [10,   20,   30],            inverse: true,  min: 0,  max: 75 },
+}
+
+// Range indikator individu tingkat provinsi (12 Indikator)
+export const INDICATOR_RANGES_PROV = {
+  ncpr:        { breaks: [0.50, 0.75, 1.00, 1.25, 1.50], inverse: true,  min: 0,  max: 10 },
+  energy:      { breaks: [70,   80,   90,   100,  110],  inverse: false, min: 50, max: 120 },
+  protein:     { breaks: [70,   80,   90,   100,  110],  inverse: false, min: 28, max: 120 },
+  cadangan:    { breaks: [0.25, 0.375, 0.50, 0.625, 0.75], inverse: false, min: 0,  max: 3.5 },
+  poverty:     { breaks: [10,   15,   20,   25,   30],   inverse: true,  min: 0,  max: 50 },
+  cv_harga:    { breaks: [6,    7,    8,    9,    10],   inverse: true,  min: 2,  max: 20 },
+  pou:         { breaks: [5,    10,   15,   20,   25],   inverse: true,  min: 0,  max: 75 },
+  sekolah:     { breaks: [6.0,  6.5,  7.5,  8.5,  9.0],  inverse: false, min: 1,  max: 12 },
+  air:         { breaks: [30,   40,   50,   60,   70],   inverse: true,  min: 0,  max: 100 },
+  food_safety: { breaks: [30,   40,   50,   60,   70],   inverse: false, min: 0,  max: 100 },
+  pph:         { breaks: [70,   75,   80,   85,   90],   inverse: false, min: 40, max: 100 },
+  stunting:    { breaks: [20,   25,   30,   35,   40],   inverse: true,  min: 0,  max: 75 },
 }
 
 // Konversi GKG → Beras per Provinsi (Gambar 1 Juknis, Sumber BPS 2018)

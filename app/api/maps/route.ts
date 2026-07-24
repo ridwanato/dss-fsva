@@ -5,25 +5,28 @@ export const revalidate = 0;
 
 export async function GET() {
   const supabase = getServiceSupabase();
-  // Fetch distinct kabupaten names and their user_id from geometries
+  // Fetch distinct kabupaten/provinsi names, user_id, and level from geometries
   const { data, error } = await supabase
     .from('geometries')
-    .select('nama_kabupaten, user_id')
+    .select('nama_kabupaten, user_id, level')
     .not('nama_kabupaten', 'is', null);
 
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
-  // Deduplicate and sort
-  const mapNames = Array.from(new Set(data.map(d => d.nama_kabupaten))).filter(Boolean).sort() as string[];
-
-  // Map each kabupaten to its owner user_id
-  const mapUserIds: Record<string, string | null> = {};
+  // Deduplicate based on name and level
+  const uniqueMaps: Record<string, any> = {};
   if (data) {
     for (const item of data) {
       if (item.nama_kabupaten) {
-        mapUserIds[item.nama_kabupaten] = item.user_id || null;
+        const lvl = item.level || 'kab_kota';
+        const key = `${lvl}:${item.nama_kabupaten}`;
+        uniqueMaps[key] = {
+          nama_kabupaten: item.nama_kabupaten,
+          user_id: item.user_id || null,
+          level: lvl
+        };
       }
     }
   }
@@ -31,22 +34,30 @@ export async function GET() {
   // Fetch distinct maps and their latest year from fsva_results
   const { data: yearData } = await supabase
     .from('fsva_results')
-    .select('nama_kabupaten, tahun');
+    .select('nama_kabupaten, level, tahun');
 
   const mapYears: Record<string, number> = {};
   if (yearData) {
     for (const item of yearData) {
       if (item.nama_kabupaten && item.tahun) {
-        mapYears[item.nama_kabupaten] = Math.max(mapYears[item.nama_kabupaten] || 0, item.tahun);
+        const lvl = item.level || 'kab_kota';
+        const key = `${lvl}:${item.nama_kabupaten}`;
+        mapYears[key] = Math.max(mapYears[key] || 0, item.tahun);
       }
     }
   }
 
-  const mapDetails = mapNames.map(name => ({
-    nama_kabupaten: name,
-    tahun: mapYears[name] || 2025, // Default fallback to 2025
-    user_id: mapUserIds[name] || null
-  }));
+  const mapDetails = Object.values(uniqueMaps).map((m: any) => {
+    const key = `${m.level}:${m.nama_kabupaten}`;
+    return {
+      nama_kabupaten: m.nama_kabupaten,
+      level: m.level,
+      tahun: mapYears[key] || 2025, // Default fallback to 2025
+      user_id: m.user_id
+    };
+  });
+
+  const mapNames = mapDetails.map(m => m.nama_kabupaten);
 
   return NextResponse.json({ success: true, maps: mapNames, mapDetails });
 }
@@ -55,9 +66,10 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const kabupaten = searchParams.get('kabupaten');
+    const level = searchParams.get('level') || 'kab_kota';
 
     if (!kabupaten) {
-      return NextResponse.json({ success: false, error: 'Nama kabupaten/peta wajib diisi.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Nama kabupaten/provinsi peta wajib diisi.' }, { status: 400 });
     }
 
     // Pastikan user terautentikasi (login) sebelum mengizinkan penghapusan
@@ -76,6 +88,7 @@ export async function DELETE(req: NextRequest) {
       .from('geometries')
       .select('user_id')
       .eq('nama_kabupaten', kabupaten)
+      .eq('level', level)
       .limit(1);
 
     if (ownerError) {
@@ -108,13 +121,14 @@ export async function DELETE(req: NextRequest) {
     const { error } = await supabase
       .from('geometries')
       .delete()
-      .eq('nama_kabupaten', kabupaten);
+      .eq('nama_kabupaten', kabupaten)
+      .eq('level', level);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: `Peta kabupaten "${kabupaten}" berhasil dihapus.` });
+    return NextResponse.json({ success: true, message: `Peta "${kabupaten}" (${level}) berhasil dihapus.` });
   } catch (err: any) {
     console.error(err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

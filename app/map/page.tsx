@@ -6,7 +6,7 @@ import InfoPanel from '@/components/InfoPanel';
 import PrintLayout from '@/components/PrintLayout';
 import { Download, Printer, Settings, X } from 'lucide-react';
 
-import LayerPanel, { LAYERS } from '@/components/LayerPanel';
+import LayerPanel, { getLayersForLevel } from '@/components/LayerPanel';
 
   import { useSearchParams, useRouter } from 'next/navigation';
   import { Suspense } from 'react';
@@ -30,6 +30,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
     const searchParams = useSearchParams();
     const router = useRouter();
     const kabupaten = searchParams.get('kabupaten') || '';
+    const level = searchParams.get('level') || 'kab_kota';
     
     const [geoData, setGeoData] = useState<any>(null);
     const [selectedPolygon, setSelectedPolygon] = useState<any>(null);
@@ -79,44 +80,46 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            const fetchedMaps = data.maps || [];
-            setMaps(fetchedMaps);
-            setMapDetails(data.mapDetails || []);
+            const fetchedDetails = data.mapDetails || [];
+            setMapDetails(fetchedDetails);
+            
+            // Filter maps based on level
+            const filteredMaps = fetchedDetails.filter((d: any) => d.level === level).map((d: any) => d.nama_kabupaten);
+            setMaps(filteredMaps);
 
             // Auto-select map if none is selected
-            if (!kabupaten && fetchedMaps.length > 0) {
-              const lastActive = localStorage.getItem('last_active_map');
-              if (lastActive && fetchedMaps.includes(lastActive)) {
-                router.replace(`/map?kabupaten=${encodeURIComponent(lastActive)}`);
+            if (!kabupaten && filteredMaps.length > 0) {
+              const lastActive = localStorage.getItem(`last_active_map_${level}`);
+              if (lastActive && filteredMaps.includes(lastActive)) {
+                router.replace(`/map?kabupaten=${encodeURIComponent(lastActive)}&level=${level}`);
               } else {
-                // Default to the first map in the list
-                router.replace(`/map?kabupaten=${encodeURIComponent(fetchedMaps[0])}`);
+                router.replace(`/map?kabupaten=${encodeURIComponent(filteredMaps[0])}&level=${level}`);
               }
             }
           }
         })
         .catch(console.error);
-    }, [kabupaten, router]);
+    }, [kabupaten, level, router]);
 
     // Save active map to localStorage
     useEffect(() => {
       if (kabupaten) {
-        localStorage.setItem('last_active_map', kabupaten);
+        localStorage.setItem(`last_active_map_${level}`, kabupaten);
       }
-    }, [kabupaten]);
+    }, [kabupaten, level]);
 
     // Fetch GeoJSON with dynamic year based on the selected map
     useEffect(() => {
       let year = 2025;
       if (kabupaten && mapDetails.length > 0) {
-        const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten);
+        const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
         if (detail) {
           year = detail.tahun;
         }
       }
       setSelectedYear(year);
 
-      let url = `/api/geojson?tahun=${year}`;
+      let url = `/api/geojson?tahun=${year}&level=${level}`;
       if (kabupaten) url += `&kabupaten=${encodeURIComponent(kabupaten)}`;
       
       setLoading(true);
@@ -130,7 +133,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
           console.error(err);
           setLoading(false);
         });
-    }, [kabupaten, mapDetails]);
+    }, [kabupaten, level, mapDetails]);
 
     // Re-synchronize printConfig dynamically when map or year changes
     useEffect(() => {
@@ -142,6 +145,54 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN ${selectedYear}\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`
       }));
     }, [kabupaten, selectedYear]);
+
+    // Listen to print and download triggers from Sidebar
+    useEffect(() => {
+      const handlePrint = () => {
+        setShowPrintModal(true);
+      };
+      
+      const handleDownload = () => {
+        if (kabupaten) {
+          const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
+          const year = detail ? detail.tahun : selectedYear;
+          window.location.href = `/api/export?tahun=${year}&kabupaten=${encodeURIComponent(kabupaten)}&level=${level}`;
+        }
+      };
+
+      window.addEventListener('trigger-print-pdf', handlePrint);
+      window.addEventListener('trigger-download-xlsx', handleDownload);
+
+      // Check URL query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('triggerPrint') === 'true') {
+        setShowPrintModal(true);
+        // Clear param
+        const params = new URLSearchParams(window.location.search);
+        params.delete('triggerPrint');
+        router.replace(`/map?${params.toString()}`);
+      }
+      if (urlParams.get('triggerDownload') === 'true') {
+        handleDownload();
+        // Clear param
+        const params = new URLSearchParams(window.location.search);
+        params.delete('triggerDownload');
+        router.replace(`/map?${params.toString()}`);
+      }
+
+      return () => {
+        window.removeEventListener('trigger-print-pdf', handlePrint);
+        window.removeEventListener('trigger-download-xlsx', handleDownload);
+      };
+    }, [kabupaten, level, mapDetails, selectedYear, router]);
+
+    // Validate active layer on level change
+    useEffect(() => {
+      const validLayers = getLayersForLevel(level as any).map(l => l.id);
+      if (!validLayers.includes(activeLayer)) {
+        setActiveLayer('prioritas');
+      }
+    }, [level, activeLayer]);
 
   const executePrint = () => {
     setShowPrintModal(false);
@@ -163,7 +214,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         setMapImage(dataUrl);
         
         const originalTitle = document.title;
-        const indicatorName = LAYERS.find(l => l.id === activeLayer)?.label || '';
+        const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || '';
         document.title = `FSVA ${kabupaten} ${indicatorName}`.trim();
         
         setTimeout(() => {
@@ -189,7 +240,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
     <>
     <PrintLayout 
       mapImage={mapImage} 
-      activeLayerName={LAYERS.find(l => l.id === activeLayer)?.label || ''} 
+      activeLayerName={getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || ''} 
       activeLayer={activeLayer}
       config={printConfig}
     />
@@ -201,6 +252,10 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
         setOpacity={setOpacity}
         showLabels={showLabels}
         setShowLabels={setShowLabels}
+        level={level as any}
+        onLevelChange={(lvl) => {
+          router.push(`/map?level=${lvl}`);
+        }}
       >
         {/* Dropdown Peta (di atas tombol) */}
         <div className="pointer-events-auto flex flex-col gap-1 w-full mb-1 border-b border-slate-100 pb-1.5">
@@ -212,9 +267,9 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
             onChange={(e) => {
               const val = e.target.value;
               if (val === 'semua' || val === '') {
-                router.push('/map');
+                router.push(`/map?level=${level}`);
               } else {
-                router.push(`/map?kabupaten=${encodeURIComponent(val)}`);
+                router.push(`/map?kabupaten=${encodeURIComponent(val)}&level=${level}`);
               }
             }}
             className="w-full text-[10px] bg-white border border-slate-200 rounded-lg py-1 px-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none text-slate-800 font-extrabold cursor-pointer"
@@ -242,7 +297,7 @@ import LayerPanel, { LAYERS } from '@/components/LayerPanel';
               Cetak PDF
             </button>
             <a 
-              href={`/api/export?tahun=${selectedYear}&kabupaten=${encodeURIComponent(kabupaten)}`} 
+              href={`/api/export?tahun=${selectedYear}&kabupaten=${encodeURIComponent(kabupaten)}&level=${level}`} 
               className="pointer-events-auto bg-[#6b4c9a] hover:bg-[#5b3c8a] text-white px-2 py-1.5 rounded shadow border border-[#4b2c7a] text-[9px] md:text-[10px] font-bold flex items-center justify-center gap-1.5 transition text-center"
             >
               <Download className="w-3 h-3" />

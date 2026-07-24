@@ -27,6 +27,14 @@ export interface RawIndicatorInput {
   pct_no_water: number        // %
   skor_pph: number            // 0-100
   pct_stunting: number        // %
+  // Tambahan untuk tingkat provinsi
+  cbpp?: number               // kg
+  jumlah_penduduk_prov?: number // jiwa
+  cbpk?: number               // kg
+  jumlah_penduduk_kab?: number // jiwa
+  cbp_kec?: number            // kg
+  segar?: number              // %
+  siap_saji?: number          // %
 }
 
 export interface CalculatedIndicators {
@@ -48,6 +56,8 @@ export interface CalculatedIndicators {
   pct_no_water: number
   skor_pph: number
   pct_stunting: number
+  // Indikator 12 untuk tingkat provinsi
+  food_safety?: number
 }
 
 // ================================================================
@@ -117,7 +127,20 @@ function calculatePctProhe(konsumsi_protein: number): number {
 // ================================================================
 // INDIKATOR 4: Rasio Cadangan (Rumus 18)
 // ================================================================
-function calculateRasioCadangan(cbpd: number, lpm: number, penduduk: number): number {
+function calculateRasioCadangan(
+  cbpd: number, lpm: number, penduduk: number, 
+  level: 'kab_kota' | 'provinsi' = 'kab_kota',
+  cbpp?: number, jml_pend_prov?: number,
+  cbpk?: number, jml_pend_kab?: number,
+  cbp_kec?: number
+): number {
+  if (level === 'provinsi') {
+    const provCapita = cbpp && jml_pend_prov && jml_pend_prov > 0 ? cbpp / jml_pend_prov : 0;
+    const kabCapita = cbpk && jml_pend_kab && jml_pend_kab > 0 ? cbpk / jml_pend_kab : 0;
+    const kecCapita = cbp_kec && penduduk > 0 ? cbp_kec / penduduk : 0;
+    return provCapita + kabCapita + kecCapita;
+  }
+
   if (penduduk <= 0) return 0; // Hindari division by zero
   const totalCadangan = (cbpd + lpm) * 1000 // ton → kg
   return totalCadangan / penduduk // kg/kapita
@@ -139,14 +162,31 @@ function calculateCVHarga(
 }
 
 // ================================================================
+// INDIKATOR 10 PROVINSI: Keamanan Pangan
+// ================================================================
+function calculateFoodSafety(segar?: number, siap_saji?: number): number {
+  const vals: number[] = [];
+  if (segar !== undefined && segar !== null && !isNaN(segar)) vals.push(segar);
+  if (siap_saji !== undefined && siap_saji !== null && !isNaN(siap_saji)) vals.push(siap_saji);
+  if (vals.length === 0) return 0; // fallback if no data
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+// ================================================================
 // MAIN EXPORT: Kalkulasi semua indikator
 // ================================================================
-export function calculateAllIndicators(input: RawIndicatorInput): CalculatedIndicators {
-  return {
+export function calculateAllIndicators(
+  input: RawIndicatorInput, 
+  level: 'kab_kota' | 'provinsi' = 'kab_kota'
+): CalculatedIndicators {
+  const result: CalculatedIndicators = {
     ncpr:            calculateNCPR(input),
     pct_ake:         calculatePctAKE(input.konsumsi_energi),
     pct_prohe:       calculatePctProhe(input.konsumsi_protein),
-    rasio_cadangan:  calculateRasioCadangan(input.cadangan_cbpd, input.cadangan_lpm, input.jumlah_penduduk),
+    rasio_cadangan:  calculateRasioCadangan(
+      input.cadangan_cbpd, input.cadangan_lpm, input.jumlah_penduduk, 
+      level, input.cbpp, input.jumlah_penduduk_prov, input.cbpk, input.jumlah_penduduk_kab, input.cbp_kec
+    ),
     pct_miskin:      input.pct_miskin,
     cv_harga:        calculateCVHarga(input.cv_harga_beras, input.cv_harga_ayam, input.cv_harga_telur, input.cv_harga_minyak),
     pou:             input.pou,
@@ -154,5 +194,11 @@ export function calculateAllIndicators(input: RawIndicatorInput): CalculatedIndi
     pct_no_water:    input.pct_no_water,
     skor_pph:        input.skor_pph,
     pct_stunting:    input.pct_stunting,
+  };
+
+  if (level === 'provinsi') {
+    result.food_safety = calculateFoodSafety(input.segar, input.siap_saji);
   }
+
+  return result;
 }

@@ -6,10 +6,13 @@ export interface FSVAFullResult extends FSVAResult {
   tahun: number
 }
 
-export function processFSVAData(data: (RawIndicatorInput & { kode_bps: string, tahun: number })[]): FSVAFullResult[] {
+export function processFSVAData(
+  data: (RawIndicatorInput & { kode_bps: string, tahun: number })[],
+  level: 'kab_kota' | 'provinsi' = 'kab_kota'
+): FSVAFullResult[] {
   return data.map(item => {
-    const indicators = calculateAllIndicators(item)
-    const result = calculateFSVAResult(indicators)
+    const indicators = calculateAllIndicators(item, level)
+    const result = calculateFSVAResult(indicators, level)
     
     return {
       ...result,

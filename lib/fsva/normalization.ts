@@ -1,10 +1,13 @@
-import { INDICATOR_RANGES } from './constants'
+import { INDICATOR_RANGES, INDICATOR_RANGES_PROV } from './constants'
 
-type IndicatorKey = keyof typeof INDICATOR_RANGES
+type IndicatorKey = keyof typeof INDICATOR_RANGES | 'food_safety'
 
 // Tentukan prioritas individu berdasarkan range breaks di Tabel 2/6 Juknis
-export function getPriorityIndividual(key: IndicatorKey, value: number): number {
-  const range = INDICATOR_RANGES[key]
+export function getPriorityIndividual(key: IndicatorKey, value: number, level: 'kab_kota' | 'provinsi' = 'kab_kota'): number {
+  const ranges = level === 'provinsi' ? INDICATOR_RANGES_PROV : INDICATOR_RANGES
+  const range = (ranges as any)[key]
+  if (!range) return 6; // default safety fallback
+
   const { breaks, inverse } = range
   const N = breaks.length
 
@@ -30,8 +33,11 @@ export function getPriorityIndividual(key: IndicatorKey, value: number): number 
 
 // Normalisasi nilai ke skala 0-1 berdasarkan min-max range
 // Min = nilai terburuk, Max = nilai terbaik
-export function normalizeValue(key: IndicatorKey, value: number): number {
-  const range = INDICATOR_RANGES[key]
+export function normalizeValue(key: IndicatorKey, value: number, level: 'kab_kota' | 'provinsi' = 'kab_kota'): number {
+  const ranges = level === 'provinsi' ? INDICATOR_RANGES_PROV : INDICATOR_RANGES
+  const range = (ranges as any)[key]
+  if (!range) return 1; // default safety fallback
+
   const { min, max, inverse } = range
 
   // Clamp the raw value to the Min-Max boundaries to prevent scores outside [0, 1]
@@ -47,4 +53,5 @@ export function normalizeValue(key: IndicatorKey, value: number): number {
     return (clamped - min) / (max - min)
   }
 }
+
 

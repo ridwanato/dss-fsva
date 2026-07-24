@@ -1,21 +1,40 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Layers, BarChart2, Zap, Beef, Warehouse, TrendingDown, DollarSign, Activity, GraduationCap, Droplet, Utensils, Baby, ChevronRight } from 'lucide-react';
+import { 
+  ChevronUp, ChevronDown, Layers, BarChart2, Zap, Beef, 
+  Warehouse, TrendingDown, DollarSign, Activity, GraduationCap, 
+  Droplet, Utensils, Baby, ChevronRight, ShieldCheck 
+} from 'lucide-react';
 
-export const LAYERS = [
-  { id: 'prioritas', label: 'Komposit', icon: Layers },
-  { id: 'p_ncpr', label: 'Rasio Ketersediaan (NCPR)', icon: BarChart2 },
-  { id: 'p_energy', label: '% Ketersediaan Energi', icon: Zap },
-  { id: 'p_protein', label: '% Ketersediaan Protein Hewani', icon: Beef },
-  { id: 'p_cadangan', label: 'Rasio Cadangan Pangan', icon: Warehouse },
-  { id: 'p_poverty', label: '% Penduduk Miskin', icon: TrendingDown },
-  { id: 'p_cv_harga', label: 'CV Harga Bapok', icon: DollarSign },
-  { id: 'p_pou', label: 'Proporsi Penduduk < Energi (PoU)', icon: Activity },
-  { id: 'p_sekolah', label: 'Lama Sekolah Perempuan', icon: GraduationCap },
-  { id: 'p_air', label: '% Rumah Tangga Tanpa Air Bersih', icon: Droplet },
-  { id: 'p_pph', label: 'Skor Pola Pangan Harapan (PPH)', icon: Utensils },
-  { id: 'p_stunting', label: 'Prevalensi Stunting', icon: Baby },
-];
+export const getLayersForLevel = (level: 'kab_kota' | 'provinsi') => {
+  const base = [
+    { id: 'prioritas', label: 'Komposit', icon: Layers },
+    { id: 'p_ncpr', label: 'Rasio Ketersediaan (NCPR)', icon: BarChart2 },
+    { id: 'p_energy', label: '% Ketersediaan Energi', icon: Zap },
+    { id: 'p_protein', label: '% Ketersediaan Protein Hewani', icon: Beef },
+    { id: 'p_cadangan', label: 'Rasio Cadangan Pangan', icon: Warehouse },
+    { id: 'p_poverty', label: '% Penduduk Miskin', icon: TrendingDown },
+    { id: 'p_cv_harga', label: 'CV Harga Bapok', icon: DollarSign },
+    { id: 'p_pou', label: 'Proporsi Penduduk < Energi (PoU)', icon: Activity },
+    { id: 'p_sekolah', label: 'Lama Sekolah Perempuan', icon: GraduationCap },
+    { id: 'p_air', label: '% Rumah Tangga Tanpa Air Bersih', icon: Droplet },
+  ];
+
+  if (level === 'provinsi') {
+    return [
+      ...base,
+      { id: 'p_food_safety', label: 'Keamanan Pangan', icon: ShieldCheck },
+      { id: 'p_pph', label: 'Skor Pola Pangan Harapan (PPH)', icon: Utensils },
+      { id: 'p_stunting', label: 'Prevalensi Stunting', icon: Baby },
+    ];
+  } else {
+    return [
+      ...base,
+      { id: 'p_pph', label: 'Skor Pola Pangan Harapan (PPH)', icon: Utensils },
+      { id: 'p_stunting', label: 'Prevalensi Stunting', icon: Baby },
+    ];
+  }
+};
 
 interface LayerPanelProps {
   activeLayer: string;
@@ -25,10 +44,13 @@ interface LayerPanelProps {
   showLabels: boolean;
   setShowLabels: (val: boolean) => void;
   children?: React.ReactNode;
+  level: 'kab_kota' | 'provinsi';
+  onLevelChange: (lvl: 'kab_kota' | 'provinsi') => void;
 }
 
 export default function LayerPanel({
-  activeLayer, setActiveLayer, opacity, setOpacity, showLabels, setShowLabels, children
+  activeLayer, setActiveLayer, opacity, setOpacity, 
+  showLabels, setShowLabels, children, level, onLevelChange
 }: LayerPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -58,6 +80,8 @@ export default function LayerPanel({
     }
   };
 
+  const layersList = getLayersForLevel(level);
+
   if (isMobile) {
     if (!expanded) {
       return (
@@ -84,13 +108,39 @@ export default function LayerPanel({
 
         {/* White Section: Title & Controls */}
         <div className="bg-white/80 backdrop-blur px-4 py-3 shrink-0 border-b border-[rgba(109,94,245,0.15)]">
+          {/* Level Toggle Buttons */}
+          <div className="flex bg-[#F5F3FF] p-1 rounded-xl mb-3 border border-[#E8E4FF] pointer-events-auto">
+            <button
+              onClick={() => onLevelChange('kab_kota')}
+              className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                level === 'kab_kota'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+              }`}
+            >
+              KAB KOTA
+            </button>
+            <button
+              onClick={() => onLevelChange('provinsi')}
+              className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                level === 'provinsi'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+              }`}
+            >
+              PROVINSI
+            </button>
+          </div>
+
           {/* Title & Buttons Row */}
           <div className="flex justify-between items-start gap-2 mb-3">
             <div>
               <h1 className="text-sm font-black text-[#1E1B4B] tracking-tight leading-tight">
                 Peta FSVA 2026 <br/><span className="text-[10px] font-semibold text-slate-500">(basis data 2025)</span>
               </h1>
-              <p className="text-[8px] font-extrabold text-[#6D5EF5] mt-0.5 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+              <p className="text-[8px] font-extrabold text-[#6D5EF5] mt-0.5 uppercase tracking-wider">
+                {level === 'provinsi' ? '12 Indikator Provinsi' : '11 Indikator Kab/Kota'}
+              </p>
             </div>
             
             {/* Buttons Slot */}
@@ -120,7 +170,9 @@ export default function LayerPanel({
             </div>
             
             <div className="flex items-center gap-1.5 border-l pl-2 border-[rgba(109,94,245,0.15)]">
-              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">Nama<br/>Desa</label>
+              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">
+                {level === 'provinsi' ? 'Nama\nKec' : 'Nama\nDesa'}
+              </label>
               <button 
                 onClick={() => setShowLabels(!showLabels)}
                 className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showLabels ? 'bg-[#6D5EF5]' : 'bg-gray-300'}`}
@@ -135,7 +187,7 @@ export default function LayerPanel({
         {/* Purple Section: Layers List (Scrollable) */}
         <div className="bg-white/60 backdrop-blur flex-1 overflow-y-auto max-h-[50vh]">
           <ul className="flex flex-col py-1">
-            {LAYERS.map(layer => {
+            {layersList.map(layer => {
               const Icon = layer.icon;
               const isActive = activeLayer === layer.id;
               return (
@@ -181,14 +233,39 @@ export default function LayerPanel({
         
         {/* White Section: Title & Controls */}
         <div className="bg-white/80 backdrop-blur px-4 md:px-5 py-4 shrink-0 border-b border-[rgba(109,94,245,0.15)]">
-          
+          {/* Level Toggle Buttons */}
+          <div className="flex bg-[#F5F3FF] p-1 rounded-xl mb-3 border border-[#E8E4FF] pointer-events-auto">
+            <button
+              onClick={() => onLevelChange('kab_kota')}
+              className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                level === 'kab_kota'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+              }`}
+            >
+              KAB KOTA
+            </button>
+            <button
+              onClick={() => onLevelChange('provinsi')}
+              className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                level === 'provinsi'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+              }`}
+            >
+              PROVINSI
+            </button>
+          </div>
+
           {/* Title & Buttons Row */}
           <div className="flex justify-between items-start gap-2 mb-4">
             <div>
               <h1 className="text-lg font-black text-[#1E1B4B] tracking-tight leading-tight">
                 Peta FSVA 2026 <br/><span className="text-xs font-semibold text-slate-500">(basis data 2025)</span>
               </h1>
-              <p className="text-[9px] font-extrabold text-[#6D5EF5] mt-1 uppercase tracking-wider">11 Indikator Kab/Kota</p>
+              <p className="text-[9px] font-extrabold text-[#6D5EF5] mt-1 uppercase tracking-wider">
+                {level === 'provinsi' ? '12 Indikator Provinsi' : '11 Indikator Kab/Kota'}
+              </p>
             </div>
             
             {/* Buttons Slot */}
@@ -218,7 +295,9 @@ export default function LayerPanel({
             </div>
             
             <div className="flex items-center gap-2 border-l pl-3 border-[rgba(109,94,245,0.15)]">
-              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">Nama<br/>Desa</label>
+              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">
+                {level === 'provinsi' ? 'Nama\nKec' : 'Nama\nDesa'}
+              </label>
               <button 
                 onClick={() => setShowLabels(!showLabels)}
                 className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showLabels ? 'bg-[#6D5EF5]' : 'bg-gray-300'}`}
@@ -233,7 +312,7 @@ export default function LayerPanel({
         {/* Purple Section: Layers List (Scrollable) */}
         <div className="bg-white/60 backdrop-blur flex-1 overflow-y-auto">
           <ul className="flex flex-col py-1">
-            {LAYERS.map(layer => {
+            {layersList.map(layer => {
               const Icon = layer.icon;
               const isActive = activeLayer === layer.id;
               return (

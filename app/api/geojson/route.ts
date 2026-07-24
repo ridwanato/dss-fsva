@@ -8,28 +8,29 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const tahunStr = url.searchParams.get('tahun');
     const kabupaten = url.searchParams.get('kabupaten');
+    const level = url.searchParams.get('level') || 'kab_kota';
     const tahun = tahunStr ? parseInt(tahunStr) : 2025; // Default to 2025
 
     const supabase = getServiceSupabase();
     let features: string[] = [];
 
     if (kabupaten) {
-      // 1. Ambil seluruh geometri untuk kabupaten ini dari tabel geometries.
-      // Ini menjamin peta selalu muncul (berwarna abu-abu) meskipun data indikator belum diunggah/dikalkulasi.
+      // 1. Ambil seluruh geometri untuk kabupaten/provinsi ini dari tabel geometries.
       const { data: geomData, error: geomError } = await supabase
         .from('geometries')
-        .select('kode_bps, nama_desa, nama_kecamatan, nama_kabupaten, user_id, geom')
-        .eq('nama_kabupaten', kabupaten);
+        .select('kode_bps, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
+        .eq('nama_kabupaten', kabupaten)
+        .eq('level', level);
 
       if (geomError) throw geomError;
 
       if (geomData && geomData.length > 0) {
-        // 2. Ambil data hasil kalkulasi FSVA dan data indikator mentah (raw_indicators) secara paralel
+        // 2. Ambil data hasil kalkulasi FSVA dan data indikator mentah secara paralel
         const codes = geomData.map(g => g.kode_bps);
         
         const [resPromise, rawPromise] = await Promise.all([
-          supabase.from('fsva_results').select('*').eq('tahun', tahun).in('kode_bps', codes),
-          supabase.from('raw_indicators').select('*').eq('tahun', tahun).in('kode_bps', codes)
+          supabase.from('fsva_results').select('*').eq('tahun', tahun).eq('level', level).in('kode_bps', codes),
+          supabase.from('raw_indicators').select('*').eq('tahun', tahun).eq('level', level).in('kode_bps', codes)
         ]);
 
         if (resPromise.error) throw resPromise.error;
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
         const resData = resPromise.data;
         const rawData = rawPromise.data;
 
-        // Petakan hasil kalkulasi berdasarkan kode_bps untuk pencarian cepat O(1)
+        // Petakan hasil kalkulasi
         const resMap: Record<string, any> = {};
         if (resData) {
           for (const r of resData) {
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // Petakan indikator mentah berdasarkan kode_bps untuk pencarian cepat O(1)
+        // Petakan indikator mentah
         const rawMap: Record<string, any> = {};
         if (rawData) {
           for (const r of rawData) {
@@ -60,7 +61,6 @@ export async function GET(req: NextRequest) {
           const fsvaRes = resMap[row.kode_bps] || {};
           const rawInd = rawMap[row.kode_bps] || {};
           
-          // Gabungkan seluruh properti indikator mentah dan hasil akhir
           const properties = {
             ...geoProps,
             tahun: fsvaRes.tahun || tahun,
@@ -74,11 +74,12 @@ export async function GET(req: NextRequest) {
             pou: fsvaRes.pou || null,
             pct_miskin_ref: fsvaRes.pct_miskin || null,
             
-            // Raw values dari tabel raw_indicators untuk 4 indikator yang sebelumnya kosong
+            // Raw values
             lama_sekolah: rawInd.lama_sekolah_perempuan !== undefined ? rawInd.lama_sekolah_perempuan : null,
             pct_no_water: rawInd.pct_no_water !== undefined ? rawInd.pct_no_water : null,
             skor_pph: rawInd.skor_pph !== undefined ? rawInd.skor_pph : null,
             pct_stunting: rawInd.pct_stunting !== undefined ? rawInd.pct_stunting : null,
+            food_safety: fsvaRes.food_safety !== undefined ? fsvaRes.food_safety : null,
 
             indeks_ketersediaan: fsvaRes.indeks_ketersediaan || null,
             indeks_keterjangkauan: fsvaRes.indeks_keterjangkauan || null,
@@ -92,6 +93,7 @@ export async function GET(req: NextRequest) {
             p_pou: fsvaRes.p_pou || null,
             p_sekolah: fsvaRes.p_sekolah || null,
             p_air: fsvaRes.p_air || null,
+            p_food_safety: fsvaRes.p_food_safety || null,
             p_pph: fsvaRes.p_pph || null,
             p_stunting: fsvaRes.p_stunting || null
           };
@@ -107,7 +109,8 @@ export async function GET(req: NextRequest) {
       const { data, error } = await supabase
         .from('fsva_map_view')
         .select('*')
-        .eq('tahun', tahun);
+        .eq('tahun', tahun)
+        .eq('level', level);
 
       if (error) throw error;
 

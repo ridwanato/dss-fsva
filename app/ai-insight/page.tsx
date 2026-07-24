@@ -192,7 +192,7 @@ export default function AIInsightPage() {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Kecamatan/Desa
+                  Kabupaten/Kota
                 </button>
                 <button
                   onClick={() => setLevel('provinsi')}
@@ -202,7 +202,7 @@ export default function AIInsightPage() {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Prov/Kecamatan
+                  Provinsi
                 </button>
               </div>
             </div>

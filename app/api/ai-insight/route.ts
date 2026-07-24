@@ -15,7 +15,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Parameter kabupaten/provinsi wajib diisi.' }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    let apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const envPath = path.join(process.cwd(), '.env.local');
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf8');
+          const match = envContent.match(/GEMINI_API_KEY\s*=\s*([^\s#\r\n]+)/);
+          if (match && match[1]) {
+            apiKey = match[1].replace(/['"]/g, '').trim();
+          }
+        }
+      } catch (e) {
+        console.error('Failed to read .env.local manually:', e);
+      }
+    }
+
     if (!apiKey) {
       return NextResponse.json({
         success: false,

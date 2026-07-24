@@ -88,7 +88,7 @@ export default function PrintLayout({
           </div>
 
           {/* Scale Bar */}
-          <div className="absolute bottom-[130px] left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
+          <div className="absolute bottom-[210px] left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
             <div className="flex justify-between w-24 mb-1">
               <span>0</span>
               <span>1</span>
@@ -140,13 +140,13 @@ export default function PrintLayout({
 
           {/* Subtitle Section */}
           <div className="p-3 border-b-[2px] border-black text-center py-6">
-            <h2 className="font-bold text-[11px] mb-2 uppercase">
+            <h2 className="font-bold text-[14px] leading-snug uppercase break-words px-2">
               {activeLayerName.toUpperCase() === 'KOMPOSIT' ? 'INDIKATOR KOMPOSIT' : `INDIKATOR ${activeLayerName.toUpperCase()}`}
             </h2>
           </div>
 
           {/* Legend Section */}
-          <div className="p-3 border-b-[2px] border-black flex-1">
+          <div className="p-3 border-b-[2px] border-black shrink-0 pb-4">
             <h3 className="font-black text-[11px] text-center mb-3">LEGENDA</h3>
             <div className="flex flex-col gap-2">
               {priorities.map(p => (
@@ -176,8 +176,8 @@ export default function PrintLayout({
           </div>
 
           {/* Sources Section */}
-          <div className="p-3 border-b-[2px] border-black leading-tight flex-1 flex flex-col">
-            <h3 className="font-bold text-center mb-2 text-[9px]">SUMBER DATA</h3>
+          <div className="p-3 leading-tight flex-1 flex flex-col text-[14px]">
+            <h3 className="font-bold text-center mb-2 text-[10px]">SUMBER DATA</h3>
             <div className="flex flex-col gap-1 whitespace-pre-wrap flex-1" style={getTextStyle(fontStyles?.sources)}>
               {config.sources}
             </div>

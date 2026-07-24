@@ -173,7 +173,7 @@ function FontToolbar({
       },
       sources: {
         fontFamily: 'Arial',
-        fontSize: 7,
+        fontSize: 11,
         bold: false,
         italic: false,
         underline: false,

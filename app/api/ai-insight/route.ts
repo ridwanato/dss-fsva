@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
+import fs from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,19 +18,22 @@ export async function GET(req: NextRequest) {
     }
 
     let apiKey = process.env.GEMINI_API_KEY;
+    let debugInfo = { envPath: '', exists: false, processCwd: process.cwd(), matchFound: false, errorOccurred: '' };
     if (!apiKey) {
       try {
-        const fs = require('fs');
-        const path = require('path');
         const envPath = path.join(process.cwd(), '.env.local');
+        debugInfo.envPath = envPath;
+        debugInfo.exists = fs.existsSync(envPath);
         if (fs.existsSync(envPath)) {
           const envContent = fs.readFileSync(envPath, 'utf8');
           const match = envContent.match(/GEMINI_API_KEY\s*=\s*([^\s#\r\n]+)/);
           if (match && match[1]) {
             apiKey = match[1].replace(/['"]/g, '').trim();
+            debugInfo.matchFound = true;
           }
         }
-      } catch (e) {
+      } catch (e: any) {
+        debugInfo.errorOccurred = e.message || String(e);
         console.error('Failed to read .env.local manually:', e);
       }
     }
@@ -36,7 +41,7 @@ export async function GET(req: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({
         success: false,
-        error: 'API Key Gemini belum dikonfigurasi di file .env.local (GEMINI_API_KEY).'
+        error: `API Key Gemini belum dikonfigurasi di file .env.local (GEMINI_API_KEY). Debug: ${JSON.stringify(debugInfo)}`
       }, { status: 500 });
     }
 

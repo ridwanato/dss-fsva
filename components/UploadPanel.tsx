@@ -405,7 +405,13 @@ export default function UploadPanel() {
                 {geomResult.success ? <CheckCircle2 className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />}
                 <div>
                   <p className={`text-xs font-bold ${geomResult.success ? 'text-[#14B8A6]' : 'text-red-600'}`}>
-                    {geomResult.success ? `Berhasil upload ${geomResult.features} wilayah.` : 'Gagal Upload'}
+                    {geomResult.success 
+                      ? (geomResult.desaCount !== undefined || geomResult.kecCount !== undefined)
+                        ? level === 'kab_kota'
+                          ? `Berhasil mengunggah ${geomResult.desaCount || 0} wilayah desa/kelurahan (melewati ${geomResult.skippedKecCount || 0} wilayah kecamatan).`
+                          : `Berhasil mengunggah ${geomResult.kecCount || 0} wilayah kecamatan (melewati ${geomResult.skippedDesaCount || 0} wilayah desa/kelurahan).`
+                        : `Berhasil upload ${geomResult.features} wilayah.`
+                      : 'Gagal Upload'}
                   </p>
                   {geomResult.errors?.length > 0 && (
                     <ul className="text-[10px] text-red-600 list-disc pl-3 mt-0.5 max-h-20 overflow-y-auto custom-scrollbar">

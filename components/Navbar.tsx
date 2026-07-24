@@ -334,7 +334,7 @@ export default function Navbar() {
                       }`}
                       title={kab.nama_kabupaten}
                     >
-                      {kab.nama_kabupaten}
+                      {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
                     </button>
                     {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
                       <button
@@ -395,7 +395,7 @@ export default function Navbar() {
                       }`}
                       title={kab.nama_kabupaten}
                     >
-                      {kab.nama_kabupaten}
+                      {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
                     </button>
                     {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
                       <button

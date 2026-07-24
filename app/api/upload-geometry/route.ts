@@ -67,8 +67,43 @@ export async function POST(req: NextRequest) {
       const collections = Array.isArray(geojson) ? geojson : [geojson];
       const featuresToInsert = [];
       
+      let skippedKecFeatures = 0;
+      let skippedDesaFeatures = 0;
+      
       for (const coll of collections) {
         if (!coll || !coll.features) continue;
+        
+        const fileNameLower = (coll.fileName || '').toLowerCase();
+        
+        // Check if layer name indicates level
+        let isKecLayer = fileNameLower.includes('kec') || fileNameLower.includes('kecamatan') || fileNameLower.includes('dist');
+        let isDesaLayer = fileNameLower.includes('desa') || fileNameLower.includes('kelurahan') || fileNameLower.includes('kel_') || fileNameLower.includes('des_');
+        
+        // Fallback checks properties of first feature if layer name is empty
+        if (!coll.fileName && coll.features.length > 0) {
+          const keys = Object.keys(coll.features[0].properties || {}).map(k => k.toLowerCase());
+          const hasDesaKey = keys.some(k => k.includes('desa') || k.includes('kelurahan') || k.includes('des'));
+          const hasKecKey = keys.some(k => k.includes('kec') || k.includes('subdist'));
+          
+          if (hasKecKey && !hasDesaKey) isKecLayer = true;
+          if (hasDesaKey && !hasKecKey) isDesaLayer = true;
+        }
+
+        // Apply level specific skipping
+        if (level === 'kab_kota') {
+          // If mapping villages, skip kecamatan layers
+          if (isKecLayer && !isDesaLayer) {
+            skippedKecFeatures += coll.features.length;
+            continue;
+          }
+        } else if (level === 'provinsi') {
+          // If mapping kecamatans, skip desa layers
+          if (isDesaLayer && !isKecLayer) {
+            skippedDesaFeatures += coll.features.length;
+            continue;
+          }
+        }
+
         for (const feature of coll.features) {
           if (!feature.geometry || !feature.properties) continue;
           
@@ -194,7 +229,15 @@ export async function POST(req: NextRequest) {
         }
       }
       
-      return NextResponse.json({ success: true, features: inserted, errors });
+      return NextResponse.json({ 
+        success: true, 
+        features: inserted, 
+        desaCount: level === 'kab_kota' ? inserted : 0,
+        kecCount: level === 'provinsi' ? inserted : 0,
+        skippedDesaCount: skippedDesaFeatures,
+        skippedKecCount: skippedKecFeatures,
+        errors 
+      });
     } else {
       // Flow KML/KMZ
       const parser = new DOMParser();
@@ -333,7 +376,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({ success: true, features: inserted, errors });
+      return NextResponse.json({ 
+        success: true, 
+        features: inserted, 
+        desaCount: level === 'kab_kota' ? inserted : 0,
+        kecCount: level === 'provinsi' ? inserted : 0,
+        skippedDesaCount: 0,
+        skippedKecCount: 0,
+        errors 
+      });
     }
   } catch (error: any) {
     console.error(error);

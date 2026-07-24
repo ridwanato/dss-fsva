@@ -1,5 +1,7 @@
 // ================================================================
-// KONSTANTA FSVA — Badan Pangan Nasional, Juknis No.301.2/2025
+// KONSTANTA FSVA — Badan Pangan Nasional
+// Kab/Kota : Keputusan Sekretaris Utama BPN Nomor 21 Tahun 2026
+// Provinsi  : Keputusan Sekretaris Utama BPN Nomor 20 Tahun 2026
 // ================================================================
 
 // Bobot indikator (Tabel 3 Juknis) — total = 100
@@ -66,7 +68,9 @@ export const INDICATOR_RANGES = {
   sekolah:  { breaks: [6.0,  6.5,  7.5,  8.5,  9.0],  inverse: false, min: 1,  max: 12 },
   air:      { breaks: [30,   40,   50,   60,   70],   inverse: true,  min: 0,  max: 100 },
   pph:      { breaks: [70,   75,   80,   85,   90],   inverse: false, min: 40, max: 100 },
-  stunting: { breaks: [10,   20,   30],            inverse: true,  min: 0,  max: 75 },
+  // Stunting: 4 kelompok per WHO & Juknis No.21/2026 Tabel 3
+  // P1=≥40, P2=30-<40, P3=20-<30, P4=<20
+  stunting: { breaks: [20,   30,   40],             inverse: true,  min: 0,  max: 75 },
 }
 
 // Range indikator individu tingkat provinsi (12 Indikator)

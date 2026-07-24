@@ -104,7 +104,7 @@ export async function DELETE(req: NextRequest) {
     // Jika peta diunggah oleh user lain (user_id tidak cocok) dan bukan admin
     const adminEmails = process.env.ADMIN_EMAILS 
       ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
-      : ['admin@email.com', 'admin@fsva.go.id'];
+      : ['admin@email.com', 'admin@fsva.go.id', 'ketapangcilegon@gmail.com'];
     const isAdmin = adminEmails.includes(session.user.email?.toLowerCase() || '') || session.user.user_metadata?.role === 'admin';
 
     if (mapOwnerId && mapOwnerId !== session.user.id && !isAdmin) {

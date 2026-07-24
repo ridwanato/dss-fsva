@@ -279,7 +279,7 @@ export default function Navbar() {
 
     const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS 
       ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
-      : ['admin@email.com', 'admin@fsva.go.id'];
+      : ['admin@email.com', 'admin@fsva.go.id', 'ketapangcilegon@gmail.com'];
     const isAdmin = !!(session?.user?.email && adminEmails.includes(session.user.email.toLowerCase()) || session?.user?.user_metadata?.role === 'admin');
 
     const isSemuaPetaActive = pathname === '/map' && !currentKabupaten;

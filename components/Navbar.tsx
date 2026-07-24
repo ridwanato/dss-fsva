@@ -29,6 +29,11 @@ export default function Navbar() {
 
   const isActive = (path: string) => pathname === path;
 
+  const latestMap = maps[0];
+  const interactiveMapUrl = latestMap 
+    ? `/map?kabupaten=${encodeURIComponent(latestMap.nama_kabupaten)}&level=${latestMap.level}`
+    : '/map';
+
   useEffect(() => {
     // Check auth
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -286,6 +291,8 @@ export default function Navbar() {
     const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
     const provinsiMaps = maps.filter(m => m.level === 'provinsi');
 
+
+
     return (
       <div className="flex flex-col border-t border-green-750/30 pt-3 mt-2 space-y-3">
         {/* Dropdown 1: Kab/Kota */}
@@ -462,6 +469,13 @@ export default function Navbar() {
             className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
           >
             Beranda
+          </Link>
+          <Link 
+            href={interactiveMapUrl} 
+            onClick={() => toggleExpand(false)} 
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${pathname === '/map' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
+          >
+            Peta FSVA Interaktif
           </Link>
           <Link 
             href="/entry" 
@@ -691,6 +705,9 @@ export default function Navbar() {
       <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2.5 custom-scrollbar">
         {/* Beranda */}
         <SidebarLink href="/" icon={<Home className="w-5 h-5" />} label="Beranda" active={isActive('/')} />
+
+        {/* Peta FSVA Interaktif */}
+        <SidebarLink href={interactiveMapUrl} icon={<Map className="w-5 h-5" />} label="Peta FSVA Interaktif" active={pathname === '/map'} />
 
         {/* Data Entry */}
         <SidebarLink href="/entry" icon={<Database className="w-5 h-5" />} label="Data Entry" active={isActive('/entry')} />

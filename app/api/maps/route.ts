@@ -5,28 +5,35 @@ export const revalidate = 0;
 
 export async function GET() {
   const supabase = getServiceSupabase();
-  // Fetch distinct kabupaten/provinsi names, user_id, and level from geometries
+  // Fetch distinct kabupaten/provinsi names, user_id, level, and created_at from geometries
   const { data, error } = await supabase
     .from('geometries')
-    .select('nama_kabupaten, user_id, level')
+    .select('nama_kabupaten, user_id, level, created_at')
     .not('nama_kabupaten', 'is', null);
 
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
-  // Deduplicate based on name and level
+  // Deduplicate based on name and level, keeping the latest created_at
   const uniqueMaps: Record<string, any> = {};
   if (data) {
     for (const item of data) {
       if (item.nama_kabupaten) {
         const lvl = item.level || 'kab_kota';
         const key = `${lvl}:${item.nama_kabupaten}`;
-        uniqueMaps[key] = {
-          nama_kabupaten: item.nama_kabupaten,
-          user_id: item.user_id || null,
-          level: lvl
-        };
+        const itemDate = item.created_at ? new Date(item.created_at).getTime() : 0;
+        const existingDate = uniqueMaps[key]?.created_time || 0;
+        
+        if (!uniqueMaps[key] || itemDate > existingDate) {
+          uniqueMaps[key] = {
+            nama_kabupaten: item.nama_kabupaten,
+            user_id: item.user_id || null,
+            level: lvl,
+            created_at: item.created_at,
+            created_time: itemDate
+          };
+        }
       }
     }
   }
@@ -53,8 +60,16 @@ export async function GET() {
       nama_kabupaten: m.nama_kabupaten,
       level: m.level,
       tahun: mapYears[key] || 2025, // Default fallback to 2025
-      user_id: m.user_id
+      user_id: m.user_id,
+      created_at: m.created_at
     };
+  });
+
+  // Sort mapDetails so that the latest created map is first
+  mapDetails.sort((a: any, b: any) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
   });
 
   const mapNames = mapDetails.map(m => m.nama_kabupaten);

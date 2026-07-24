@@ -99,10 +99,10 @@ export default function LayerPanel({
         
         {/* Header */}
         <div 
-          className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer"
+          className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer gap-2"
           onClick={() => toggleExpand(false)}
         >
-          <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Pilih Layer Peta:</span>
+          <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest whitespace-normal break-words flex-1">Pilih Layer Peta dan Cetak PDF</span>
           <ChevronUp className="w-6 h-6 text-white font-black" strokeWidth={3} />
         </div>
 
@@ -222,10 +222,10 @@ export default function LayerPanel({
       
       {/* Header */}
       <div 
-        className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer"
+        className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer gap-2"
         onClick={() => toggleExpand(!expanded)}
       >
-        <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Pilih Layer Peta:</span>
+        <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest whitespace-normal break-words flex-1">Pilih Layer Peta dan Cetak PDF</span>
         {expanded ? <ChevronUp className="w-6 h-6 text-white font-black" strokeWidth={3} /> : <ChevronDown className="w-6 h-6 text-white font-black" strokeWidth={3} />}
       </div>
 

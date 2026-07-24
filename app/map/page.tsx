@@ -156,7 +156,7 @@ function FontToolbar({
 
     const [fontStyles, setFontStyles] = useState<Record<string, FontStyle>>({
       govName: {
-        fontFamily: 'Times New Roman',
+        fontFamily: 'Arial',
         fontSize: 10,
         bold: true,
         italic: false,
@@ -164,7 +164,7 @@ function FontToolbar({
         align: 'left'
       },
       title: {
-        fontFamily: 'Times New Roman',
+        fontFamily: 'Arial',
         fontSize: 12,
         bold: true,
         italic: false,
@@ -331,7 +331,11 @@ function FontToolbar({
     if (!mapInstance) return;
     setIsPrinting(true);
     
-    mapInstance.once('render', () => {
+    let hasRendered = false;
+
+    const doCapture = () => {
+      if (hasRendered) return;
+      hasRendered = true;
       try {
         const mapCanvas = mapInstance.getCanvas();
         const hiddenCanvas = document.createElement('canvas');
@@ -363,9 +367,18 @@ function FontToolbar({
         setIsPrinting(false);
         alert("Gagal memproses gambar peta untuk PDF.");
       }
-    });
+    };
 
+    mapInstance.once('render', doCapture);
     mapInstance.triggerRepaint();
+
+    // Fallback for mobile browser where render event might be suspended/throttled
+    setTimeout(() => {
+      if (!hasRendered) {
+        console.log("Fallback print capture triggered");
+        doCapture();
+      }
+    }, 300);
   };
 
   return (
@@ -376,6 +389,7 @@ function FontToolbar({
       activeLayer={activeLayer}
       config={printConfig}
       fontStyles={fontStyles}
+      level={level}
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       <LayerPanel 

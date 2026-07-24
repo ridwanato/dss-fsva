@@ -24,6 +24,7 @@ interface PrintLayoutProps {
   activeLayer?: string;
   config: PrintConfig;
   fontStyles?: Record<string, FontStyle>;
+  level?: string;
 }
 
 export default function PrintLayout({ 
@@ -31,7 +32,8 @@ export default function PrintLayout({
   activeLayerName, 
   activeLayer = 'prioritas', 
   config,
-  fontStyles
+  fontStyles,
+  level = 'kab_kota'
 }: PrintLayoutProps) {
   if (!mapImage) return null;
 
@@ -39,11 +41,13 @@ export default function PrintLayout({
   const priorities = isStunting ? ([1, 2, 3, 4] as const) : ([1, 2, 3, 4, 5, 6] as const);
   const labels = isStunting ? STUNTING_PRIORITY_LABELS : PRIORITY_LABELS;
 
+  const isProvinsi = level === 'provinsi';
+
   // Helper to convert FontStyle to inline CSS style object
   const getTextStyle = (style?: FontStyle) => {
-    if (!style) return {};
+    if (!style) return { fontFamily: 'Arial, sans-serif' };
     return {
-      fontFamily: style.fontFamily,
+      fontFamily: style.fontFamily || 'Arial, sans-serif',
       fontSize: `${style.fontSize}pt`,
       fontWeight: style.bold ? 'bold' : 'normal',
       fontStyle: style.italic ? 'italic' : 'normal',
@@ -54,7 +58,7 @@ export default function PrintLayout({
   };
 
   return (
-    <div className="print-only bg-white w-[210mm] h-[297mm] overflow-hidden p-[10mm] mx-auto text-black font-sans relative">
+    <div className="print-only bg-white w-[210mm] h-[297mm] overflow-hidden p-[10mm] mx-auto text-black relative" style={{ fontFamily: 'Arial, sans-serif' }}>
       <div className="border-[2px] border-black w-full h-full flex flex-col relative">
         
         {/* Main Map Area (Left side) */}
@@ -66,8 +70,17 @@ export default function PrintLayout({
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.1)', zIndex: 0, display: 'block' }}
           />
 
+          {/* North Arrow */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center bg-white/85 backdrop-blur-xs p-1.5 rounded border border-black/35 shadow-xs select-none">
+            <svg width="24" height="36" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-9">
+              <path d="M16 2 L26 24 L16 18 L6 24 Z" fill="black" stroke="black" stroke-width="1.5" stroke-linejoin="miter" />
+              <path d="M16 2 L16 18 L6 24 Z" fill="white" />
+              <text x="16" y="42" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="black" text-anchor="middle">U</text>
+            </svg>
+          </div>
+
           {/* Coordinate Grids (Top) */}
-          <div className="absolute top-0 left-0 right-0 h-4 bg-white/0 flex justify-between px-8 text-[8px]">
+          <div className="absolute top-0 left-0 right-0 h-4 bg-white/0 flex justify-between px-8 text-[8px] z-10">
             <span>105.920</span>
             <span>105.960</span>
             <span>106.000</span>
@@ -76,7 +89,7 @@ export default function PrintLayout({
           </div>
 
           {/* Coordinate Grids (Left) */}
-          <div className="absolute top-0 bottom-0 left-0 w-6 bg-white/0 flex flex-col justify-between py-12 text-[8px] transform -rotate-90 origin-left translate-y-[-100%] ml-2">
+          <div className="absolute top-0 bottom-0 left-0 w-6 bg-white/0 flex flex-col justify-between py-12 text-[8px] transform -rotate-90 origin-left translate-y-[-100%] ml-2 z-10">
             <span className="transform rotate-90">-5.840</span>
             <span className="transform rotate-90">-5.880</span>
             <span className="transform rotate-90">-5.920</span>
@@ -87,8 +100,7 @@ export default function PrintLayout({
             <span className="transform rotate-90">-6.120</span>
           </div>
 
-
-          <div className="absolute top-1/3 left-10 text-gray-500/50 font-bold text-xs italic tracking-widest">
+          <div className="absolute top-1/3 left-10 text-gray-500/50 font-bold text-xs italic tracking-widest z-10">
             SELAT SUNDA
           </div>
         </div>
@@ -134,45 +146,49 @@ export default function PrintLayout({
           </div>
 
           {/* Legend Section */}
-          <div className="p-3 border-b-[2px] border-black shrink-0 pb-4">
-            <h3 className="font-black text-[11px] text-center mb-3">LEGENDA</h3>
-            <div className="flex flex-col gap-2">
+          <div className="p-3 border-b-[2px] border-black shrink-0 pb-4 flex flex-col items-center">
+            <h3 className="font-black text-[11px] text-center mb-3 w-full">LEGENDA</h3>
+            <div className="flex flex-col gap-2 w-fit">
               {priorities.map(p => (
-                <div key={p} className="flex gap-2 items-start">
+                <div key={p} className="flex gap-2 items-center text-left">
                   <div 
-                    className="w-5 h-3 border border-black mt-0.5 flex-shrink-0"
+                    className="w-5 h-3 border border-black flex-shrink-0"
                     style={{ backgroundColor: labels[p as keyof typeof labels].fill }}
                   />
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-bold leading-none">Kelurahan Prioritas {p}</span>
+                    <span className="text-[9px] font-bold leading-none">
+                      {isProvinsi ? `Kecamatan Prioritas ${p}` : `Kelurahan Prioritas ${p}`}
+                    </span>
                     <span className="text-[8px] leading-tight">{labels[p as keyof typeof labels].label}</span>
                   </div>
                 </div>
               ))}
             </div>
             
-            <div className="mt-4 flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-5 border-t-2 border-black"></div>
-                <span className="text-[9px]">Batas Kecamatan</span>
+            <div className="mt-4 flex flex-col gap-2 w-fit">
+              <div className="flex items-center gap-2 text-left">
+                <div className="w-5 border-t-2 border-black flex-shrink-0"></div>
+                <span className="text-[9px]">{isProvinsi ? 'Batas Kabupaten/Kota' : 'Batas Kecamatan'}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 border-t border-black"></div>
-                <span className="text-[9px]">Batas Kelurahan</span>
+              <div className="flex items-center gap-2 text-left">
+                <div className="w-5 border-t border-black flex-shrink-0"></div>
+                <span className="text-[9px]">{isProvinsi ? 'Batas Kecamatan' : 'Batas Kelurahan'}</span>
               </div>
             </div>
           </div>
 
           {/* Scale Bar — between Legend and Sources per mockup */}
-          <div className="px-4 py-2 border-b-[2px] border-black shrink-0">
-            <div className="flex justify-between w-28 mb-1 text-[9px] font-bold">
-              <span>0</span>
-              <span>1</span>
-              <span>2 km</span>
-            </div>
-            <div className="w-28 h-2 border-x-[2px] border-b-[2px] border-black flex">
-              <div className="w-1/2 h-full bg-black"></div>
-              <div className="w-1/2 h-full bg-white border-l-[2px] border-black"></div>
+          <div className="px-4 py-2 border-b-[2px] border-black shrink-0 flex flex-col items-center justify-center">
+            <div className="w-28">
+              <div className="flex justify-between w-full mb-1 text-[9px] font-bold">
+                <span>0</span>
+                <span>1</span>
+                <span>2 km</span>
+              </div>
+              <div className="w-full h-2 border-x-[2px] border-b-[2px] border-black flex">
+                <div className="w-1/2 h-full bg-black"></div>
+                <div className="w-1/2 h-full bg-white border-l-[2px] border-black"></div>
+              </div>
             </div>
           </div>
 
@@ -183,7 +199,6 @@ export default function PrintLayout({
               {config.sources}
             </div>
           </div>
-
 
         </div>
 

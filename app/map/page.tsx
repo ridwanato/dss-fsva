@@ -351,19 +351,28 @@ function FontToolbar({
         
         const originalTitle = document.title;
         const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || '';
-        document.title = `FSVA ${kabupaten} ${indicatorName}`.trim();
+        const regionName = kabupaten || 'Wilayah';
         
+        // Default filename format requested: FSVA - [Nama Kab/Kota/Prov] - [Tahun] - [Indikator]
+        const formattedFileName = `FSVA - ${regionName} - ${selectedYear} - ${indicatorName}`.trim();
+        document.title = formattedFileName;
+        
+        document.body.classList.add('printing-map-pdf');
+
+        // Allow 1000ms for mobile browser image decoding before triggering print window
         setTimeout(() => {
           try {
             window.print();
           } finally {
+            document.body.classList.remove('printing-map-pdf');
             setIsPrinting(false);
             document.title = originalTitle;
-            setTimeout(() => setMapImage(null), 1000);
+            setTimeout(() => setMapImage(null), 1500);
           }
-        }, 800);
+        }, 1000);
       } catch(e) {
         console.error(e);
+        document.body.classList.remove('printing-map-pdf');
         setIsPrinting(false);
         alert("Gagal memproses gambar peta untuk PDF.");
       }
@@ -372,13 +381,13 @@ function FontToolbar({
     mapInstance.once('render', doCapture);
     mapInstance.triggerRepaint();
 
-    // Fallback for mobile browser where render event might be suspended/throttled
+    // Fallback for mobile browsers where render event might be suspended/throttled
     setTimeout(() => {
       if (!hasRendered) {
         console.log("Fallback print capture triggered");
         doCapture();
       }
-    }, 300);
+    }, 400);
   };
 
   return (

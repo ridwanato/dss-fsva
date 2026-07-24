@@ -185,3 +185,28 @@
     z-index: 20 !important;
   }
 }
+
+/* AI Insight Printable CSS overrides */
+@media print {
+  body.printing-ai-insight * {
+    visibility: hidden !important;
+  }
+  body.printing-ai-insight .print-report-container,
+  body.printing-ai-insight .print-report-container * {
+    visibility: visible !important;
+  }
+  body.printing-ai-insight .print-report-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  body.printing-ai-insight .printing-show {
+    display: flex !important;
+  }
+}

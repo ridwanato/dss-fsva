@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { 
   ChevronDown, ChevronLeft, ChevronRight, Trash2, 
   Map, BarChart3, Database, BookOpen, User, LogOut, Layers,
-  Home, Printer, Download
+  Home, Printer, Download, Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 
@@ -491,6 +491,13 @@ export default function Navbar() {
           >
             Faktor yang Berpengaruh
           </Link>
+          <Link 
+            href="/ai-insight" 
+            onClick={() => toggleExpand(false)} 
+            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center gap-2 ${isActive('/ai-insight') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-550 fill-amber-500/10 shrink-0" /> AI Insight FSVA
+          </Link>
           <button 
             onClick={() => { toggleExpand(false); handleCetakPeta(); }} 
             className="text-left text-xs font-semibold py-2 px-3 rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer"
@@ -714,6 +721,9 @@ export default function Navbar() {
 
         {/* Faktor yang Berpengaruh */}
         <SidebarLink href="/dashboard" icon={<BarChart3 className="w-5 h-5" />} label="Faktor yang Berpengaruh" active={isActive('/dashboard')} />
+
+        {/* AI Insight FSVA */}
+        <SidebarLink href="/ai-insight" icon={<Sparkles className="w-5 h-5 text-amber-400 fill-amber-400/20" />} label="AI Insight FSVA" active={isActive('/ai-insight')} />
 
         {/* Cetak Peta FSVA */}
         <SidebarAction onClick={handleCetakPeta} icon={<Printer className="w-5 h-5" />} label="Cetak Peta FSVA" />

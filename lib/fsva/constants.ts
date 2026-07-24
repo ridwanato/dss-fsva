@@ -82,7 +82,8 @@ export const INDICATOR_RANGES_PROV = {
   air:         { breaks: [30,   40,   50,   60,   70],   inverse: true,  min: 0,  max: 100 },
   food_safety: { breaks: [30,   40,   50,   60,   70],   inverse: false, min: 0,  max: 100 },
   pph:         { breaks: [70,   75,   80,   85,   90],   inverse: false, min: 40, max: 100 },
-  stunting:    { breaks: [20,   25,   30,   35,   40],   inverse: true,  min: 0,  max: 75 },
+  // Stunting khusus 4 kelompok per WHO/PDF Tabel 4: P1≥40, P2=30-<40, P3=20-<30, P4=<20
+  stunting:    { breaks: [20,   30,   40],               inverse: true,  min: 0,  max: 75 },
 }
 
 // Konversi GKG → Beras per Provinsi (Gambar 1 Juknis, Sumber BPS 2018)
@@ -125,34 +126,41 @@ export const GKG_CONVERSION: Record<string, number> = {
 }
 
 // Konversi komoditas setara beras
+// Angka konversi setara beras berdasarkan nilai energi dan %BDD
+// Sumber: Rumus 11 Juknis (Buku Panduan NBM 2025)
 export const COMMODITY_CONVERSION = {
-  jagung:   0.92,
-  ubi_kayu: 0.365,
-  ubi_jalar: 0.260,
-  sagu:     0.942,
-  pisang:   0.135,
+  jagung:   0.92,   // dari Rumus 8 Juknis
+  ubi_kayu: 0.363,  // Rumus 11: Cnet x 0.363
+  ubi_jalar: 0.259, // Rumus 11: Jnet x 0.259
+  sagu:     0.640,  // Rumus 11: Snet x 0.640
+  pisang:   0.134,  // Rumus 11: Bnet x 0.134
 }
 
 // Faktor susut/tercecer padi (Rumus 1-5 Juknis)
 export const PADI_SUSUT = {
-  benih:  0.0090,  // 0.90%
-  pakan:  0.0044,  // 0.44%
-  tercecer: 0.0492, // 4.92%
+  benih:             0.0090,  // 0.90%   — Rumus 1 Juknis
+  pakan:             0.0044,  // 0.44%   — Rumus 1 Juknis
+  tercecer:          0.0492,  // 4.92%   — Rumus 1 Juknis
+  industri_non_mak:  0.0056,  // 0.56%   — Rumus 1 Juknis
 }
 export const BERAS_SUSUT = {
-  benih:   0.0000,  // 0%
-  pakan:   0.0017,  // 0.17%
-  tercecer: 0.0250, // 2.5%
+  benih:             0.0000,  // 0%
+  pakan:             0.0017,  // 0.17%   — Rumus 3 Juknis
+  tercecer:          0.0250,  // 2.5%    — Rumus 3 Juknis
+  industri_non_mak:  0.0066,  // 0.66%   — Rumus 3 Juknis
 }
 
+
 // Faktor susut komoditas lain
+// Faktor susut komoditas lain — Sumber: Rumus 9 Juknis (Tabel konversi Buku Panduan NBM 2025)
 export const KOMODITAS_SUSUT = {
-  jagung:    { benih: 0.0035, pakan: 0.7633, tercecer: 0.0462 },
-  ubi_kayu:  { benih: 0.0000, pakan: 0.0200, tercecer: 0.0004 },
-  ubi_jalar: { benih: 0.0000, pakan: 0.0200, tercecer: 0.0005 },
-  sagu:      { benih: 0.0000, pakan: 0.0000, tercecer: 0.0072 },
-  pisang:    { benih: 0.0000, pakan: 0.0000, tercecer: 0.0111 },
+  jagung:    { benih: 0.0035, pakan: 0.0000, tercecer: 0.0462 }, // benih&pakan dihitung dari series 5 thn (benih dipakai, pakan ditangani terpisah); tercecer 4.62%
+  ubi_kayu:  { benih: 0.0000, pakan: 0.0043, tercecer: 0.0423 }, // pakan 0.43%, tercecer 4.23% — Rumus 9 Juknis
+  ubi_jalar: { benih: 0.0000, pakan: 0.0077, tercecer: 0.0490 }, // pakan 0.77%, tercecer 4.90% — Rumus 9 Juknis
+  sagu:      { benih: 0.0000, pakan: 0.0000, tercecer: 0.0072 }, // tercecer 0.72% — Rumus 9 Juknis
+  pisang:    { benih: 0.0000, pakan: 0.0000, tercecer: 0.0111 }, // tercecer 1.11% — Rumus 9 Juknis
 }
+
 
 // Konversi jagung JPK ke konsumsi (kadar air 28% → 14%)
 export const JAGUNG_KONSUMSI_FACTOR = 0.7385

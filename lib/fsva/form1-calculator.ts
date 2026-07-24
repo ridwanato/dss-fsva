@@ -70,9 +70,11 @@ function calculateNCPR(input: RawIndicatorInput): number {
 
   // Padi → Beras konsumsi
   const P = input.produksi_padi * 1000 // ton → kg
-  const Pnet = P * (1 - PADI_SUSUT.benih - PADI_SUSUT.pakan - PADI_SUSUT.tercecer)
+  // Rumus 1: Pnet = P - (benih + pakan + tercecer + industri_non_makanan)
+  const Pnet = P * (1 - PADI_SUSUT.benih - PADI_SUSUT.pakan - PADI_SUSUT.tercecer - PADI_SUSUT.industri_non_mak)
   const Rnet = c * Pnet
-  const Rc = Rnet * (1 - BERAS_SUSUT.benih - BERAS_SUSUT.pakan - BERAS_SUSUT.tercecer)
+  // Rumus 4: Rc = Rnet - (pakan + tercecer + industri_non_makanan)
+  const Rc = Rnet * (1 - BERAS_SUSUT.pakan - BERAS_SUSUT.tercecer - BERAS_SUSUT.industri_non_mak)
 
   // Jagung setara beras
   const M = input.produksi_jagung * 1000 * JAGUNG_KONSUMSI_FACTOR

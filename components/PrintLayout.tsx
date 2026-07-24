@@ -88,7 +88,7 @@ export default function PrintLayout({
           </div>
 
           {/* Scale Bar */}
-          <div className="absolute bottom-[210px] left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
+          <div className="absolute bottom-[40px] left-6 bg-white/90 px-3 py-2 border-[2px] border-black text-[10px] font-bold shadow-md z-20">
             <div className="flex justify-between w-24 mb-1">
               <span>0</span>
               <span>1</span>

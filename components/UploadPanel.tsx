@@ -15,6 +15,9 @@ export default function UploadPanel() {
   const [calcResult, setCalcResult] = useState<any>(null);
   const [uploadedYear, setUploadedYear] = useState<number | null>(null);
 
+  const [checkResult, setCheckResult] = useState<{ exists: boolean; isOwner?: boolean; hasOwner?: boolean } | null>(null);
+  const [overwriteMode, setOverwriteMode] = useState<'overwrite' | 'version_v2' | null>(null);
+
   // Administrative Area selection states
   const [wilayahData, setWilayahData] = useState<any[]>([]);
   const [level, setLevel] = useState<'kab_kota' | 'provinsi'>('kab_kota');
@@ -52,6 +55,33 @@ export default function UploadPanel() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const activeKabupaten = level === 'provinsi' ? selectedProvinsi : selectedKabupaten;
+
+  useEffect(() => {
+    if (!activeKabupaten) {
+      setCheckResult(null);
+      setOverwriteMode(null);
+      return;
+    }
+
+    fetch(`/api/maps/check?kabupaten=${encodeURIComponent(activeKabupaten)}&level=${level}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.exists) {
+          setCheckResult(data);
+          setOverwriteMode(data.isOwner ? 'overwrite' : 'version_v2');
+        } else {
+          setCheckResult(null);
+          setOverwriteMode(null);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setCheckResult(null);
+        setOverwriteMode(null);
+      });
+  }, [activeKabupaten, level]);
+
   const allKabupaten = wilayahData.reduce((acc: string[], p: any) => {
     return [...acc, ...(p.kabupaten || [])];
   }, []).sort();
@@ -64,14 +94,16 @@ export default function UploadPanel() {
     ? allKabupaten
     : allKabupaten.filter((k: string) => k.toLowerCase().includes(kabQuery.toLowerCase()));
 
-  const activeKabupaten = level === 'provinsi' ? selectedProvinsi : selectedKabupaten;
+  const targetMapName = checkResult?.exists && overwriteMode === 'version_v2'
+    ? `${activeKabupaten} ${uploadedYear || 2025} v.2`
+    : activeKabupaten;
 
   const handleUploadGeometry = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     setLoading(true);
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
-    formData.append('kabupaten', activeKabupaten);
+    formData.append('kabupaten', targetMapName);
     formData.append('level', level);
 
     try {
@@ -90,7 +122,7 @@ export default function UploadPanel() {
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
     formData.append('tahun', '2025'); // default fallback
-    formData.append('kabupaten', activeKabupaten);
+    formData.append('kabupaten', targetMapName);
     formData.append('level', level);
 
     try {
@@ -114,7 +146,7 @@ export default function UploadPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           tahun: uploadedYear || 2025,
-          kab_kota: activeKabupaten,
+          kab_kota: targetMapName,
           level
         }) 
       });
@@ -265,6 +297,65 @@ export default function UploadPanel() {
             </div>
           )}
         </div>
+
+        {checkResult && checkResult.exists && activeKabupaten && (
+          <div className="mt-6 p-5 rounded-2xl border bg-amber-50/50 border-amber-200/60 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">
+                  Peringatan Peta Sudah Ada
+                </p>
+                <p className="text-xs font-bold text-amber-700 leading-relaxed">
+                  Peta {level === 'provinsi' ? 'Provinsi' : 'Kabupaten/Kota'} <strong className="text-amber-900 font-extrabold">"{activeKabupaten}"</strong> sudah ada dan tersimpan sebelumnya {checkResult.isOwner ? 'oleh Anda' : 'oleh akun lain'}.
+                </p>
+                
+                <div className="mt-4 space-y-2">
+                  {/* Option 1: Overwrite (Disabled if not owner) */}
+                  <label className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer text-xs font-bold ${
+                    overwriteMode === 'overwrite'
+                      ? 'bg-amber-100/50 border-amber-300 text-amber-900 shadow-xs'
+                      : 'border-transparent text-amber-600 hover:bg-amber-100/20'
+                  } ${!checkResult.isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <input
+                      type="radio"
+                      name="overwriteOption"
+                      value="overwrite"
+                      disabled={!checkResult.isOwner}
+                      checked={overwriteMode === 'overwrite'}
+                      onChange={() => setOverwriteMode('overwrite')}
+                      className="text-amber-600 focus:ring-amber-500"
+                    />
+                    <div className="flex-1">
+                      <span className="block font-extrabold">Timpa Peta & Data Lama</span>
+                      <span className="block text-[10px] text-amber-600 font-medium">Gantikan geometri dan hasil analisis yang ada dengan unggahan baru ini.</span>
+                    </div>
+                  </label>
+
+                  {/* Option 2: Version v.2 */}
+                  <label className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer text-xs font-bold ${
+                    overwriteMode === 'version_v2'
+                      ? 'bg-amber-100/50 border-amber-300 text-amber-900 shadow-xs'
+                      : 'border-transparent text-amber-600 hover:bg-amber-100/20'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="overwriteOption"
+                      value="version_v2"
+                      checked={overwriteMode === 'version_v2'}
+                      onChange={() => setOverwriteMode('version_v2')}
+                      className="text-amber-600 focus:ring-amber-500"
+                    />
+                    <div className="flex-1">
+                      <span className="block font-extrabold">Buat Peta Baru Versi 2</span>
+                      <span className="block text-[10px] text-amber-600 font-medium">Simpan sebagai peta baru dengan nama <strong className="font-extrabold text-amber-800">"{activeKabupaten} {uploadedYear || 2025} v.2"</strong>.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {!activeKabupaten && (
           <p className="text-xs text-[#7C3AED] font-semibold mt-4 flex items-center gap-1.5 justify-center">

@@ -277,6 +277,11 @@ export default function Navbar() {
       );
     }
 
+    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS 
+      ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+      : ['admin@email.com', 'admin@fsva.go.id'];
+    const isAdmin = !!(session?.user?.email && adminEmails.includes(session.user.email.toLowerCase()) || session?.user?.user_metadata?.role === 'admin');
+
     const isSemuaPetaActive = pathname === '/map' && !currentKabupaten;
     const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
     const provinsiMaps = maps.filter(m => m.level === 'provinsi');
@@ -324,7 +329,7 @@ export default function Navbar() {
                     >
                       {kab.nama_kabupaten}
                     </button>
-                    {session && session.user && kab.user_id === session.user.id && (
+                    {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
                       <button
                         onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
                         className={`p-1 transition-colors cursor-pointer shrink-0 ${
@@ -385,7 +390,7 @@ export default function Navbar() {
                     >
                       {kab.nama_kabupaten}
                     </button>
-                    {session && session.user && kab.user_id === session.user.id && (
+                    {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
                       <button
                         onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
                         className={`p-1 transition-colors cursor-pointer shrink-0 ${

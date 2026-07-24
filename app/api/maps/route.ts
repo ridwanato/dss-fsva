@@ -101,8 +101,13 @@ export async function DELETE(req: NextRequest) {
 
     const mapOwnerId = geoOwner[0].user_id;
 
-    // Jika peta diunggah oleh user lain (user_id tidak cocok)
-    if (mapOwnerId && mapOwnerId !== session.user.id) {
+    // Jika peta diunggah oleh user lain (user_id tidak cocok) dan bukan admin
+    const adminEmails = process.env.ADMIN_EMAILS 
+      ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+      : ['admin@email.com', 'admin@fsva.go.id'];
+    const isAdmin = adminEmails.includes(session.user.email?.toLowerCase() || '') || session.user.user_metadata?.role === 'admin';
+
+    if (mapOwnerId && mapOwnerId !== session.user.id && !isAdmin) {
       return NextResponse.json({
         success: false,
         error: 'Anda hanya dapat menghapus peta yang Anda unggah sendiri.'

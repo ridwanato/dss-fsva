@@ -4,7 +4,7 @@ import MapView from '@/components/MapView';
 import LegendPanel from '@/components/LegendPanel';
 import InfoPanel from '@/components/InfoPanel';
 import PrintLayout from '@/components/PrintLayout';
-import { Download, Printer, Settings, X } from 'lucide-react';
+import { Download, Printer, Settings, X, RotateCw } from 'lucide-react';
 
 import LayerPanel, { getLayersForLevel } from '@/components/LayerPanel';
 
@@ -146,14 +146,51 @@ function FontToolbar({
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [showPrintGuide, setShowPrintGuide] = useState(true);
     const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
-    const [printConfig, setPrintConfig] = useState({
-      logoPemda: '/logo-cilegon.png',
-      logoBapanas: '/bapanas logo.png',
-      govName: 'PEMERINTAH\n' + (kabupaten ? kabupaten.toUpperCase() : 'DAERAH'),
-      title: `FSVA ${kabupaten ? kabupaten.toUpperCase() : 'DAERAH'}\nTAHUN 2025`,
-      sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
-      footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`
-    });
+
+    // Dynamic @page size injection for print orientation (A4 Landscape vs Portrait)
+    useEffect(() => {
+      const styleId = 'dynamic-print-page-style';
+      let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = `@media print { @page { size: A4 ${printOrientation}; margin: 0; } }`;
+    }, [printOrientation]);
+    // Dynamic default print configuration with placeholders based on mode (Provinsi vs Kab/Kota)
+    const getDefaultPrintConfig = (lvl: string, kab?: string) => {
+      const isProv = lvl === 'provinsi';
+      const hasKab = kab && kab !== 'semua' && kab.trim() !== '';
+
+      const regionLabel = isProv
+        ? (hasKab ? `PROVINSI ${kab.toUpperCase()}` : 'PROVINSI .....')
+        : (hasKab ? kab.toUpperCase() : 'KABUPATEN/KOTA .....');
+
+      const govLabel = isProv
+        ? `PEMERINTAH ${regionLabel}`
+        : `PEMERINTAH\n${regionLabel}`;
+
+      const titleLabel = `PETA FSVA ${regionLabel}\nTAHUN 2025`;
+
+      const footerLabel = `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${regionLabel}`;
+
+      return {
+        logoPemda: '/logo-cilegon.png',
+        logoBapanas: '/bapanas logo.png',
+        govName: govLabel,
+        title: titleLabel,
+        sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
+        footer: footerLabel
+      };
+    };
+
+    const [printConfig, setPrintConfig] = useState(() => getDefaultPrintConfig(level, kabupaten));
+
+    // Update printConfig placeholders automatically when level or kabupaten changes
+    useEffect(() => {
+      setPrintConfig(getDefaultPrintConfig(level, kabupaten));
+    }, [level, kabupaten]);
 
     const [fontStyles, setFontStyles] = useState<Record<string, FontStyle>>({
       govName: {
@@ -340,7 +377,7 @@ function FontToolbar({
       styleEl.id = styleId;
       document.head.appendChild(styleEl);
     }
-    styleEl.innerHTML = `@page { size: A4 ${printOrientation}; margin: 0; }`;
+    styleEl.innerHTML = `@media print { @page { size: A4 portrait; margin: 0; } }`;
     
     let hasRendered = false;
 
@@ -349,12 +386,58 @@ function FontToolbar({
       hasRendered = true;
       try {
         const mapCanvas = mapInstance.getCanvas();
+        const containerEl = mapCanvas.parentElement || mapCanvas;
+        const containerRect = containerEl.getBoundingClientRect();
+        const activeGuideEl = document.getElementById('active-print-guide-box');
+
+        let srcX = 0;
+        let srcY = 0;
+        let srcW = mapCanvas.width;
+        let srcH = mapCanvas.height;
+
+        if (activeGuideEl && containerRect.width > 0 && containerRect.height > 0) {
+          const guideRect = activeGuideEl.getBoundingClientRect();
+          const scaleX = mapCanvas.width / containerRect.width;
+          const scaleY = mapCanvas.height / containerRect.height;
+
+          const borderWidth = 4;
+          const innerLeft = guideRect.left + borderWidth;
+          const innerTop = guideRect.top + borderWidth;
+          const innerW = guideRect.width - (borderWidth * 2);
+          const innerH = guideRect.height - (borderWidth * 2);
+
+          srcX = (innerLeft - containerRect.left) * scaleX;
+          srcY = (innerTop - containerRect.top) * scaleY;
+          srcW = innerW * scaleX;
+          srcH = innerH * scaleY;
+
+          // Clamp to canvas boundaries
+          if (srcX < 0) srcX = 0;
+          if (srcY < 0) srcY = 0;
+          if (srcX + srcW > mapCanvas.width) srcW = mapCanvas.width - srcX;
+          if (srcY + srcH > mapCanvas.height) srcH = mapCanvas.height - srcY;
+        } else {
+          const targetAspect = printOrientation === 'landscape' ? 1.294 : 0.55;
+          srcW = mapCanvas.width;
+          srcH = mapCanvas.height;
+          let drawW = srcW;
+          let drawH = srcW / targetAspect;
+          if (drawH > srcH) {
+            drawH = srcH;
+            drawW = srcH * targetAspect;
+          }
+          srcX = (srcW - drawW) / 2;
+          srcY = (srcH - drawH) / 2;
+          srcW = drawW;
+          srcH = drawH;
+        }
+
         const hiddenCanvas = document.createElement('canvas');
-        hiddenCanvas.width = mapCanvas.width;
-        hiddenCanvas.height = mapCanvas.height;
+        hiddenCanvas.width = Math.round(srcW);
+        hiddenCanvas.height = Math.round(srcH);
         const ctx = hiddenCanvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(mapCanvas, 0, 0);
+          ctx.drawImage(mapCanvas, srcX, srcY, srcW, srcH, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
         }
         
         const dataUrl = hiddenCanvas.toDataURL('image/png');
@@ -368,15 +451,14 @@ function FontToolbar({
         const formattedFileName = `FSVA - ${regionName} - ${selectedYear} - ${indicatorName}`.trim();
         document.title = formattedFileName;
         
-        document.body.classList.add('printing-map-pdf');
-        document.body.classList.add(printOrientation === 'landscape' ? 'print-landscape' : 'print-portrait');
+        document.body.classList.add('printing-map-pdf', 'print-portrait');
 
         // Allow 1000ms for mobile browser image decoding before triggering print window
         setTimeout(() => {
           try {
             window.print();
           } finally {
-            document.body.classList.remove('printing-map-pdf', 'print-landscape', 'print-portrait');
+            document.body.classList.remove('printing-map-pdf', 'print-portrait');
             setIsPrinting(false);
             document.title = originalTitle;
             setTimeout(() => setMapImage(null), 1500);
@@ -411,7 +493,7 @@ function FontToolbar({
       config={printConfig}
       fontStyles={fontStyles}
       level={level}
-      orientation={printOrientation}
+      orientation="portrait"
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       <LayerPanel 
@@ -518,17 +600,15 @@ function FontToolbar({
           </svg>
         </div>
 
-        {/* Print Preview Guide Overlay */}
+        {/* Print Preview Guide Overlay - Portrait Only */}
         {showPrintGuide && (
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+            
+            {/* PORTRAIT BOX (Standard FSVA Aspect Ratio 3:4) */}
             <div 
-              className={`relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent flex flex-col items-center justify-start pointer-events-none transition-all duration-300 ${
-                printOrientation === 'landscape'
-                  ? 'aspect-[258/133] w-[85%] max-h-[85%]'
-                  : 'aspect-[133/258] h-[80%] max-w-[90%]'
-              }`}
+              id="active-print-guide-box"
+              className="relative flex flex-col items-center justify-start pointer-events-none transition-all duration-300 aspect-[3/4] h-[80%] max-w-[90%] rounded border-4 border-solid border-[#ec4899] shadow-[0_0_25px_rgba(236,72,153,0.4)] z-20"
             >
-              {/* Text info in 2 lines inside the top margin of the box */}
               <div className="absolute top-3 left-0 right-0 flex justify-center items-center pointer-events-auto">
                 <span 
                   className="text-[10px] font-black text-center leading-snug px-6 tracking-wide select-none"
@@ -537,18 +617,20 @@ function FontToolbar({
                     textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.5)'
                   }}
                 >
-                  Geser dan zoom out untuk menyesuaikan peta<br />yang akan dicetak ({printOrientation === 'landscape' ? 'Landscape/A4 Tidur' : 'Portrait/A4 Tegak'}) ke dalam kotak panduan ini.
+                  Geser dan zoom out untuk menyesuaikan peta<br />yang akan dicetak ke dalam kotak panduan ini.
                 </span>
               </div>
+
               {/* Close Button */}
               <button 
                 onClick={() => setShowPrintGuide(false)}
-                className="absolute -right-3 -top-3 text-black font-black text-xs md:text-sm hover:text-red-600 transition-colors bg-white hover:bg-slate-100 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-lg shadow-md border border-slate-200 pointer-events-auto"
+                className="absolute -right-3 -top-3 text-black font-black text-xs md:text-sm hover:text-red-600 transition-colors bg-white hover:bg-slate-100 w-7 h-7 flex items-center justify-center rounded-lg shadow-md border border-slate-200 pointer-events-auto cursor-pointer"
                 title="Tutup Panduan"
               >
                 X
               </button>
             </div>
+
           </div>
         )}
 
@@ -578,40 +660,10 @@ function FontToolbar({
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <Printer className="w-5 h-5 text-blue-600" /> Pengaturan Cetak Peta
               </h2>
-              <p className="text-xs text-gray-500 mt-1">Pilih orientasi halaman & ubah teks dinamis untuk PDF.</p>
+              <p className="text-xs text-gray-500 mt-1">Ubah teks dinamis & logo untuk cetak PDF (A4 Tegak).</p>
             </div>
             
             <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-              {/* Orientation Selection Option */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">Orientasi Halaman Cetak (Layout PDF)</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPrintOrientation('portrait')}
-                    className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2.5 transition-all text-xs font-bold ${
-                      printOrientation === 'portrait'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="w-3.5 h-5 border-2 border-current rounded-xs" />
-                    <span>Portrait (A4 Tegak)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPrintOrientation('landscape')}
-                    className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2.5 transition-all text-xs font-bold ${
-                      printOrientation === 'landscape'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="w-5 h-3.5 border-2 border-current rounded-xs" />
-                    <span>Landscape (A4 Tidur)</span>
-                  </button>
-                </div>
-              </div>
 
               <div className="flex gap-4">
                 <div className="flex-1">

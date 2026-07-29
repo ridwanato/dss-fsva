@@ -145,6 +145,7 @@ function FontToolbar({
 
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [showPrintGuide, setShowPrintGuide] = useState(true);
+    const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [printConfig, setPrintConfig] = useState({
       logoPemda: '/logo-cilegon.png',
       logoBapanas: '/bapanas logo.png',
@@ -331,6 +332,16 @@ function FontToolbar({
     if (!mapInstance) return;
     setIsPrinting(true);
     
+    // Inject dynamic @page style for current print orientation
+    const styleId = 'dynamic-print-page-style';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `@page { size: A4 ${printOrientation}; margin: 0; }`;
+    
     let hasRendered = false;
 
     const doCapture = () => {
@@ -399,6 +410,7 @@ function FontToolbar({
       config={printConfig}
       fontStyles={fontStyles}
       level={level}
+      orientation={printOrientation}
     />
     <div className="flex-1 relative flex flex-col no-print h-full">
       <LayerPanel 
@@ -508,7 +520,13 @@ function FontToolbar({
         {/* Print Preview Guide Overlay */}
         {showPrintGuide && (
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent aspect-[133/258] h-[80%] max-w-[90%] flex flex-col items-center justify-start pointer-events-none">
+            <div 
+              className={`relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent flex flex-col items-center justify-start pointer-events-none transition-all duration-300 ${
+                printOrientation === 'landscape'
+                  ? 'aspect-[258/133] w-[85%] max-h-[85%]'
+                  : 'aspect-[133/258] h-[80%] max-w-[90%]'
+              }`}
+            >
               {/* Text info in 2 lines inside the top margin of the box */}
               <div className="absolute top-3 left-0 right-0 flex justify-center items-center pointer-events-auto">
                 <span 
@@ -518,7 +536,7 @@ function FontToolbar({
                     textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.5)'
                   }}
                 >
-                  Geser dan zoom out untuk menyesuaikan peta<br />yang akan dicetak ke dalam kotak panduan ini.
+                  Geser dan zoom out untuk menyesuaikan peta<br />yang akan dicetak ({printOrientation === 'landscape' ? 'Landscape/A4 Tidur' : 'Portrait/A4 Tegak'}) ke dalam kotak panduan ini.
                 </span>
               </div>
               {/* Close Button */}
@@ -559,10 +577,41 @@ function FontToolbar({
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <Printer className="w-5 h-5 text-blue-600" /> Pengaturan Cetak Peta
               </h2>
-              <p className="text-xs text-gray-500 mt-1">Ubah teks dinamis yang akan tampil di PDF.</p>
+              <p className="text-xs text-gray-500 mt-1">Pilih orientasi halaman & ubah teks dinamis untuk PDF.</p>
             </div>
             
             <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
+              {/* Orientation Selection Option */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">Orientasi Halaman Cetak (Layout PDF)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPrintOrientation('portrait')}
+                    className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2.5 transition-all text-xs font-bold ${
+                      printOrientation === 'portrait'
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="w-3.5 h-5 border-2 border-current rounded-xs" />
+                    <span>Portrait (A4 Tegak)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintOrientation('landscape')}
+                    className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2.5 transition-all text-xs font-bold ${
+                      printOrientation === 'landscape'
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="w-5 h-3.5 border-2 border-current rounded-xs" />
+                    <span>Landscape (A4 Tidur)</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Logo Pemda (Kiri)</label>

@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { 
   ChevronDown, ChevronLeft, ChevronRight, Trash2, 
   Map, BarChart3, Database, BookOpen, User, LogOut, Layers,
-  Home, Printer, Download, Sparkles
+  Home, Printer, Download, Sparkles, Leaf, X, Info, FileText, HelpCircle
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 
@@ -18,9 +18,13 @@ export default function Navbar() {
   const [session, setSession] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false); // Desktop sidebar collapse state
+
+  // Category dropdown collapse states
+  const [fiturUtamaOpen, setFiturUtamaOpen] = useState(true);
   const [petunjukDropdownOpen, setPetunjukDropdownOpen] = useState(true);
   const [savedKabDropdownOpen, setSavedKabDropdownOpen] = useState(true);
   const [savedProvDropdownOpen, setSavedProvDropdownOpen] = useState(true);
+
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -137,288 +141,365 @@ export default function Navbar() {
     }
   };
 
-  // Helper component for desktop sidebar links
-  const SidebarLink = ({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) => {
-    if (isMinimized) {
-      return (
-        <Link 
-          href={href} 
-          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
-            active 
-              ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md scale-105 border border-[#14B8A6]/30' 
-              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
-          }`}
-        >
-          {icon}
-          {/* Tooltip */}
-          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
-            {label}
-          </div>
-        </Link>
-      );
-    }
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS 
+    ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+    : ['admin@email.com', 'admin@fsva.go.id', 'ketapangcilegon@gmail.com'];
+  const isAdmin = !!(session?.user?.email && adminEmails.includes(session.user.email.toLowerCase()) || session?.user?.user_metadata?.role === 'admin');
 
-    return (
+  const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
+  const provinsiMaps = maps.filter(m => m.level === 'provinsi');
+  const isSemuaPetaActive = pathname === '/map' && !currentKabupaten;
+
+  // Reusable Tree Submenu Wrapper Component with visual connector lines
+  const TreeContainer = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative pl-5 ml-4 border-l border-emerald-500/30 my-1 space-y-1.5">
+      {children}
+    </div>
+  );
+
+  const TreeItem = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative flex items-center group">
+      {/* Horizontal connector line */}
+      <span className="absolute -left-[20px] top-1/2 -translate-y-1/2 w-3.5 h-[1px] bg-emerald-500/35 group-hover:bg-emerald-400 transition-colors" />
+      {children}
+    </div>
+  );
+
+  // Render authentic DSS FSVA navigation content
+  const renderNavItems = (onItemClick?: () => void) => (
+    <div className="flex flex-col gap-3 py-2">
+      {/* BERANDA */}
       <Link 
-        href={href} 
-        className={`flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-extrabold text-sm transition-all duration-200 ${
-          active 
-            ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md translate-x-1 border border-[#14B8A6]/30' 
-            : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+        href="/" 
+        onClick={() => onItemClick && onItemClick()} 
+        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
+          isActive('/') 
+            ? 'bg-[#0f4d38] text-white border-emerald-500/40 shadow-inner' 
+            : 'text-emerald-100 hover:bg-[#0f4d38]/60 hover:text-white border-transparent'
         }`}
       >
-        <span className="shrink-0">{icon}</span>
-        <span className="whitespace-normal leading-snug">{label}</span>
+        <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-300 shrink-0">
+          <Home className="w-4 h-4" />
+        </div>
+        <span>BERANDA</span>
       </Link>
-    );
-  };
 
-  const SidebarAction = ({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) => {
-    if (isMinimized) {
-      return (
-        <button 
-          onClick={onClick} 
-          className="flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative text-emerald-100 hover:bg-white/10 hover:text-white cursor-pointer w-full"
+      {/* CATEGORY 1: FITUR UTAMA FSVA */}
+      <div className="flex flex-col">
+        <button
+          onClick={() => setFiturUtamaOpen(!fiturUtamaOpen)}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
         >
-          {icon}
-          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
-            {label}
-          </div>
+          <span className="flex items-center gap-2.5">
+            <Map className="w-4 h-4 text-emerald-400 shrink-0" />
+            FITUR UTAMA FSVA
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: fiturUtamaOpen ? 'rotate(180deg)' : 'none' }} 
+          />
         </button>
-      );
-    }
 
-    return (
-      <button 
-        onClick={onClick} 
-        className="flex items-center gap-3.5 py-2.5 px-4 rounded-xl font-extrabold text-sm transition-all duration-200 text-emerald-100 hover:bg-white/10 hover:text-white cursor-pointer w-full text-left"
-      >
-        <span className="shrink-0">{icon}</span>
-        <span className="whitespace-normal leading-snug">{label}</span>
-      </button>
-    );
-  };
+        {fiturUtamaOpen && (
+          <TreeContainer>
+            <TreeItem>
+              <Link 
+                href={interactiveMapUrl} 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/map' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Peta FSVA Interaktif
+              </Link>
+            </TreeItem>
 
-  const renderPetunjukDropdown = () => {
-    if (isMinimized) {
-      return (
-        <Link 
-          href="/petunjuk-penggunaan" 
-          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
-            isActive('/petunjuk-penggunaan') 
-              ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md scale-105 border border-[#14B8A6]/30' 
-              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
-          }`}
-        >
-          <BookOpen className="w-5 h-5" />
-          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
-            Petunjuk penggunaan
-          </div>
-        </Link>
-      );
-    }
+            <TreeItem>
+              <Link 
+                href="/entry" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/entry') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Data Entry
+              </Link>
+            </TreeItem>
 
-    const isPetunjukActive = pathname === '/petunjuk-penggunaan';
+            <TreeItem>
+              <Link 
+                href="/dashboard" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/dashboard') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Faktor yang Berpengaruh
+              </Link>
+            </TreeItem>
 
-    return (
+            <TreeItem>
+              <Link 
+                href="/ai-insight" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 truncate ${
+                  isActive('/ai-insight') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
+                <span>AI Insight FSVA</span>
+              </Link>
+            </TreeItem>
+
+            <TreeItem>
+              <button 
+                onClick={() => { onItemClick && onItemClick(); handleCetakPeta(); }} 
+                className="w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold text-emerald-100/90 hover:text-white hover:bg-emerald-800/30 cursor-pointer truncate flex items-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <span>Cetak Peta FSVA</span>
+              </button>
+            </TreeItem>
+
+            <TreeItem>
+              <button 
+                onClick={() => { onItemClick && onItemClick(); handleDownloadHasil(); }} 
+                className="w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold text-emerald-100/90 hover:text-white hover:bg-emerald-800/30 cursor-pointer truncate flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <span>Download Hasil Analisis FSVA</span>
+              </button>
+            </TreeItem>
+          </TreeContainer>
+        )}
+      </div>
+
+      {/* CATEGORY 2: PETUNJUK PENGGUNAAN & INFORMASI */}
       <div className="flex flex-col">
         <button
           onClick={() => setPetunjukDropdownOpen(!petunjukDropdownOpen)}
-          className={`flex items-center justify-between px-4 py-2.5 text-sm font-extrabold transition-all duration-200 cursor-pointer w-full text-left rounded-xl ${
-            isPetunjukActive 
-              ? 'text-[#2DD4BF] bg-[#14B8A6]/5' 
-              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
-          }`}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
         >
-          <span className="flex items-center gap-3.5"><BookOpen className="w-5 h-5 shrink-0" /> Petunjuk penggunaan</span>
-          <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: petunjukDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+          <span className="flex items-center gap-2.5">
+            <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
+            PETUNJUK PENGGUNAAN
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: petunjukDropdownOpen ? 'rotate(180deg)' : 'none' }} 
+          />
         </button>
 
         {petunjukDropdownOpen && (
-          <div className="pl-9 space-y-1.5 mt-1">
-            <Link 
-              href="/petunjuk-penggunaan?type=kab_kota"
-              className={`block py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all ${
-                pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota'
-                  ? 'bg-[#14B8A6]/20 text-[#2DD4BF]'
-                  : 'text-emerald-200 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Peta Kab/Kota
-            </Link>
-            <Link 
-              href="/petunjuk-penggunaan?type=provinsi"
-              className={`block py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all ${
-                pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi'
-                  ? 'bg-[#14B8A6]/20 text-[#2DD4BF]'
-                  : 'text-emerald-200 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Peta Provinsi
-            </Link>
-          </div>
+          <TreeContainer>
+            <TreeItem>
+              <Link 
+                href="/petunjuk-penggunaan?type=kab_kota" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Peta Kab/Kota
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/petunjuk-penggunaan?type=provinsi" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Peta Provinsi
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/indikator-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/indikator-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Indikator FSVA
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/metodologi-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/metodologi-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Metodologi FSVA
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/tentang-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/tentang-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Tentang Aplikasi
+              </Link>
+            </TreeItem>
+          </TreeContainer>
         )}
       </div>
-    );
-  };
 
-  const renderSavedMapsDropdown = () => {
-    if (isMinimized) {
-      const isAnyMapActive = pathname === '/map' && currentKabupaten !== '';
-      return (
-        <Link 
-          href="/map"
-          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 group relative ${
-            isAnyMapActive
-              ? 'bg-[#14B8A6]/20 text-[#2DD4BF] shadow-md border border-[#14B8A6]/30' 
-              : 'text-emerald-100 hover:bg-white/10 hover:text-white'
-          }`}
+      {/* CATEGORY 3: PETA TERSIMPAN KAB/KOTA */}
+      <div className="flex flex-col">
+        <button
+          onClick={() => setSavedKabDropdownOpen(!savedKabDropdownOpen)}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
         >
-          <Layers className="w-5 h-5" />
-          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-xl whitespace-nowrap z-[100] border border-slate-700/50">
-            Peta Tersimpan
-          </div>
-        </Link>
-      );
-    }
+          <span className="flex items-center gap-2.5">
+            <Layers className="w-4 h-4 text-emerald-400 shrink-0" />
+            PETA TERSIMPAN KAB/KOTA
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: savedKabDropdownOpen ? 'rotate(180deg)' : 'none' }} 
+          />
+        </button>
 
-    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS 
-      ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
-      : ['admin@email.com', 'admin@fsva.go.id', 'ketapangcilegon@gmail.com'];
-    const isAdmin = !!(session?.user?.email && adminEmails.includes(session.user.email.toLowerCase()) || session?.user?.user_metadata?.role === 'admin');
-
-    const isSemuaPetaActive = pathname === '/map' && !currentKabupaten;
-    const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
-    const provinsiMaps = maps.filter(m => m.level === 'provinsi');
-
-
-
-    return (
-      <div className="flex flex-col border-t border-green-750/30 pt-3 mt-2 space-y-3">
-        {/* Dropdown 1: Kab/Kota */}
-        <div className="flex flex-col">
-          <button
-            onClick={() => setSavedKabDropdownOpen(!savedKabDropdownOpen)}
-            className="flex items-center justify-between px-3 mb-2 text-xs font-black text-emerald-200 hover:text-white uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
-          >
-            <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Peta Kab/Kota</span>
-            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: savedKabDropdownOpen ? 'rotate(180deg)' : 'none' }} />
-          </button>
-
-          {savedKabDropdownOpen && (
-            <div className="pl-2 pr-1 space-y-1 max-h-[130px] overflow-y-auto custom-scrollbar">
+        {savedKabDropdownOpen && (
+          <TreeContainer>
+            <TreeItem>
               <button
-                onClick={() => router.push('/map?level=kab_kota')}
-                className={`w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
+                onClick={() => {
+                  onItemClick && onItemClick();
+                  router.push('/map?level=kab_kota');
+                }}
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
                   isSemuaPetaActive && activeLevel === 'kab_kota'
-                    ? 'bg-[#14B8A6]/20 text-[#2DD4BF] font-extrabold shadow-sm' 
-                    : 'text-emerald-100 hover:bg-white/5 hover:text-white'
+                    ? 'text-white bg-emerald-800/40 border border-emerald-500/30'
+                    : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
                 }`}
               >
                 Semua Peta Kab/Kota
               </button>
-              
-              {kabKotaMaps.length > 0 ? kabKotaMaps.map((kab, i) => {
+            </TreeItem>
+
+            {kabKotaMaps.length > 0 ? (
+              kabKotaMaps.map((kab, i) => {
                 const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'kab_kota';
                 return (
-                  <div 
-                    key={i} 
-                    className={`flex items-center justify-between w-full rounded-lg group px-1 transition-colors ${
-                      isMapActive ? 'bg-[#14B8A6]/20 border border-[#14B8A6]/25' : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <button
-                      onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota`)}
-                      className={`flex-1 text-left py-1.5 px-2 rounded text-xs transition-colors cursor-pointer truncate ${
-                        isMapActive ? 'text-[#2DD4BF] font-extrabold' : 'text-emerald-100 hover:text-white'
-                      }`}
-                      title={kab.nama_kabupaten}
-                    >
-                      {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
-                    </button>
-                    {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
+                  <TreeItem key={i}>
+                    <div className="flex items-center justify-between w-full rounded-lg group hover:bg-emerald-800/30 pr-1">
                       <button
-                        onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
-                        className={`p-1 transition-colors cursor-pointer shrink-0 ${
-                          isMapActive ? 'text-slate-500 hover:text-rose-650' : 'text-emerald-300/40 hover:text-rose-400'
+                        onClick={() => {
+                          onItemClick && onItemClick();
+                          router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota`);
+                        }}
+                        className={`flex-1 text-left py-1.5 px-2.5 text-xs transition-colors cursor-pointer truncate rounded-lg ${
+                          isMapActive ? 'text-emerald-300 font-bold bg-emerald-800/50' : 'text-emerald-100/90 hover:text-white'
                         }`}
-                        title="Hapus Peta"
+                        title={kab.nama_kabupaten}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
                       </button>
-                    )}
-                  </div>
+                      {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
+                        <button
+                          onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                          className="p-1 text-emerald-400/60 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                          title="Hapus Peta"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </TreeItem>
                 );
-              }) : (
-                <div className="px-3 py-1.5 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
-              )}
-            </div>
-          )}
-        </div>
+              })
+            ) : (
+              <TreeItem>
+                <span className="px-2.5 py-1 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</span>
+              </TreeItem>
+            )}
+          </TreeContainer>
+        )}
+      </div>
 
-        {/* Dropdown 2: Provinsi */}
-        <div className="flex flex-col">
-          <button
-            onClick={() => setSavedProvDropdownOpen(!savedProvDropdownOpen)}
-            className="flex items-center justify-between px-3 mb-2 text-xs font-black text-emerald-250 hover:text-white uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
-          >
-            <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Peta Provinsi</span>
-            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: savedProvDropdownOpen ? 'rotate(180deg)' : 'none' }} />
-          </button>
+      {/* CATEGORY 4: PETA TERSIMPAN PROVINSI */}
+      <div className="flex flex-col">
+        <button
+          onClick={() => setSavedProvDropdownOpen(!savedProvDropdownOpen)}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+        >
+          <span className="flex items-center gap-2.5">
+            <Layers className="w-4 h-4 text-emerald-400 shrink-0" />
+            PETA TERSIMPAN PROVINSI
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: savedProvDropdownOpen ? 'rotate(180deg)' : 'none' }} 
+          />
+        </button>
 
-          {savedProvDropdownOpen && (
-            <div className="pl-2 pr-1 space-y-1 max-h-[130px] overflow-y-auto custom-scrollbar">
+        {savedProvDropdownOpen && (
+          <TreeContainer>
+            <TreeItem>
               <button
-                onClick={() => router.push('/map?level=provinsi')}
-                className={`w-full text-left py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
+                onClick={() => {
+                  onItemClick && onItemClick();
+                  router.push('/map?level=provinsi');
+                }}
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
                   isSemuaPetaActive && activeLevel === 'provinsi'
-                    ? 'bg-[#14B8A6]/20 text-[#2DD4BF] font-extrabold shadow-sm' 
-                    : 'text-emerald-100 hover:bg-white/5 hover:text-white'
+                    ? 'text-white bg-emerald-800/40 border border-emerald-500/30'
+                    : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
                 }`}
               >
                 Semua Peta Provinsi
               </button>
-              
-              {provinsiMaps.length > 0 ? provinsiMaps.map((kab, i) => {
+            </TreeItem>
+
+            {provinsiMaps.length > 0 ? (
+              provinsiMaps.map((kab, i) => {
                 const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'provinsi';
                 return (
-                  <div 
-                    key={i} 
-                    className={`flex items-center justify-between w-full rounded-lg group px-1 transition-colors ${
-                      isMapActive ? 'bg-[#14B8A6]/20 border border-[#14B8A6]/25' : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <button
-                      onClick={() => router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi`)}
-                      className={`flex-1 text-left py-1.5 px-2 rounded text-xs transition-colors cursor-pointer truncate ${
-                        isMapActive ? 'text-[#2DD4BF] font-extrabold' : 'text-emerald-100 hover:text-white'
-                      }`}
-                      title={kab.nama_kabupaten}
-                    >
-                      {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
-                    </button>
-                    {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
+                  <TreeItem key={i}>
+                    <div className="flex items-center justify-between w-full rounded-lg group hover:bg-emerald-800/30 pr-1">
                       <button
-                        onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
-                        className={`p-1 transition-colors cursor-pointer shrink-0 ${
-                          isMapActive ? 'text-slate-500 hover:text-rose-650' : 'text-emerald-300/40 hover:text-rose-400'
+                        onClick={() => {
+                          onItemClick && onItemClick();
+                          router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi`);
+                        }}
+                        className={`flex-1 text-left py-1.5 px-2.5 text-xs transition-colors cursor-pointer truncate rounded-lg ${
+                          isMapActive ? 'text-emerald-300 font-bold bg-emerald-800/50' : 'text-emerald-100/90 hover:text-white'
                         }`}
-                        title="Hapus Peta"
+                        title={kab.nama_kabupaten}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
                       </button>
-                    )}
-                  </div>
+                      {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
+                        <button
+                          onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                          className="p-1 text-emerald-400/60 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                          title="Hapus Peta"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </TreeItem>
                 );
-              }) : (
-                <div className="px-3 py-1.5 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</div>
-              )}
-            </div>
-          )}
-        </div>
+              })
+            ) : (
+              <TreeItem>
+                <span className="px-2.5 py-1 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</span>
+              </TreeItem>
+            )}
+          </TreeContainer>
+        )}
       </div>
-    );
-  };
+    </div>
+  );
 
   // MOBILE VIEW RENDER
   if (isMobile) {
@@ -426,223 +507,104 @@ export default function Navbar() {
       return (
         <div 
           onClick={() => toggleExpand(true)}
-          className="fixed top-3 right-3 z-50 w-20 h-10 flex items-center justify-center bg-gradient-to-r from-green-700 to-green-500 text-white shadow-md border border-green-500/30 rounded-xl cursor-pointer pointer-events-auto text-xs font-bold uppercase tracking-wider select-none no-print"
+          className="fixed top-3 right-3 z-50 px-3.5 py-2 flex items-center gap-2 bg-[#0b2e24]/95 backdrop-blur-md text-white shadow-xl border border-emerald-500/40 rounded-xl cursor-pointer pointer-events-auto text-xs font-bold uppercase tracking-wider select-none no-print hover:bg-[#104234] transition-all"
         >
-          MENU
+          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <Leaf className="w-3 h-3 fill-white" />
+          </div>
+          <span>MENU</span>
         </div>
       );
     }
 
-    const kabKotaMaps = maps.filter(m => m.level === 'kab_kota' || !m.level);
-    const provinsiMaps = maps.filter(m => m.level === 'provinsi');
-
     return (
-      <div className="fixed top-3 right-3 left-3 z-50 flex flex-col bg-white/95 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl p-4 pointer-events-auto max-h-[85vh] overflow-y-auto no-print animate-in slide-in-from-top-2 fade-in duration-200">
-        {/* Mobile Header */}
-        <div className="flex items-center justify-between border-b pb-3 border-green-50/50 mb-3 bg-gradient-to-r from-green-800 via-green-700 to-green-500 -mx-4 -mt-4 p-4 rounded-t-2xl text-white">
-          <Link 
-            href="/" 
-            onClick={() => toggleExpand(false)} 
-            className="flex items-center gap-2 hover:opacity-90 transition-opacity"
-          >
-            <div className="w-6 h-6 bg-white text-green-800 rounded-lg flex items-center justify-center font-black text-xs">
-              F
-            </div>
-            <div className="flex flex-col justify-center leading-none">
-              <span className="font-bold text-xs text-white">FSVA</span>
-              <span className="text-[7px] text-emerald-200/90 font-medium mt-0.5">FSVA.my.id</span>
-            </div>
-          </Link>
-          <button 
-            onClick={() => toggleExpand(false)} 
-            className="text-xs font-bold text-emerald-100 hover:text-white px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
-          >
-            Tutup
-          </button>
-        </div>
+      <>
+        {/* Backdrop overlay */}
+        <div 
+          onClick={() => toggleExpand(false)} 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 no-print animate-in fade-in duration-200"
+        />
 
-        {/* Mobile Menu Links */}
-        <div className="flex flex-col gap-2">
-          <Link 
-            href="/" 
-            onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-          >
-            Beranda
-          </Link>
-          <Link 
-            href={interactiveMapUrl} 
-            onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${pathname === '/map' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-          >
-            Peta FSVA Interaktif
-          </Link>
-          <Link 
-            href="/entry" 
-            onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/entry') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-          >
-            Data Entry
-          </Link>
-          <Link 
-            href="/dashboard" 
-            onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors ${isActive('/dashboard') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-          >
-            Faktor yang Berpengaruh
-          </Link>
-          <Link 
-            href="/ai-insight" 
-            onClick={() => toggleExpand(false)} 
-            className={`text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center gap-2 ${isActive('/ai-insight') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-550 fill-amber-500/10 shrink-0" /> AI Insight FSVA
-          </Link>
-          <button 
-            onClick={() => { toggleExpand(false); handleCetakPeta(); }} 
-            className="text-left text-xs font-semibold py-2 px-3 rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer"
-          >
-            Cetak Peta FSVA
-          </button>
-          <button 
-            onClick={() => { toggleExpand(false); handleDownloadHasil(); }} 
-            className="text-left text-xs font-semibold py-2 px-3 rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer"
-          >
-            Download Hasil Analisis FSVA
-          </button>
-          
-          <div className="flex flex-col border-t pt-2 border-slate-100">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Petunjuk penggunaan</span>
-            <div className="flex flex-col gap-1 pl-4">
-              <Link 
-                href="/petunjuk-penggunaan?type=kab_kota" 
-                onClick={() => toggleExpand(false)} 
-                className={`text-xs py-1.5 px-2 rounded transition-colors ${pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:text-emerald-600'}`}
-              >
-                Peta Kab/Kota
-              </Link>
-              <Link 
-                href="/petunjuk-penggunaan?type=provinsi" 
-                onClick={() => toggleExpand(false)} 
-                className={`text-xs py-1.5 px-2 rounded transition-colors ${pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-500 hover:text-emerald-600'}`}
-              >
-                Peta Provinsi
-              </Link>
+        {/* Mobile Slide-over Drawer (Narrow width ~280px / w-72) */}
+        <div className="fixed inset-y-0 right-0 z-50 w-72 max-w-[85vw] bg-gradient-to-b from-[#0e4434] via-[#093527] to-[#05241a] border-l border-emerald-500/20 text-white shadow-2xl flex flex-col no-print animate-in slide-in-from-right duration-200 overflow-hidden">
+          {/* Mobile Header (Capture 2 Style) */}
+          <div className="p-4 border-b border-emerald-500/20 flex items-center justify-between bg-[#08291f] shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#10b981] text-white flex items-center justify-center shadow-md border border-emerald-400/30 shrink-0">
+                <Leaf className="w-5 h-5 fill-white" />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="font-black text-xs text-white tracking-wider uppercase">FSVA - KETAHANAN PANGAN</span>
+                <span className="text-[10px] font-extrabold text-[#34d399] tracking-wider uppercase truncate max-w-[130px]">
+                  {currentKabupaten ? currentKabupaten : 'FSVA.MY.ID'}
+                </span>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan Kab/Kota</span>
-            <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1 pl-4 custom-scrollbar">
-              {kabKotaMaps.length > 0 ? kabKotaMaps.map((kab, i) => (
-                <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
-                  <button
-                    onClick={() => {
-                      toggleExpand(false);
-                      router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota`);
-                    }}
-                    className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
-                  >
-                    {kab.nama_kabupaten}
-                  </button>
-                  {session && session.user && kab.user_id === session.user.id && (
-                    <button
-                      onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
-                      className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer pr-3 shrink-0"
-                      title="Hapus Peta"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              )) : (
-                <div className="px-3 py-1 text-xs text-gray-400 italic">Belum ada peta</div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col border-t pt-2 border-slate-100 mt-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Peta Tersimpan Provinsi</span>
-            <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1 pl-4 custom-scrollbar">
-              {provinsiMaps.length > 0 ? provinsiMaps.map((kab, i) => (
-                <div key={i} className="flex items-center justify-between w-full hover:bg-emerald-50 rounded-lg group">
-                  <button
-                    onClick={() => {
-                      toggleExpand(false);
-                      router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi`);
-                    }}
-                    className="flex-1 text-left px-3 py-1.5 text-xs text-[#1E1B4B] hover:text-emerald-600 transition-colors font-medium truncate rounded cursor-pointer"
-                  >
-                    {kab.nama_kabupaten}
-                  </button>
-                  {session && session.user && kab.user_id === session.user.id && (
-                    <button
-                      onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
-                      className="p-1 text-slate-400 hover:text-rose-650 transition-colors cursor-pointer pr-3 shrink-0"
-                      title="Hapus Peta"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              )) : (
-                <div className="px-3 py-1 text-xs text-gray-400 italic">Belum ada peta</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Auth Button */}
-        <div className="border-t pt-3 border-slate-100 flex justify-end mt-3">
-          {session ? (
             <button 
-              onClick={handleSignOut}
-              className="w-full text-center text-xs font-bold text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 py-2 rounded-xl transition-colors cursor-pointer"
+              onClick={() => toggleExpand(false)} 
+              className="p-1.5 text-emerald-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              title="Tutup Menu"
             >
-              Keluar
+              <X className="w-5 h-5" />
             </button>
-          ) : (
-            <Link 
-              href="/login"
-              onClick={() => toggleExpand(false)}
-              className="w-full text-center text-xs font-bold btn-primary py-2 rounded-xl shadow-sm block"
-            >
-              Masuk / Login
-            </Link>
-          )}
+          </div>
+
+          {/* Navigation Links Scroll Container */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+            {renderNavItems(() => toggleExpand(false))}
+          </div>
+
+          {/* Mobile Auth Footer */}
+          <div className="p-3 border-t border-emerald-500/20 bg-[#061f17] shrink-0">
+            {session ? (
+              <button 
+                onClick={handleSignOut}
+                className="w-full py-2 px-3 rounded-xl text-xs font-bold text-rose-300 border border-rose-500/30 bg-rose-950/40 hover:bg-rose-900/60 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" /> Keluar
+              </button>
+            ) : (
+              <Link 
+                href="/login"
+                onClick={() => toggleExpand(false)}
+                className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-400 shadow-md transition-colors flex items-center justify-center gap-2"
+              >
+                <User className="w-4 h-4" /> Masuk / Login
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // DESKTOP VERTICAL SIDEBAR VIEW RENDER
   return (
     <aside 
-      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-[#0F2E23] via-[#0A261D] to-[#041A14] border-r border-[#14B8A6]/10 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
-        isMinimized ? 'w-20' : 'w-64'
+      className={`hidden md:flex flex-col h-screen bg-gradient-to-b from-[#0e4434] via-[#093527] to-[#05241a] border-r border-emerald-500/20 shadow-2xl text-white transition-all duration-300 shrink-0 select-none no-print ${
+        isMinimized ? 'w-20' : 'w-72'
       }`}
     >
-      {/* Sidebar Header */}
-      <div className={`p-4 flex items-center border-b border-green-800/30 h-20 shrink-0 ${
+      {/* Desktop Header (Capture 2 Style) */}
+      <div className={`p-4 flex items-center border-b border-emerald-500/20 bg-[#08291f] h-20 shrink-0 ${
         isMinimized ? 'justify-center flex-col gap-2' : 'justify-between'
       }`}>
         {!isMinimized ? (
           <>
-            <Link 
-              href="/" 
-              className="flex items-center gap-3 hover:opacity-90 transition-opacity"
-            >
-              <div className="w-9 h-9 bg-white text-green-800 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center font-black text-xl">
-                F
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#10b981] text-white flex items-center justify-center shadow-md border border-emerald-400/30 shrink-0">
+                <Leaf className="w-5 h-5 fill-white" />
               </div>
-              <div className="flex flex-col leading-none">
-                <span className="font-black text-lg tracking-tight text-white">FSVA</span>
-                <span className="text-[9px] text-emerald-350 font-semibold tracking-wide mt-0.5">FSVA.my.id</span>
+              <div className="flex flex-col leading-tight">
+                <span className="font-black text-xs text-white tracking-wider uppercase">FSVA - KETAHANAN PANGAN</span>
+                <span className="text-[10px] font-extrabold text-[#34d399] tracking-wider uppercase truncate max-w-[130px]">
+                  {currentKabupaten ? currentKabupaten : 'FSVA.MY.ID'}
+                </span>
               </div>
-            </Link>
+            </div>
             <button 
               onClick={() => setIsMinimized(true)}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-250 hover:text-white transition-all duration-200 cursor-pointer border border-[#14B8A6]/10"
+              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-all duration-200 cursor-pointer border border-emerald-500/20"
               title="Sembunyikan Menu"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -650,15 +612,12 @@ export default function Navbar() {
           </>
         ) : (
           <>
-            <Link 
-              href="/" 
-              className="w-9 h-9 bg-white text-green-800 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center font-black text-xl hover:opacity-90 transition-opacity"
-            >
-              F
-            </Link>
+            <div className="w-9 h-9 rounded-full bg-[#10b981] text-white flex items-center justify-center shadow-md border border-emerald-400/30">
+              <Leaf className="w-5 h-5 fill-white" />
+            </div>
             <button 
               onClick={() => setIsMinimized(false)}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-250 hover:text-white transition-all duration-200 cursor-pointer border border-[#14B8A6]/10 mt-1"
+              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-all duration-200 cursor-pointer border border-emerald-500/20 mt-1"
               title="Tampilkan Menu"
             >
               <ChevronRight className="w-4 h-4" />
@@ -667,20 +626,20 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Auth Button */}
-      <div className="p-4 border-b border-green-800/20 shrink-0">
+      {/* Auth Section */}
+      <div className="p-3 border-b border-emerald-500/15 shrink-0 bg-[#07241b]">
         {!isMinimized ? (
           session ? (
             <button 
               onClick={handleSignOut}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-rose-200 border border-rose-850/40 bg-rose-950/20 hover:bg-rose-900/30 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl text-xs font-bold text-rose-300 border border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/50 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogOut className="w-4 h-4" /> Keluar
             </button>
           ) : (
             <Link 
               href="/login"
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-white text-green-800 hover:bg-green-50 hover:scale-[1.02] shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-400 shadow-md transition-all flex items-center justify-center gap-2"
             >
               <User className="w-4 h-4" /> Masuk / Login
             </Link>
@@ -690,7 +649,7 @@ export default function Navbar() {
             {session ? (
               <button 
                 onClick={handleSignOut}
-                className="p-2.5 rounded-xl text-rose-200 hover:text-white hover:bg-rose-900/20 transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-rose-300 hover:text-white hover:bg-rose-900/30 transition-colors cursor-pointer"
                 title="Keluar"
               >
                 <LogOut className="w-5 h-5" />
@@ -698,7 +657,7 @@ export default function Navbar() {
             ) : (
               <Link 
                 href="/login"
-                className="p-2.5 rounded-xl text-emerald-250 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-2 rounded-xl text-emerald-300 hover:text-white hover:bg-white/10 transition-colors"
                 title="Masuk / Login"
               >
                 <User className="w-5 h-5" />
@@ -709,34 +668,38 @@ export default function Navbar() {
       </div>
 
       {/* Menu List */}
-      <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2.5 custom-scrollbar">
-        {/* Beranda */}
-        <SidebarLink href="/" icon={<Home className="w-5 h-5" />} label="Beranda" active={isActive('/')} />
-
-        {/* Peta FSVA Interaktif */}
-        <SidebarLink href={interactiveMapUrl} icon={<Map className="w-5 h-5" />} label="Peta FSVA Interaktif" active={pathname === '/map'} />
-
-        {/* Data Entry */}
-        <SidebarLink href="/entry" icon={<Database className="w-5 h-5" />} label="Data Entry" active={isActive('/entry')} />
-
-        {/* Faktor yang Berpengaruh */}
-        <SidebarLink href="/dashboard" icon={<BarChart3 className="w-5 h-5" />} label="Faktor yang Berpengaruh" active={isActive('/dashboard')} />
-
-        {/* AI Insight FSVA */}
-        <SidebarLink href="/ai-insight" icon={<Sparkles className="w-5 h-5 text-amber-400 fill-amber-400/20" />} label="AI Insight FSVA" active={isActive('/ai-insight')} />
-
-        {/* Cetak Peta FSVA */}
-        <SidebarAction onClick={handleCetakPeta} icon={<Printer className="w-5 h-5" />} label="Cetak Peta FSVA" />
-
-        {/* Download Hasil Analisis FSVA */}
-        <SidebarAction onClick={handleDownloadHasil} icon={<Download className="w-5 h-5" />} label="Download Hasil Analisis" />
-
-        {/* Petunjuk Penggunaan Dropdown */}
-        {renderPetunjukDropdown()}
-
-        {/* Peta Tersimpan Dropdown */}
-        {renderSavedMapsDropdown()}
-      </div>
+      {!isMinimized ? (
+        <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+          {renderNavItems()}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-3 flex flex-col items-center custom-scrollbar">
+          <Link href="/" className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all" title="Beranda">
+            <Home className="w-5 h-5" />
+          </Link>
+          <Link href={interactiveMapUrl} className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all" title="Peta FSVA">
+            <Map className="w-5 h-5" />
+          </Link>
+          <Link href="/entry" className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all" title="Data Entry">
+            <Database className="w-5 h-5" />
+          </Link>
+          <Link href="/dashboard" className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all" title="Faktor yang Berpengaruh">
+            <BarChart3 className="w-5 h-5" />
+          </Link>
+          <Link href="/ai-insight" className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all" title="AI Insight FSVA">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+          </Link>
+          <button onClick={handleCetakPeta} className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all cursor-pointer" title="Cetak Peta FSVA">
+            <Printer className="w-5 h-5" />
+          </button>
+          <button onClick={handleDownloadHasil} className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all cursor-pointer" title="Download Hasil">
+            <Download className="w-5 h-5" />
+          </button>
+          <Link href="/petunjuk-penggunaan" className="p-2.5 rounded-xl text-emerald-100 hover:bg-white/10 hover:text-white transition-all" title="Petunjuk Penggunaan">
+            <BookOpen className="w-5 h-5" />
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

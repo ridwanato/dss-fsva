@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { 
   ChevronUp, ChevronDown, Layers, BarChart2, Zap, Beef, 
@@ -87,35 +88,36 @@ export default function LayerPanel({
       return (
         <div 
           onClick={() => toggleExpand(true)}
-          className="fixed top-3 left-3 z-40 w-20 h-10 flex items-center justify-center bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] text-white shadow-md rounded-xl cursor-pointer pointer-events-auto text-xs font-black select-none no-print"
+          className="fixed top-3 left-3 z-40 px-3 py-2 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#0e4434] to-[#10b981] text-white shadow-xl border border-emerald-500/40 rounded-xl cursor-pointer pointer-events-auto text-xs font-black select-none no-print hover:opacity-95 transition-all"
         >
-          LAYER
+          <Layers className="w-4 h-4 text-emerald-200" />
+          <span>LAYER</span>
         </div>
       );
     }
 
     return (
-      <div className="fixed top-3 left-3 z-40 w-[280px] max-h-[85vh] flex flex-col bg-white border border-[rgba(109,94,245,0.15)] shadow-lg rounded-2xl overflow-hidden pointer-events-auto no-print animate-in slide-in-from-left-2 fade-in duration-200">
+      <div className="fixed top-3 left-3 z-40 w-[280px] max-h-[85vh] flex flex-col bg-[#08291f] border border-emerald-500/30 shadow-2xl rounded-2xl overflow-hidden pointer-events-auto no-print animate-in slide-in-from-left-2 fade-in duration-200 text-white">
         
-        {/* Header */}
+        {/* Dark Emerald Header */}
         <div 
-          className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer gap-2"
+          className="bg-gradient-to-r from-[#08291f] to-[#0e4434] border-b border-emerald-500/20 px-4 py-3 flex justify-between items-center cursor-pointer gap-2"
           onClick={() => toggleExpand(false)}
         >
-          <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest whitespace-normal break-words flex-1">Pilih Layer Peta dan Cetak PDF</span>
-          <ChevronUp className="w-6 h-6 text-white font-black" strokeWidth={3} />
+          <span className="text-[11px] font-bold text-white uppercase tracking-widest whitespace-normal break-words flex-1">Pilih Layer Peta dan Cetak PDF</span>
+          <ChevronUp className="w-5 h-5 text-emerald-300 font-black" strokeWidth={3} />
         </div>
 
-        {/* White Section: Title & Controls */}
-        <div className="bg-white/80 backdrop-blur px-4 py-3 shrink-0 border-b border-[rgba(109,94,245,0.15)]">
+        {/* Dark Emerald Controls Container */}
+        <div className="bg-[#08291f]/95 backdrop-blur px-4 py-3 shrink-0 border-b border-emerald-500/20">
           {/* Level Toggle Buttons */}
-          <div className="flex bg-[#F5F3FF] p-1 rounded-xl mb-3 border border-[#E8E4FF] pointer-events-auto">
+          <div className="flex bg-[#051f17] p-1 rounded-xl mb-3 border border-emerald-500/30 pointer-events-auto">
             <button
               onClick={() => onLevelChange('kab_kota')}
               className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 level === 'kab_kota'
                   ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+                  : 'bg-emerald-950/60 text-emerald-300/60 hover:text-white'
               }`}
             >
               KAB KOTA
@@ -125,7 +127,7 @@ export default function LayerPanel({
               className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 level === 'provinsi'
                   ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+                  : 'bg-emerald-950/60 text-emerald-300/60 hover:text-white'
               }`}
             >
               PROVINSI
@@ -135,10 +137,10 @@ export default function LayerPanel({
           {/* Title & Buttons Row */}
           <div className="flex justify-between items-start gap-2 mb-3">
             <div>
-              <h1 className="text-sm font-black text-[#1E1B4B] tracking-tight leading-tight">
-                Peta FSVA 2026 <br/><span className="text-[10px] font-semibold text-slate-500">(basis data 2025)</span>
+              <h1 className="text-sm font-black text-white tracking-tight leading-tight">
+                Peta FSVA 2026 <br/><span className="text-[10px] font-semibold text-emerald-300/70">(basis data 2025)</span>
               </h1>
-              <p className="text-[8px] font-extrabold text-[#6D5EF5] mt-0.5 uppercase tracking-wider">
+              <p className="text-[8px] font-extrabold text-[#34d399] mt-0.5 uppercase tracking-wider">
                 {level === 'provinsi' ? '12 Indikator Provinsi' : '11 Indikator Kab/Kota'}
               </p>
             </div>
@@ -151,31 +153,31 @@ export default function LayerPanel({
           
           <div className="flex flex-row items-center justify-between gap-3">
             <div className="flex-1">
-              <label className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex justify-between">
+              <label className="text-[8px] font-bold text-emerald-200/80 uppercase tracking-wider mb-1 flex justify-between">
                 <span>Transparansi Peta</span>
-                <span className="text-gray-400">{opacity}%</span>
+                <span className="text-emerald-400">{opacity}%</span>
               </label>
-              <div className="relative flex items-center h-1 bg-gray-200 rounded-full">
-                <div className="absolute h-full bg-[#6D5EF5] rounded-full" style={{ width: `${opacity}%` }}></div>
+              <div className="relative flex items-center h-1.5 bg-[#051f17] rounded-full border border-emerald-500/20">
+                <div className="absolute h-full bg-[#10b981] rounded-full" style={{ width: `${opacity}%` }}></div>
                 <input 
                   type="range" min="0" max="100" 
                   value={opacity} onChange={(e) => setOpacity(parseInt(e.target.value))}
                   className="absolute w-full h-full opacity-0 cursor-pointer"
                 />
                 <div 
-                  className="absolute h-2.5 w-2.5 bg-white border-2 border-[#6D5EF5] rounded-full pointer-events-none shadow-sm"
-                  style={{ left: `calc(${opacity}% - 5px)` }}
+                  className="absolute h-3 w-3 bg-white border-2 border-[#10b981] rounded-full pointer-events-none shadow-sm"
+                  style={{ left: `calc(${opacity}% - 6px)` }}
                 />
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 border-l pl-2 border-[rgba(109,94,245,0.15)]">
-              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">
+            <div className="flex items-center gap-1.5 border-l pl-2 border-emerald-500/20">
+              <label className="text-[8px] font-bold text-emerald-200/80 uppercase text-right leading-tight">
                 {level === 'provinsi' ? 'Nama\nKec' : 'Nama\nDesa'}
               </label>
               <button 
                 onClick={() => setShowLabels(!showLabels)}
-                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showLabels ? 'bg-[#6D5EF5]' : 'bg-gray-300'}`}
+                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
               >
                 <span className={`absolute left-0.5 text-[6px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
                 <span className={`absolute z-10 inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
@@ -184,8 +186,8 @@ export default function LayerPanel({
           </div>
         </div>
 
-        {/* Purple Section: Layers List (Scrollable) */}
-        <div className="bg-white/60 backdrop-blur flex-1 overflow-y-auto max-h-[50vh]">
+        {/* Scrollable Layers List */}
+        <div className="bg-[#05241a]/95 backdrop-blur flex-1 overflow-y-auto max-h-[50vh]">
           <ul className="flex flex-col py-1">
             {layersList.map(layer => {
               const Icon = layer.icon;
@@ -197,15 +199,21 @@ export default function LayerPanel({
                       setActiveLayer(layer.id);
                       toggleExpand(false); // Collapse on selection in mobile
                     }}
-                    className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${isActive ? 'bg-[#6D5EF5] text-white' : 'hover:bg-[#F5F3FF] text-[#1E1B4B]'}`}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${
+                      isActive 
+                        ? 'bg-[#10b981] text-white font-bold shadow-md' 
+                        : 'hover:bg-[#0e4434]/60 text-emerald-100/90 hover:text-white'
+                    }`}
                   >
-                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-white/30 bg-white/10' : 'border-[#6D5EF5]/20 bg-white'}`}>
-                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#6D5EF5]'}`} />
+                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 ${
+                      isActive ? 'border-white/40 bg-white/20' : 'border-emerald-500/30 bg-emerald-950/40'
+                    }`}>
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-400'}`} />
                     </div>
-                    <span className={`flex-1 text-[11px] font-semibold tracking-wide`}>
+                    <span className={`flex-1 text-[11px] tracking-wide ${isActive ? 'font-black' : 'font-medium'}`}>
                       {layer.label}
                     </span>
-                    <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white/50' : 'text-slate-300'}`} />
+                    <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white/80' : 'text-emerald-500/40'}`} />
                   </button>
                 </li>
               );
@@ -218,29 +226,29 @@ export default function LayerPanel({
 
   // Desktop Rendering
   return (
-    <div className="absolute top-4 left-4 z-20 w-[280px] md:w-80 glass-card rounded-xl overflow-hidden flex flex-col pointer-events-auto transition-all duration-300 border-none">
+    <div className="absolute top-4 left-4 z-20 w-[280px] md:w-80 rounded-2xl overflow-hidden flex flex-col pointer-events-auto transition-all duration-300 border border-emerald-500/30 shadow-2xl bg-[#08291f] text-white">
       
       {/* Header */}
       <div 
-        className="bg-gradient-to-r from-[#6D5EF5] to-[#8B5CF6] px-4 py-3 flex justify-between items-center cursor-pointer gap-2"
+        className="bg-gradient-to-r from-[#08291f] to-[#0e4434] border-b border-emerald-500/20 px-4 py-3 flex justify-between items-center cursor-pointer gap-2"
         onClick={() => toggleExpand(!expanded)}
       >
-        <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest whitespace-normal break-words flex-1">Pilih Layer Peta dan Cetak PDF</span>
-        {expanded ? <ChevronUp className="w-6 h-6 text-white font-black" strokeWidth={3} /> : <ChevronDown className="w-6 h-6 text-white font-black" strokeWidth={3} />}
+        <span className="text-[11px] font-bold text-white uppercase tracking-widest whitespace-normal break-words flex-1">Pilih Layer Peta dan Cetak PDF</span>
+        {expanded ? <ChevronUp className="w-5 h-5 text-emerald-300 font-black" strokeWidth={3} /> : <ChevronDown className="w-5 h-5 text-emerald-300 font-black" strokeWidth={3} />}
       </div>
 
       <div className={`transition-all duration-300 ${expanded ? 'max-h-[calc(100vh-240px)] md:max-h-[calc(100vh-140px)] opacity-100 flex flex-col' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         
-        {/* White Section: Title & Controls */}
-        <div className="bg-white/80 backdrop-blur px-4 md:px-5 py-4 shrink-0 border-b border-[rgba(109,94,245,0.15)]">
+        {/* Controls Container */}
+        <div className="bg-[#08291f]/95 backdrop-blur px-4 md:px-5 py-4 shrink-0 border-b border-emerald-500/20">
           {/* Level Toggle Buttons */}
-          <div className="flex bg-[#F5F3FF] p-1 rounded-xl mb-3 border border-[#E8E4FF] pointer-events-auto">
+          <div className="flex bg-[#051f17] p-1 rounded-xl mb-3 border border-emerald-500/30 pointer-events-auto">
             <button
               onClick={() => onLevelChange('kab_kota')}
               className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 level === 'kab_kota'
                   ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+                  : 'bg-emerald-950/60 text-emerald-300/60 hover:text-white'
               }`}
             >
               KAB KOTA
@@ -250,7 +258,7 @@ export default function LayerPanel({
               className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 level === 'provinsi'
                   ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-rose-600 text-white opacity-40 hover:opacity-75'
+                  : 'bg-emerald-950/60 text-emerald-300/60 hover:text-white'
               }`}
             >
               PROVINSI
@@ -260,10 +268,10 @@ export default function LayerPanel({
           {/* Title & Buttons Row */}
           <div className="flex justify-between items-start gap-2 mb-4">
             <div>
-              <h1 className="text-lg font-black text-[#1E1B4B] tracking-tight leading-tight">
-                Peta FSVA 2026 <br/><span className="text-xs font-semibold text-slate-500">(basis data 2025)</span>
+              <h1 className="text-lg font-black text-white tracking-tight leading-tight">
+                Peta FSVA 2026 <br/><span className="text-xs font-semibold text-emerald-300/70">(basis data 2025)</span>
               </h1>
-              <p className="text-[9px] font-extrabold text-[#6D5EF5] mt-1 uppercase tracking-wider">
+              <p className="text-[9px] font-extrabold text-[#34d399] mt-1 uppercase tracking-wider">
                 {level === 'provinsi' ? '12 Indikator Provinsi' : '11 Indikator Kab/Kota'}
               </p>
             </div>
@@ -276,31 +284,31 @@ export default function LayerPanel({
           
           <div className="flex flex-row items-center justify-between gap-4">
             <div className="flex-1">
-              <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex justify-between">
+              <label className="text-[9px] font-bold text-emerald-200/80 uppercase tracking-wider mb-1.5 flex justify-between">
                 <span>Transparansi Peta</span>
-                <span className="text-gray-400">{opacity}%</span>
+                <span className="text-emerald-400">{opacity}%</span>
               </label>
-              <div className="relative flex items-center h-1.5 bg-gray-200 rounded-full">
-                <div className="absolute h-full bg-[#6D5EF5] rounded-full" style={{ width: `${opacity}%` }}></div>
+              <div className="relative flex items-center h-1.5 bg-[#051f17] rounded-full border border-emerald-500/20">
+                <div className="absolute h-full bg-[#10b981] rounded-full" style={{ width: `${opacity}%` }}></div>
                 <input 
                   type="range" min="0" max="100" 
                   value={opacity} onChange={(e) => setOpacity(parseInt(e.target.value))}
                   className="absolute w-full h-full opacity-0 cursor-pointer"
                 />
                 <div 
-                  className="absolute h-3 w-3 bg-white border-2 border-[#6D5EF5] rounded-full pointer-events-none shadow-sm"
+                  className="absolute h-3 w-3 bg-white border-2 border-[#10b981] rounded-full pointer-events-none shadow-sm"
                   style={{ left: `calc(${opacity}% - 6px)` }}
                 />
               </div>
             </div>
             
-            <div className="flex items-center gap-2 border-l pl-3 border-[rgba(109,94,245,0.15)]">
-              <label className="text-[8px] font-bold text-gray-500 uppercase text-right leading-tight">
+            <div className="flex items-center gap-2 border-l pl-3 border-emerald-500/20">
+              <label className="text-[8px] font-bold text-emerald-200/80 uppercase text-right leading-tight">
                 {level === 'provinsi' ? 'Nama\nKec' : 'Nama\nDesa'}
               </label>
               <button 
                 onClick={() => setShowLabels(!showLabels)}
-                className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showLabels ? 'bg-[#6D5EF5]' : 'bg-gray-300'}`}
+                className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
               >
                 <span className={`absolute left-1 text-[7px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
                 <span className={`absolute z-10 inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-5' : 'translate-x-1'}`} />
@@ -309,8 +317,8 @@ export default function LayerPanel({
           </div>
         </div>
 
-        {/* Purple Section: Layers List (Scrollable) */}
-        <div className="bg-white/60 backdrop-blur flex-1 overflow-y-auto">
+        {/* Scrollable Layers List */}
+        <div className="bg-[#05241a]/95 backdrop-blur flex-1 overflow-y-auto">
           <ul className="flex flex-col py-1">
             {layersList.map(layer => {
               const Icon = layer.icon;
@@ -319,15 +327,21 @@ export default function LayerPanel({
                 <li key={layer.id}>
                   <button
                     onClick={() => setActiveLayer(layer.id)}
-                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${isActive ? 'bg-[#6D5EF5] text-white' : 'hover:bg-[#F5F3FF] text-[#1E1B4B]'}`}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${
+                      isActive 
+                        ? 'bg-[#10b981] text-white font-bold shadow-md' 
+                        : 'hover:bg-[#0e4434]/60 text-emerald-100/90 hover:text-white'
+                    }`}
                   >
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-white/30 bg-white/10' : 'border-[#6D5EF5]/20 bg-white'}`}>
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#6D5EF5]'}`} />
+                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${
+                      isActive ? 'border-white/40 bg-white/20' : 'border-emerald-500/30 bg-emerald-950/40'
+                    }`}>
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-emerald-400'}`} />
                     </div>
-                    <span className={`flex-1 text-xs font-semibold tracking-wide`}>
+                    <span className={`flex-1 text-xs tracking-wide ${isActive ? 'font-black' : 'font-medium'}`}>
                       {layer.label}
                     </span>
-                    <ChevronRight className={`w-4 h-4 shrink-0 ${isActive ? 'text-white/50' : 'text-slate-300'}`} />
+                    <ChevronRight className={`w-4 h-4 shrink-0 ${isActive ? 'text-white/80' : 'text-emerald-500/40'}`} />
                   </button>
                 </li>
               );

@@ -350,26 +350,49 @@ function FontToolbar({
         setMapImage(dataUrl);
         
         const originalTitle = document.title;
-        const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || '';
-        const regionName = kabupaten || 'Wilayah';
+        const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || 'Komposit';
         
-        // Default filename format requested: FSVA - [Nama Kab/Kota/Prov] - [Tahun] - [Indikator]
-        const formattedFileName = `FSVA - ${regionName} - ${selectedYear} - ${indicatorName}`.trim();
-        document.title = formattedFileName;
-        
-        document.body.classList.add('printing-map-pdf');
-
-        // Allow 1000ms for mobile browser image decoding before triggering print window
-        setTimeout(() => {
-          try {
-            window.print();
-          } finally {
-            document.body.classList.remove('printing-map-pdf');
-            setIsPrinting(false);
-            document.title = originalTitle;
-            setTimeout(() => setMapImage(null), 1500);
+        let regionName = kabupaten || '';
+        if (level === 'kab_kota') {
+          if (regionName) {
+            const upper = regionName.toUpperCase();
+            if (!upper.startsWith('KOTA') && !upper.startsWith('KAB')) {
+              regionName = `Kabupaten ${regionName}`;
+            }
+          } else {
+            regionName = 'Kabupaten Kota';
           }
-        }, 1000);
+        } else if (level === 'provinsi') {
+          if (regionName && !regionName.toUpperCase().startsWith('PROVINSI')) {
+            regionName = `Provinsi ${regionName}`;
+          } else if (!regionName) {
+            regionName = 'Provinsi';
+          }
+        }
+        
+        // Standard filename rule: FSVA + Kabupaten/Kota/Provinsi + [Nama] + [Indikator]
+        const formattedFileName = `FSVA ${regionName} ${indicatorName}`.replace(/\s+/g, ' ').trim();
+        document.title = formattedFileName;
+
+        // Pre-decode image before window.print() so mobile renderers do not show blank image
+        const img = new Image();
+        const startPrintWindow = () => {
+          document.body.classList.add('printing-map-pdf');
+          setTimeout(() => {
+            try {
+              window.print();
+            } finally {
+              document.body.classList.remove('printing-map-pdf');
+              setIsPrinting(false);
+              document.title = originalTitle;
+              setTimeout(() => setMapImage(null), 1500);
+            }
+          }, 600);
+        };
+
+        img.onload = startPrintWindow;
+        img.onerror = startPrintWindow;
+        img.src = dataUrl;
       } catch(e) {
         console.error(e);
         document.body.classList.remove('printing-map-pdf');

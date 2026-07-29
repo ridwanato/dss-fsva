@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,46 +13,19 @@ export async function GET(req: NextRequest) {
     const level = searchParams.get('level') || 'kab_kota';
     const tahunStr = searchParams.get('tahun');
     const tahun = tahunStr ? parseInt(tahunStr) : 2025;
+    const force = searchParams.get('force') === 'true';
 
     if (!kabupaten) {
       return NextResponse.json({ success: false, error: 'Parameter kabupaten/provinsi wajib diisi.' }, { status: 400 });
     }
 
-    let apiKey = process.env.GEMINI_API_KEY;
-    let debugInfo = { envPath: '', exists: false, processCwd: process.cwd(), matchFound: false, errorOccurred: '' };
-    if (!apiKey) {
-      try {
-        const envPath = path.join(process.cwd(), '.env.local');
-        debugInfo.envPath = envPath;
-        debugInfo.exists = fs.existsSync(envPath);
-        if (fs.existsSync(envPath)) {
-          const envContent = fs.readFileSync(envPath, 'utf8');
-          const match = envContent.match(/GEMINI_API_KEY\s*=\s*([^\s#\r\n]+)/);
-          if (match && match[1]) {
-            apiKey = match[1].replace(/['"]/g, '').trim();
-            debugInfo.matchFound = true;
-          }
-        }
-      } catch (e: any) {
-        debugInfo.errorOccurred = e.message || String(e);
-        console.error('Failed to read .env.local manually:', e);
-      }
-    }
-
-    if (!apiKey) {
-      return NextResponse.json({
-        success: false,
-        error: `API Key Gemini belum dikonfigurasi di file .env.local (GEMINI_API_KEY). Debug: ${JSON.stringify(debugInfo)}`
-      }, { status: 500 });
-    }
-
     const supabase = getServiceSupabase();
 
-    // 1. Fetch geometries to map BPS codes to names
+    // 1. Fetch geometries to map BPS codes to names (using case-insensitive ilike)
     const { data: geomData, error: geomError } = await supabase
       .from('geometries')
       .select('kode_bps, nama_desa, nama_kecamatan')
-      .eq('nama_kabupaten', kabupaten)
+      .ilike('nama_kabupaten', kabupaten)
       .eq('level', level);
 
     if (geomError) throw geomError;
@@ -63,11 +37,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2. Fetch calculations results from fsva_results
+    // 2. Fetch calculations results from fsva_results (using case-insensitive ilike)
     const { data: results, error: resError } = await supabase
       .from('fsva_results')
       .select('*')
-      .eq('nama_kabupaten', kabupaten)
+      .ilike('nama_kabupaten', kabupaten)
       .eq('level', level)
       .eq('tahun', tahun);
 
@@ -79,6 +53,9 @@ export async function GET(req: NextRequest) {
         error: `Tidak ada data kalkulasi FSVA ditemukan untuk wilayah "${kabupaten}" (${level}) pada tahun ${tahun}.`
       }, { status: 404 });
     }
+
+    // Standardize canonical kabupaten name from DB record
+    const canonicalKabupaten = results[0].nama_kabupaten || kabupaten;
 
     // 3. Aggregate metrics
     const totalWilayah = results.length;
@@ -144,9 +121,75 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // 4. Construct Prompt
+    // Generate SHA-256 hash of the input data to detect data changes
+    const currentDataHash = crypto
+      .createHash('sha256')
+      .update(JSON.stringify({ totalWilayah, priorityDist, rentanWilayah, avgMetrics }))
+      .digest('hex');
+
+    // 4. Check if cached insight exists in Supabase table `ai_insights`
+    if (!force) {
+      try {
+        const { data: cachedRow, error: cacheErr } = await supabase
+          .from('ai_insights')
+          .select('insight, data_hash, updated_at, created_at')
+          .ilike('nama_kabupaten', kabupaten)
+          .eq('level', level)
+          .eq('tahun', tahun)
+          .maybeSingle();
+
+        if (!cacheErr && cachedRow && cachedRow.insight) {
+          // Return cached insight immediately (no Gemini call needed!)
+          return NextResponse.json({
+            success: true,
+            cached: true,
+            updated_at: cachedRow.updated_at || cachedRow.created_at,
+            metadata: {
+              kabupaten: canonicalKabupaten,
+              level,
+              tahun,
+              totalWilayah,
+              rentanCount: rentanWilayah.length
+            },
+            insight: cachedRow.insight
+          });
+        }
+      } catch (checkCacheErr) {
+        console.warn('Note: ai_insights cache check skipped:', checkCacheErr);
+      }
+    }
+
+    // 5. Read Gemini API Key
+    let apiKey = process.env.GEMINI_API_KEY;
+    let debugInfo = { envPath: '', exists: false, processCwd: process.cwd(), matchFound: false, errorOccurred: '' };
+    if (!apiKey) {
+      try {
+        const envPath = path.join(process.cwd(), '.env.local');
+        debugInfo.envPath = envPath;
+        debugInfo.exists = fs.existsSync(envPath);
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf8');
+          const match = envContent.match(/GEMINI_API_KEY\s*=\s*([^\s#\r\n]+)/);
+          if (match && match[1]) {
+            apiKey = match[1].replace(/['"]/g, '').trim();
+            debugInfo.matchFound = true;
+          }
+        }
+      } catch (e: any) {
+        debugInfo.errorOccurred = e.message || String(e);
+        console.error('Failed to read .env.local manually:', e);
+      }
+    }
+
+    if (!apiKey) {
+      return NextResponse.json({
+        success: false,
+        error: `API Key Gemini belum dikonfigurasi di file .env.local (GEMINI_API_KEY). Debug: ${JSON.stringify(debugInfo)}`
+      }, { status: 500 });
+    }
+
+    // 6. Construct Prompt
     const levelLabel = level === 'provinsi' ? 'Kecamatan' : 'Desa/Kelurahan';
-    const subLabelPlural = level === 'provinsi' ? 'Kecamatan-Kecamatan' : 'Desa-Desa/Kelurahan-Kelurahan';
     const isProv = level === 'provinsi';
 
     const systemContext = `
@@ -156,7 +199,7 @@ Tugas Anda adalah menulis laporan analisis komprehensif mengenai peta Ketahanan 
 Tulis laporan dalam Bahasa Indonesia yang formal, objektif, profesional, dan kaya analisis kebijakan.
 
 Berikut adalah data statistik FSVA hasil agregasi untuk:
-- Wilayah: ${kabupaten} (${isProv ? 'Provinsi' : 'Kabupaten/Kota'})
+- Wilayah: ${canonicalKabupaten} (${isProv ? 'Provinsi' : 'Kabupaten/Kota'})
 - Tahun Analisis: ${tahun} (menggunakan data basis tahun ${tahun - 1})
 - Total Unit Analisis (${levelLabel}): ${totalWilayah}
 - Distribusi Prioritas Komposit (P1 = Sangat Rentan, P6 = Sangat Tahan):
@@ -176,7 +219,7 @@ Berikut adalah data statistik FSVA hasil agregasi untuk:
 
 FORMAT LAPORAN HARUS MENGIKUTI STRUKTUR BERIKUT (Gunakan Markdown tebal untuk Judul Bab dan Poin-Poin Utama):
 
-# **LAPORAN ANALISIS AI INSIGHT FSVA - ${kabupaten.toUpperCase()} TAHUN ${tahun}**
+# **LAPORAN ANALISIS AI INSIGHT FSVA - ${canonicalKabupaten.toUpperCase()} TAHUN ${tahun}**
 
 ### **1. RINGKASAN EKSEKUTIF**
 - Jelaskan secara singkat status ketahanan pangan komposit wilayah secara keseluruhan (berapa banyak yang Rentan vs Tahan).
@@ -202,37 +245,75 @@ Berikan rekomendasi aksi konkret yang spesifik dan dapat diimplementasikan oleh 
 Keterbatasan: Tulis langsung teks laporannya tanpa ada sapaan pembuka (seperti "Halo", "Ini laporan yang Anda minta") atau penutup chat. Langsung mulai dengan judul utama.
 `;
 
-    // 5. Call Gemini API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: systemContext }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2
-        }
-      })
-    });
+    // 7. Call Gemini API with Multi-Model Fallback & Retry
+    const modelsToTry = ['gemini-flash-lite-latest', 'gemini-2.0-flash', 'gemini-flash-latest'];
+    let generatedText = '';
+    let lastGeminiError = '';
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
+    for (const mName of modelsToTry) {
+      if (generatedText) break;
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mName}:generateContent?key=${apiKey}`;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const response = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemContext }] }],
+              generationConfig: { temperature: 0.2 }
+            })
+          });
+
+          if (response.ok) {
+            const resJson = await response.json();
+            generatedText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (generatedText) break;
+          } else {
+            const errorText = await response.text();
+            lastGeminiError = `Model ${mName} (${response.status}): ${errorText}`;
+            if (response.status === 503 || response.status === 429) {
+              await new Promise(r => setTimeout(r, 2000));
+            } else {
+              break;
+            }
+          }
+        } catch (fetchErr: any) {
+          lastGeminiError = fetchErr.message;
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
     }
 
-    const resJson = await response.json();
-    const generatedText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!generatedText) {
+      throw new Error(`Gagal menghasilkan analisis dari Gemini API. ${lastGeminiError}`);
+    }
+
+    // 8. Save/Upsert generated insight to Supabase `ai_insights` table
+    const nowIso = new Date().toISOString();
+    try {
+      await supabase
+        .from('ai_insights')
+        .upsert({
+          nama_kabupaten: canonicalKabupaten,
+          level: level,
+          tahun: tahun,
+          insight: generatedText,
+          data_hash: currentDataHash,
+          updated_at: nowIso
+        }, {
+          onConflict: 'nama_kabupaten,level,tahun'
+        });
+    } catch (saveErr) {
+      console.warn('Could not save insight cache to Supabase:', saveErr);
+    }
 
     return NextResponse.json({
       success: true,
+      cached: false,
+      updated_at: nowIso,
       metadata: {
-        kabupaten,
+        kabupaten: canonicalKabupaten,
         level,
         tahun,
         totalWilayah,

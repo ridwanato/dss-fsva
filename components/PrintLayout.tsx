@@ -70,12 +70,12 @@ export default function PrintLayout({
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.1)', zIndex: 0, display: 'block' }}
           />
 
-          {/* North Arrow */}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center bg-white/85 backdrop-blur-xs p-1.5 rounded border border-black/35 shadow-xs select-none">
-            <svg width="24" height="36" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-9">
-              <path d="M16 2 L26 24 L16 18 L6 24 Z" fill="black" stroke="black" stroke-width="1.5" stroke-linejoin="miter" />
+          {/* North Arrow (Pojok Kanan Atas, Tanpa Kotak Putih) */}
+          <div className="absolute top-4 right-4 z-10 flex flex-col items-center select-none filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]">
+            <svg width="26" height="38" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6.5 h-9.5">
+              <path d="M16 2 L26 24 L16 18 L6 24 Z" fill="black" stroke="white" strokeWidth="1.5" strokeLinejoin="miter" />
               <path d="M16 2 L16 18 L6 24 Z" fill="white" />
-              <text x="16" y="42" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="black" text-anchor="middle">U</text>
+              <text x="16" y="42" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="black" textAnchor="middle" stroke="white" strokeWidth="0.8">U</text>
             </svg>
           </div>
 

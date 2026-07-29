@@ -486,7 +486,7 @@ function FontToolbar({
       )}
 
       {/* Map Container */}
-      <div className="flex-1 relative bg-blue-50">
+      <div className="flex-1 relative bg-slate-100">
         <MapView 
           geoJsonData={geoData} 
           activeLayer={activeLayer}
@@ -495,6 +495,15 @@ function FontToolbar({
           onPolygonClick={(props) => setSelectedPolygon(props)} 
           onMapReady={(m) => setMapInstance(m)}
         />
+
+        {/* North Arrow Overlay (Pojok Kanan Atas, Tanpa Latar Belakang Kotak Putih) */}
+        <div className="absolute top-4 right-4 z-20 pointer-events-none flex flex-col items-center select-none filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
+          <svg width="28" height="42" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-10">
+            <path d="M16 2 L26 24 L16 18 L6 24 Z" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5" strokeLinejoin="miter" />
+            <path d="M16 2 L16 18 L6 24 Z" fill="#ffffff" />
+            <text x="16" y="42" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="900" fill="#0f172a" textAnchor="middle" stroke="#ffffff" strokeWidth="0.8">U</text>
+          </svg>
+        </div>
 
         {/* Print Preview Guide Overlay */}
         {showPrintGuide && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Printer, AlertTriangle, RefreshCw, ChevronRight, FileText, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Printer, AlertTriangle, RefreshCw, ChevronRight, FileText, CheckCircle2, Database, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface MapDetail {
@@ -21,6 +21,7 @@ export default function AIInsightPage() {
   const [generating, setGenerating] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState(0);
   const [insight, setInsight] = useState<string | null>(null);
+  const [cachedInfo, setCachedInfo] = useState<{ cached: boolean; updated_at?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadingPhases = [
@@ -71,14 +72,24 @@ export default function AIInsightPage() {
     return () => clearInterval(interval);
   }, [generating]);
 
-  const handleGenerate = async () => {
+  // Auto-fetch insight (using cache if available) when selectedMap changes
+  useEffect(() => {
+    if (selectedMap) {
+      handleGenerate(false);
+    }
+  }, [selectedMap]);
+
+  const handleGenerate = async (force: boolean = false) => {
     if (!selectedMap) return;
     setGenerating(true);
     setError(null);
-    setInsight(null);
+    if (force) {
+      setInsight(null);
+      setCachedInfo(null);
+    }
 
     try {
-      const url = `/api/ai-insight?kabupaten=${encodeURIComponent(selectedMap.nama_kabupaten)}&level=${selectedMap.level}&tahun=${selectedMap.tahun}`;
+      const url = `/api/ai-insight?kabupaten=${encodeURIComponent(selectedMap.nama_kabupaten)}&level=${selectedMap.level}&tahun=${selectedMap.tahun}${force ? '&force=true' : ''}`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -87,6 +98,10 @@ export default function AIInsightPage() {
       }
 
       setInsight(data.insight);
+      setCachedInfo({
+        cached: Boolean(data.cached),
+        updated_at: data.updated_at
+      });
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Gagal terhubung ke AI. Pastikan GEMINI_API_KEY sudah benar.');
@@ -99,6 +114,22 @@ export default function AIInsightPage() {
     document.body.classList.add('printing-ai-insight');
     window.print();
     document.body.classList.remove('printing-ai-insight');
+  };
+
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return isoString;
+    }
   };
 
   // Custom markdown renderer
@@ -170,7 +201,7 @@ export default function AIInsightPage() {
               <Sparkles className="w-6 h-6 text-amber-500 fill-amber-500/20" /> AI Insight FSVA
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Analisis otomatis ketahanan pangan berbasis kecerdasan buatan Gemini AI.
+              Analisis otomatis ketahanan pangan berbasis kecerdasan buatan Gemini AI & Caching Supabase.
             </p>
           </div>
         </div>
@@ -238,24 +269,35 @@ export default function AIInsightPage() {
             </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-4 flex justify-end">
-            <button
-              onClick={handleGenerate}
-              disabled={generating || !selectedMap}
-              className="bg-[#6D5EF5] hover:bg-[#5b4ddb] text-white px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-            >
-              {generating ? (
-                <>
-                  <RefreshCw className="w-4.5 h-4.5 animate-spin" />
-                  Memproses Laporan...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4.5 h-4.5" />
-                  Mulai Analisis AI
-                </>
-              )}
-            </button>
+          <div className="border-t border-slate-100 pt-4 flex flex-wrap items-center justify-between gap-3">
+            {/* Cache indicator if available */}
+            {cachedInfo && insight && !generating && (
+              <div className="flex items-center gap-2 text-xs">
+                {cachedInfo.cached ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <Zap className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
+                    Tersimpan di Database (Cache) • {formatDate(cachedInfo.updated_at)}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    Baru Dihasilkan dari Gemini AI
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => handleGenerate(true)}
+                disabled={generating || !selectedMap}
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-xs shadow-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                title="Paksa pembuatan ulang laporan dengan Gemini AI"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${generating ? 'animate-spin' : ''}`} />
+                {cachedInfo?.cached ? 'Regenerate dengan AI' : 'Muat Ulang'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -279,9 +321,9 @@ export default function AIInsightPage() {
                 <div className="absolute inset-0 border-2 border-[#6D5EF5] border-t-transparent rounded-full animate-spin" />
               </div>
             </div>
-            <h3 className="font-extrabold text-sm md:text-base text-slate-800 mb-2">Gemini AI sedang Menganalisis...</h3>
+            <h3 className="font-extrabold text-sm md:text-base text-slate-800 mb-2">Memproses Laporan AI Insight...</h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
-              Kami sedang memproses data tabular indikator FSVA di database dan merumuskan naskah ringkasan.
+              Memeriksa cache database Supabase atau memproses analisis via Gemini AI Engine.
             </p>
             
             {/* Live Progress Indicators */}
@@ -318,7 +360,12 @@ export default function AIInsightPage() {
           {/* Header Action Row (no-print) */}
           <div className="flex justify-between items-center bg-white rounded-xl border border-slate-100 p-3 shadow-xs no-print">
             <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5 pl-2">
-              <FileText className="w-4 h-4 text-[#6D5EF5]" /> Laporan Berhasil Dibuat
+              <FileText className="w-4 h-4 text-[#6D5EF5]" /> Laporan AI Insight FSVA
+              {cachedInfo?.cached && (
+                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  ⚡ Cache Supabase (&lt; 100ms)
+                </span>
+              )}
             </span>
             <button
               onClick={handlePrint}
@@ -355,14 +402,14 @@ export default function AIInsightPage() {
           </div>
           <h2 className="text-lg font-black text-slate-800 mb-2">Siap untuk Memulai Analisis AI?</h2>
           <p className="text-xs md:text-sm text-slate-500 max-w-md mx-auto leading-relaxed mb-6">
-            Pilih peta daerah dan klik tombol "Mulai Analisis AI" di atas. Gemini AI akan menganalisis data indikator untuk menyusun ringkasan serta rekomendasi aksi secara dinamis.
+            Pilih peta daerah di atas. Laporan yang sudah pernah dibuat akan ditampilkan secara instan dari database.
           </p>
           {selectedMap && (
             <button
-              onClick={handleGenerate}
-              className="bg-[#6D5EF5]/10 hover:bg-[#6D5EF5]/20 text-[#6D5EF5] px-5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+              onClick={() => handleGenerate(false)}
+              className="bg-[#6D5EF5] hover:bg-[#5b4ddb] text-white px-5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
-              Analisis {selectedMap.nama_kabupaten.toUpperCase()} Sekarang <ChevronRight className="w-3.5 h-3.5" />
+              Tampilkan Laporan {selectedMap.nama_kabupaten.toUpperCase()} <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

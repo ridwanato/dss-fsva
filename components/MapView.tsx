@@ -57,10 +57,7 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
-    const mapTilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
-    const styleUrl = mapTilerKey 
-      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${mapTilerKey}`
-      : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+    const styleUrl = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,

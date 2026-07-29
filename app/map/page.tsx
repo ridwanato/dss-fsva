@@ -369,13 +369,14 @@ function FontToolbar({
         document.title = formattedFileName;
         
         document.body.classList.add('printing-map-pdf');
+        document.body.classList.add(printOrientation === 'landscape' ? 'print-landscape' : 'print-portrait');
 
         // Allow 1000ms for mobile browser image decoding before triggering print window
         setTimeout(() => {
           try {
             window.print();
           } finally {
-            document.body.classList.remove('printing-map-pdf');
+            document.body.classList.remove('printing-map-pdf', 'print-landscape', 'print-portrait');
             setIsPrinting(false);
             document.title = originalTitle;
             setTimeout(() => setMapImage(null), 1500);

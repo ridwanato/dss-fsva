@@ -21,6 +21,7 @@ export default function Navbar() {
 
   // Category dropdown collapse states
   const [fiturUtamaOpen, setFiturUtamaOpen] = useState(true);
+  const [downloadFormOpen, setDownloadFormOpen] = useState(true);
   const [petunjukDropdownOpen, setPetunjukDropdownOpen] = useState(true);
   const [savedKabDropdownOpen, setSavedKabDropdownOpen] = useState(true);
   const [savedProvDropdownOpen, setSavedProvDropdownOpen] = useState(true);
@@ -269,6 +270,51 @@ export default function Navbar() {
                 <Download className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                 <span>Download Hasil Analisis FSVA</span>
               </button>
+            </TreeItem>
+          </TreeContainer>
+        )}
+      </div>
+
+      {/* CATEGORY: DOWNLOAD FORM FSVA V2 (BAPANAS) */}
+      <div className="flex flex-col">
+        <button
+          onClick={() => setDownloadFormOpen(!downloadFormOpen)}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+        >
+          <span className="flex items-center gap-2 flex-wrap">
+            <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">DOWNLOAD FORM FSVA V2</span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-600 text-white uppercase tracking-wider animate-pulse shrink-0">BETA</span>
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: downloadFormOpen ? 'rotate(180deg)' : 'none' }} 
+          />
+        </button>
+
+        {downloadFormOpen && (
+          <TreeContainer>
+            <TreeItem>
+              <Link 
+                href="/download-form-v2?level=kab_kota" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/download-form-v2' && (searchParams.get('level') === 'kab_kota' || !searchParams.get('level')) ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Form FSVA Kab/Kota V2
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/download-form-v2?level=provinsi" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/download-form-v2' && searchParams.get('level') === 'provinsi' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Form FSVA Prov V2
+              </Link>
             </TreeItem>
           </TreeContainer>
         )}

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       // 1. Ambil seluruh geometri untuk kabupaten/provinsi ini dari tabel geometries.
       const { data: geomData, error: geomError } = await supabase
         .from('geometries')
-        .select('kode_bps, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
+        .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
         .eq('nama_kabupaten', kabupaten)
         .eq('level', level);
 
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
           
           const properties = {
             ...geoProps,
+            kode_kecamatan: row.kode_kecamatan || (row.kode_bps && String(row.kode_bps).length >= 7 ? String(row.kode_bps).substring(0, 7) : ''),
             tahun: fsvaRes.tahun || tahun,
             prioritas: fsvaRes.prioritas || null,
             indeks_komposit: fsvaRes.indeks_komposit || null,

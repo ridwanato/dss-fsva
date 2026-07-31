@@ -163,13 +163,26 @@ export async function POST(req: NextRequest) {
             name = String(feature.properties[foundNameKey]).trim();
           }
 
-          // 3. Cari nama kecamatan (Subdistrict)
-          let foundKecKey = bpsKeys.find(k => {
+          // 4. Cari kode Kemendagri
+          let kode_kemendagri = '';
+          let foundKmdKey = bpsKeys.find(k => {
             const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return nk === 'wadmkc' || nk === 'kecamatan' || nk === 'namakecamatan' || nk === 'nmkec' || nk === 'namakec';
+            return nk === 'kdpkab' || nk === 'kdcpum' || nk === 'kdekmd' || nk === 'kemendagri' || nk === 'kodekemendagri' || nk === 'kdkemendagri' || nk === 'iddesakmd';
           });
-          if (foundKecKey) {
-            kecamatan = String(feature.properties[foundKecKey]).trim();
+          if (foundKmdKey) {
+            kode_kemendagri = String(feature.properties[foundKmdKey]).trim();
+          }
+
+          // 5. Cari kode kecamatan BPS (7 digit)
+          let kode_kecamatan = '';
+          let foundKecCodeKey = bpsKeys.find(k => {
+            const nk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return nk === 'kodekec' || nk === 'kdkec' || nk === 'kdpkec' || nk === 'keccode' || nk === 'kodekecamatan' || nk === 'iddist';
+          });
+          if (foundKecCodeKey) {
+            kode_kecamatan = String(feature.properties[foundKecCodeKey]).trim();
+          } else if (kode_bps && kode_bps.length >= 7) {
+            kode_kecamatan = kode_bps.substring(0, 7);
           }
           
           // Fallback jika tidak ada kode BPS tapi ada nama desa
@@ -192,6 +205,8 @@ export async function POST(req: NextRequest) {
               kode_bps,
               nama_desa: name,
               nama_kecamatan: kecamatan,
+              kode_kemendagri,
+              kode_kecamatan,
               wkt
             });
           }
@@ -214,11 +229,16 @@ export async function POST(req: NextRequest) {
         
         if (!error) {
           inserted++;
-          // Update nama_kecamatan in geometries table if it was extracted
-          if (feature.nama_kecamatan) {
+          // Update metadata fields in geometries table if extracted from DBF
+          const updatePayload: any = {};
+          if (feature.nama_kecamatan) updatePayload.nama_kecamatan = feature.nama_kecamatan;
+          if (feature.kode_kemendagri) updatePayload.kode_kemendagri = feature.kode_kemendagri;
+          if (feature.kode_kecamatan) updatePayload.kode_kecamatan = feature.kode_kecamatan;
+
+          if (Object.keys(updatePayload).length > 0) {
             await authClient
               .from('geometries')
-              .update({ nama_kecamatan: feature.nama_kecamatan })
+              .update(updatePayload)
               .eq('kode_bps', feature.kode_bps)
               .eq('nama_kabupaten', kabupaten)
               .eq('level', level);

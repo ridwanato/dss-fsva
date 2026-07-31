@@ -71,6 +71,8 @@ export async function GET(req: NextRequest) {
     const headers = [
       'No',
       'Nama Kecamatan',
+      'Kode Kecamatan BPS',
+      'Kode Kemendagri',
       'Kode Desa BPS',
       'Nama Desa/Kelurahan',
       'Produksi Padi (ton)',

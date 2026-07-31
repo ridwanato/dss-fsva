@@ -545,7 +545,10 @@ function FontToolbar({
   .map-area img{
     position:absolute;top:0;left:0;
     width:100%;height:100%;
-    object-fit:cover;display:block;
+    object-fit:contain;
+    object-position:center;
+    background:#99d9ea;
+    display:block;
   }
   .sidebar{width:30%;height:100%;display:flex;flex-direction:column;background:white;}
   .sidebar-section{padding:8px;border-bottom:1.5px solid black;}
@@ -639,17 +642,13 @@ function FontToolbar({
     if (!page) return;
     var padding = 16;
     var availW = window.innerWidth - padding * 2;
-    // offsetWidth before transform is the natural A4 width in px
-    // Temporarily reset transform to measure true width
     page.style.transform = '';
     var pageW = page.offsetWidth;
     var pageH = page.offsetHeight;
     if (pageW > availW) {
       var s = availW / pageW;
       page.style.transform = 'scale(' + s + ')';
-      page.style.transformOrigin = 'top left';
-      page.style.marginLeft = '0';
-      // Shrink wrapper height to match scaled-down page height
+      page.style.transformOrigin = 'top center';
       var wrapper = page.parentElement;
       if (wrapper) wrapper.style.height = Math.round(pageH * s) + 'px';
     } else {
@@ -664,7 +663,6 @@ function FontToolbar({
     if (page) {
       page.style.transform = '';
       page.style.transformOrigin = '';
-      page.style.marginLeft = '';
     }
     var wrapper = page && page.parentElement;
     if (wrapper) wrapper.style.height = '';

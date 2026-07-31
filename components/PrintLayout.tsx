@@ -65,6 +65,7 @@ export default function PrintLayout({
         <div className="absolute top-0 left-0 bottom-0 w-[70%] border-r-[2px] border-black bg-[#99d9ea] overflow-hidden">
           {/* Base Map Image */}
           <img 
+            id="print-layout-map-image"
             src={mapImage} 
             alt="Map Print View" 
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.1)', zIndex: 0, display: 'block' }}

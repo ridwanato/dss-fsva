@@ -326,10 +326,36 @@ function FontToolbar({
       }
     }, [level, activeLayer]);
 
+  const getMapPdfFileName = (kab: string | null, lvl: string, layerId: string) => {
+    const indicatorName = getLayersForLevel(lvl as any).find(l => l.id === layerId)?.label || 'Komposit';
+    let regionName = kab || '';
+    if (lvl === 'kab_kota') {
+      if (regionName) {
+        const upper = regionName.toUpperCase();
+        if (!upper.startsWith('KOTA') && !upper.startsWith('KAB')) {
+          regionName = `Kabupaten ${regionName}`;
+        }
+      } else {
+        regionName = 'Kabupaten Kota';
+      }
+    } else if (lvl === 'provinsi') {
+      if (regionName && !regionName.toUpperCase().startsWith('PROVINSI')) {
+        regionName = `Provinsi ${regionName}`;
+      } else if (!regionName) {
+        regionName = 'Provinsi';
+      }
+    }
+    return `FSVA ${regionName} ${indicatorName}`.replace(/\s+/g, ' ').trim();
+  };
+
   const executePrint = () => {
     setShowPrintModal(false);
     if (!mapInstance) return;
     setIsPrinting(true);
+
+    const originalTitle = document.title;
+    const formattedFileName = getMapPdfFileName(kabupaten, level, activeLayer);
+    document.title = formattedFileName;
     
     let hasRendered = false;
 
@@ -348,55 +374,44 @@ function FontToolbar({
         
         const dataUrl = hiddenCanvas.toDataURL('image/png');
         setMapImage(dataUrl);
-        
-        const originalTitle = document.title;
-        const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || 'Komposit';
-        
-        let regionName = kabupaten || '';
-        if (level === 'kab_kota') {
-          if (regionName) {
-            const upper = regionName.toUpperCase();
-            if (!upper.startsWith('KOTA') && !upper.startsWith('KAB')) {
-              regionName = `Kabupaten ${regionName}`;
-            }
-          } else {
-            regionName = 'Kabupaten Kota';
-          }
-        } else if (level === 'provinsi') {
-          if (regionName && !regionName.toUpperCase().startsWith('PROVINSI')) {
-            regionName = `Provinsi ${regionName}`;
-          } else if (!regionName) {
-            regionName = 'Provinsi';
-          }
-        }
-        
-        // Standard filename rule: FSVA + Kabupaten/Kota/Provinsi + [Nama] + [Indikator]
-        const formattedFileName = `FSVA ${regionName} ${indicatorName}`.replace(/\s+/g, ' ').trim();
-        document.title = formattedFileName;
 
-        // Pre-decode image before window.print() so mobile renderers do not show blank image
+        // Pre-decode image in JS and poll for DOM image element readiness
         const img = new Image();
-        const startPrintWindow = () => {
+        
+        const triggerPrint = () => {
           document.body.classList.add('printing-map-pdf');
-          setTimeout(() => {
-            try {
-              window.print();
-            } finally {
-              document.body.classList.remove('printing-map-pdf');
-              setIsPrinting(false);
-              document.title = originalTitle;
-              setTimeout(() => setMapImage(null), 1500);
+          
+          let attempts = 0;
+          const checkDomImage = () => {
+            const domImg = document.getElementById('print-layout-map-image') as HTMLImageElement | null;
+            if ((domImg && domImg.complete && domImg.naturalWidth > 0) || attempts >= 20) {
+              setTimeout(() => {
+                try {
+                  window.print();
+                } finally {
+                  document.body.classList.remove('printing-map-pdf');
+                  setIsPrinting(false);
+                  document.title = originalTitle;
+                  setTimeout(() => setMapImage(null), 1500);
+                }
+              }, 400);
+            } else {
+              attempts++;
+              setTimeout(checkDomImage, 100);
             }
-          }, 600);
+          };
+
+          checkDomImage();
         };
 
-        img.onload = startPrintWindow;
-        img.onerror = startPrintWindow;
+        img.onload = triggerPrint;
+        img.onerror = triggerPrint;
         img.src = dataUrl;
       } catch(e) {
         console.error(e);
         document.body.classList.remove('printing-map-pdf');
         setIsPrinting(false);
+        document.title = originalTitle;
         alert("Gagal memproses gambar peta untuk PDF.");
       }
     };

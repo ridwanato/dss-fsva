@@ -356,7 +356,7 @@ function FontToolbar({
     const originalTitle = document.title;
     const formattedFileName = getMapPdfFileName(kabupaten, level, activeLayer);
     document.title = formattedFileName;
-    
+
     let hasRendered = false;
 
     const doCapture = () => {
@@ -364,84 +364,242 @@ function FontToolbar({
       hasRendered = true;
       try {
         const mapCanvas = mapInstance.getCanvas();
-        const hiddenCanvas = document.createElement('canvas');
-        hiddenCanvas.width = mapCanvas.width;
-        hiddenCanvas.height = mapCanvas.height;
-        const ctx = hiddenCanvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(mapCanvas, 0, 0);
+
+        // Validate canvas has real content (not blank)
+        const ctx2d = mapCanvas.getContext('2d') || mapCanvas.getContext('webgl') || mapCanvas.getContext('webgl2');
+        if (mapCanvas.width === 0 || mapCanvas.height === 0) {
+          throw new Error('Map canvas is not rendered yet');
         }
-        
-        const dataUrl = hiddenCanvas.toDataURL('image/png');
-        setMapImage(dataUrl);
 
-        // Pre-decode image in JS and poll for DOM image element readiness
-        const img = new Image();
-        
-        const triggerPrint = () => {
-          document.body.classList.add('printing-map-pdf');
-          
-          let attempts = 0;
-          const checkDomImage = () => {
-            const domImg = document.getElementById('print-layout-map-image') as HTMLImageElement | null;
-            if ((domImg && domImg.complete && domImg.naturalWidth > 0) || attempts >= 20) {
-              setTimeout(() => {
-                let cleanedUp = false;
-                const doCleanup = () => {
-                  if (cleanedUp) return;
-                  cleanedUp = true;
-                  window.removeEventListener('afterprint', doCleanup);
-                  document.body.classList.remove('printing-map-pdf');
-                  setIsPrinting(false);
-                  document.title = originalTitle;
-                  setTimeout(() => setMapImage(null), 2000);
-                };
+        // Copy canvas to offscreen canvas to avoid WebGL context loss on mobile
+        const offscreen = document.createElement('canvas');
+        offscreen.width = mapCanvas.width;
+        offscreen.height = mapCanvas.height;
+        const offCtx = offscreen.getContext('2d');
+        if (offCtx) {
+          offCtx.drawImage(mapCanvas, 0, 0);
+        }
+        const mapDataUrl = offscreen.toDataURL('image/png');
 
-                // Listen for browser afterprint event (fires when print dialog closes on desktop & mobile)
-                window.addEventListener('afterprint', doCleanup);
+        // Build the print layout inline styles
+        const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || 'Komposit';
+        const isStunting = activeLayer === 'p_stunting';
+        const priorities = isStunting ? [1,2,3,4] : [1,2,3,4,5,6];
 
-                // Fallback cleanup timer for mobile browsers where window.print() returns asynchronously
-                // Keeps print layout & title active for 15s to allow mobile print preview engines to capture
-                setTimeout(doCleanup, 15000);
+        const PRIORITY_COLORS: Record<number, string> = isStunting
+          ? { 1:'#FF0000', 2:'#FF8C00', 3:'#FFD700', 4:'#92D050' }
+          : { 1:'#C00000', 2:'#FF0000', 3:'#FF8C00', 4:'#FFD700', 5:'#92D050', 6:'#FFFFFF' };
+        const PRIORITY_LABELS_MAP: Record<number, string> = isStunting
+          ? { 1:'Sangat Rentan (≥40%)', 2:'Rentan (30–<40%)', 3:'Agak Rentan (20–<30%)', 4:'Tidak Rentan (<20%)' }
+          : { 1:'Sangat Rawan Pangan', 2:'Rawan Pangan', 3:'Agak Rawan Pangan', 4:'Cukup Tahan Pangan', 5:'Tahan Pangan', 6:'Sangat Tahan Pangan' };
 
-                try {
-                  window.print();
-                } catch(err) {
-                  console.error(err);
-                  doCleanup();
-                }
-              }, 400);
-            } else {
-              attempts++;
-              setTimeout(checkDomImage, 100);
-            }
-          };
+        const isProvinsiLevel = level === 'provinsi';
+        const legendItemsHtml = priorities.map(p => `
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
+            <div style="width:18px;height:10px;background:${PRIORITY_COLORS[p]};border:1px solid #000;flex-shrink:0;"></div>
+            <div>
+              <div style="font-size:8px;font-weight:bold;line-height:1.1;">${isProvinsiLevel ? 'Kecamatan' : 'Kelurahan'} Prioritas ${p}</div>
+              <div style="font-size:7px;line-height:1.1;">${PRIORITY_LABELS_MAP[p]}</div>
+            </div>
+          </div>
+        `).join('');
 
-          checkDomImage();
-        };
+        const govName = printConfig.govName.replace(/\n/g, '<br>');
+        const mapTitle = printConfig.title.replace(/\n/g, '<br>');
+        const sources = printConfig.sources.replace(/\n/g, '<br>');
+        const footer = printConfig.footer.replace(/\n/g, '<br>');
 
-        img.onload = triggerPrint;
-        img.onerror = triggerPrint;
-        img.src = dataUrl;
+        // Build self-contained print HTML (no external deps, no React)
+        const printHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${formattedFileName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4 portrait; margin: 0; }
+  @media print {
+    html, body { width: 210mm; height: 297mm; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  body {
+    font-family: Arial, sans-serif;
+    width: 210mm;
+    height: 297mm;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .page {
+    width: 190mm;
+    height: 277mm;
+    border: 2px solid black;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+  }
+  .map-area {
+    width: 70%;
+    height: 100%;
+    border-right: 2px solid black;
+    background: #99d9ea;
+    position: relative;
+    overflow: hidden;
+  }
+  .map-area img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scale(1.1);
+    display: block;
+  }
+  .sidebar {
+    width: 30%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+  }
+  .sidebar-section {
+    padding: 8px;
+    border-bottom: 1.5px solid black;
+  }
+  .gov-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .gov-logo { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+  .gov-name { font-size: 9px; font-weight: bold; line-height: 1.3; text-transform: uppercase; }
+  .map-title { font-size: 11px; font-weight: bold; line-height: 1.4; text-align: center; text-transform: uppercase; }
+  .indicator-title { font-size: 10px; font-weight: bold; text-align: center; text-transform: uppercase; padding: 12px 6px; }
+  .legend-title { font-size: 9px; font-weight: 900; text-align: center; margin-bottom: 6px; }
+  .scale-bar-wrap { padding: 6px 12px; }
+  .scale-bar-label { display: flex; justify-content: space-between; font-size: 8px; font-weight: bold; margin-bottom: 3px; }
+  .scale-bar { height: 6px; width: 90px; display: flex; border: 1.5px solid black; border-top: none; }
+  .scale-black { width: 50%; background: black; }
+  .scale-white { width: 50%; background: white; border-left: 1.5px solid black; }
+  .sources-section { padding: 6px 8px; flex: 1; }
+  .sources-title { font-size: 9px; font-weight: bold; text-align: center; margin-bottom: 4px; }
+  .sources-text { font-size: 7.5px; line-height: 1.5; }
+  .footer-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%;
+    border-top: 2px solid black;
+    background: white;
+    display: flex;
+    font-size: 7.5px;
+    padding: 6px 8px;
+  }
+  .footer-left { width: 70%; padding-right: 8px; border-right: 2px solid black; line-height: 1.4; }
+  .footer-right { width: 30%; padding-left: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="map-area">
+    <img src="${mapDataUrl}" alt="Peta FSVA">
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="gov-row">
+        <img src="${printConfig.logoPemda}" class="gov-logo" alt="Logo Pemda">
+        <div class="gov-name">${govName}</div>
+      </div>
+      <div class="gov-row">
+        <img src="${printConfig.logoBapanas}" class="gov-logo" alt="Logo Bapanas">
+        <div>
+          <div style="font-size:9px;font-weight:900;color:#15803d;">BADAN PANGAN</div>
+          <div style="font-size:9px;font-weight:900;color:#15803d;">NASIONAL</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="map-title">${mapTitle}</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="indicator-title">${indicatorName.toUpperCase() === 'KOMPOSIT' ? 'INDIKATOR KOMPOSIT' : 'INDIKATOR ' + indicatorName.toUpperCase()}</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="legend-title">LEGENDA</div>
+      ${legendItemsHtml}
+      <div style="margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <div style="width:18px;border-top:2px solid black;flex-shrink:0;"></div>
+          <span style="font-size:8px;">${isProvinsiLevel ? 'Batas Kabupaten/Kota' : 'Batas Kecamatan'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:18px;border-top:1px solid black;flex-shrink:0;"></div>
+          <span style="font-size:8px;">${isProvinsiLevel ? 'Batas Kecamatan' : 'Batas Kelurahan'}</span>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="scale-bar-wrap">
+        <div class="scale-bar-label"><span>0</span><span>1</span><span>2 km</span></div>
+        <div class="scale-bar"><div class="scale-black"></div><div class="scale-white"></div></div>
+      </div>
+    </div>
+    <div class="sources-section">
+      <div class="sources-title">SUMBER DATA</div>
+      <div class="sources-text">${sources}</div>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <div class="footer-left">${footer}</div>
+    <div class="footer-right"></div>
+  </div>
+</div>
+<script>
+  window.onload = function() {
+    window.print();
+    window.addEventListener('afterprint', function() { window.close(); });
+    // Fallback close for mobile where afterprint may not fire
+    setTimeout(function() { try { window.close(); } catch(e) {} }, 30000);
+  };
+<\/script>
+</body>
+</html>`;
+
+        // Open a popup window with the print HTML — this bypasses all React state timing issues
+        const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+        if (!printWindow) {
+          // Popup blocked — fallback: use blob URL
+          const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+        } else {
+          printWindow.document.open();
+          printWindow.document.write(printHtml);
+          printWindow.document.close();
+        }
+
+        document.title = originalTitle;
+        setIsPrinting(false);
+
       } catch(e) {
         console.error(e);
-        document.body.classList.remove('printing-map-pdf');
         setIsPrinting(false);
         document.title = originalTitle;
-        alert("Gagal memproses gambar peta untuk PDF.");
+        alert("Gagal memproses gambar peta untuk PDF. Pastikan peta sudah selesai dimuat.");
       }
     };
 
     mapInstance.once('render', doCapture);
     mapInstance.triggerRepaint();
 
-    // Fallback for mobile browsers where render event might be suspended/throttled
+    // Fallback for mobile browsers where 'render' event may be suspended/throttled
     setTimeout(() => {
       if (!hasRendered) {
         console.log("Fallback print capture triggered");
         doCapture();
       }
-    }, 400);
+    }, 600);
   };
 
   return (

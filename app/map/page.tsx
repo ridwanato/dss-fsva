@@ -498,7 +498,7 @@ function FontToolbar({
   }
 
   /* ============================================================
-     PRINT STYLES — reset ALL layout constraints for clean A4 PDF
+     PRINT STYLES — reset ALL layout constraints for clean single-page A4 PDF
   ============================================================ */
   @media print{
     html{
@@ -508,38 +508,48 @@ function FontToolbar({
     html,body{
       width:210mm!important;
       height:297mm!important;
+      max-height:297mm!important;
       background:white!important;
       padding:0!important;
       margin:0!important;
       display:block!important;
-      overflow:visible!important;
+      overflow:hidden!important;
+      page-break-after:avoid!important;
+      page-break-inside:avoid!important;
     }
     .no-print{display:none!important;}
     .page-wrapper{
       display:block!important;
       width:210mm!important;
-      height:auto!important;
-      overflow:visible!important;
-      padding:0!important;
+      height:297mm!important;
+      max-height:297mm!important;
+      overflow:hidden!important;
+      padding:10mm!important;
       margin:0!important;
       background:white!important;
+      box-sizing:border-box!important;
+      page-break-after:avoid!important;
+      page-break-inside:avoid!important;
     }
     .page{
       display:flex!important;
       width:190mm!important;
       height:277mm!important;
       transform:none!important;
-      margin:10mm auto!important;
+      margin:0 auto!important;
       box-shadow:none!important;
       overflow:hidden!important;
       position:relative!important;
       border:2px solid black!important;
+      box-sizing:border-box!important;
+      page-break-after:avoid!important;
+      page-break-inside:avoid!important;
     }
   }
   .map-area{
     width:70%;height:100%;
     border-right:2px solid black;
-    background:#99d9ea;
+    background:white;
     position:relative;overflow:hidden;
   }
   .map-area img{
@@ -547,7 +557,7 @@ function FontToolbar({
     width:100%;height:100%;
     object-fit:contain;
     object-position:center;
-    background:#99d9ea;
+    background:white;
     display:block;
   }
   .sidebar{width:30%;height:100%;display:flex;flex-direction:column;background:white;}

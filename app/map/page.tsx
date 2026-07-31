@@ -413,146 +413,193 @@ function FontToolbar({
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${formattedFileName}</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: A4 portrait; margin: 0; }
-  @media print {
-    html, body { width: 210mm; height: 297mm; }
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  @page{size:A4 portrait;margin:0;}
+  @media print{
+    html,body{width:210mm;height:297mm;background:white;}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0;display:block;}
+    .no-print{display:none!important;}
+    .page-wrapper{padding:0;background:white;min-height:unset;}
+    .page{
+      transform:none!important;
+      margin:10mm auto!important;
+      box-shadow:none!important;
+    }
   }
-  body {
-    font-family: Arial, sans-serif;
-    width: 210mm;
-    height: 297mm;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  html,body{
+    font-family:Arial,sans-serif;
+    background:#e5e7eb;
+    min-height:100%;
   }
-  .page {
-    width: 190mm;
-    height: 277mm;
-    border: 2px solid black;
-    display: flex;
-    position: relative;
-    overflow: hidden;
+  body{
+    padding:16px 8px 40px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
   }
-  .map-area {
-    width: 70%;
-    height: 100%;
-    border-right: 2px solid black;
-    background: #99d9ea;
-    position: relative;
-    overflow: hidden;
+  .no-print{display:block;}
+  .print-btn{
+    margin-bottom:14px;
+    padding:14px 32px;
+    background:#1d4ed8;
+    color:white;
+    border:none;
+    border-radius:12px;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:0 4px 14px rgba(29,78,216,0.35);
+    width:100%;
+    max-width:380px;
+    letter-spacing:0.3px;
   }
-  .map-area img {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transform: scale(1.1);
-    display: block;
+  .print-hint{
+    font-size:12px;
+    color:#6b7280;
+    margin-bottom:14px;
+    text-align:center;
+    max-width:380px;
   }
-  .sidebar {
-    width: 30%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: white;
+  .page-wrapper{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    overflow-x:auto;
   }
-  .sidebar-section {
-    padding: 8px;
-    border-bottom: 1.5px solid black;
+  .page{
+    width:190mm;
+    height:277mm;
+    border:2px solid black;
+    display:flex;
+    position:relative;
+    overflow:hidden;
+    background:white;
+    flex-shrink:0;
+    box-shadow:0 4px 24px rgba(0,0,0,0.18);
+    transform-origin:top center;
   }
-  .gov-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-  .gov-logo { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
-  .gov-name { font-size: 9px; font-weight: bold; line-height: 1.3; text-transform: uppercase; }
-  .map-title { font-size: 11px; font-weight: bold; line-height: 1.4; text-align: center; text-transform: uppercase; }
-  .indicator-title { font-size: 10px; font-weight: bold; text-align: center; text-transform: uppercase; padding: 12px 6px; }
-  .legend-title { font-size: 9px; font-weight: 900; text-align: center; margin-bottom: 6px; }
-  .scale-bar-wrap { padding: 6px 12px; }
-  .scale-bar-label { display: flex; justify-content: space-between; font-size: 8px; font-weight: bold; margin-bottom: 3px; }
-  .scale-bar { height: 6px; width: 90px; display: flex; border: 1.5px solid black; border-top: none; }
-  .scale-black { width: 50%; background: black; }
-  .scale-white { width: 50%; background: white; border-left: 1.5px solid black; }
-  .sources-section { padding: 6px 8px; flex: 1; }
-  .sources-title { font-size: 9px; font-weight: bold; text-align: center; margin-bottom: 4px; }
-  .sources-text { font-size: 7.5px; line-height: 1.5; }
-  .footer-bar {
-    position: absolute;
-    bottom: 0; left: 0;
-    width: 100%;
-    border-top: 2px solid black;
-    background: white;
-    display: flex;
-    font-size: 7.5px;
-    padding: 6px 8px;
+  .map-area{
+    width:70%;height:100%;
+    border-right:2px solid black;
+    background:#99d9ea;
+    position:relative;overflow:hidden;
   }
-  .footer-left { width: 70%; padding-right: 8px; border-right: 2px solid black; line-height: 1.4; }
-  .footer-right { width: 30%; padding-left: 8px; }
+  .map-area img{
+    position:absolute;top:0;left:0;
+    width:100%;height:100%;
+    object-fit:cover;display:block;
+  }
+  .sidebar{width:30%;height:100%;display:flex;flex-direction:column;background:white;}
+  .sidebar-section{padding:8px;border-bottom:1.5px solid black;}
+  .gov-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+  .gov-logo{width:40px;height:40px;object-fit:contain;flex-shrink:0;}
+  .gov-name{font-size:9px;font-weight:bold;line-height:1.3;text-transform:uppercase;}
+  .map-title{font-size:11px;font-weight:bold;line-height:1.4;text-align:center;text-transform:uppercase;}
+  .indicator-title{font-size:10px;font-weight:bold;text-align:center;text-transform:uppercase;padding:12px 6px;}
+  .legend-title{font-size:9px;font-weight:900;text-align:center;margin-bottom:6px;}
+  .scale-bar-wrap{padding:6px 12px;}
+  .scale-bar-label{display:flex;justify-content:space-between;font-size:8px;font-weight:bold;margin-bottom:3px;}
+  .scale-bar{height:6px;width:90px;display:flex;border:1.5px solid black;border-top:none;}
+  .scale-black{width:50%;background:black;}
+  .scale-white{width:50%;background:white;border-left:1.5px solid black;}
+  .sources-section{padding:6px 8px;flex:1;overflow:hidden;}
+  .sources-title{font-size:9px;font-weight:bold;text-align:center;margin-bottom:4px;}
+  .sources-text{font-size:7.5px;line-height:1.5;}
+  .footer-bar{
+    position:absolute;bottom:0;left:0;width:100%;
+    border-top:2px solid black;background:white;
+    display:flex;font-size:7.5px;padding:6px 8px;
+  }
+  .footer-left{width:70%;padding-right:8px;border-right:2px solid black;line-height:1.4;}
+  .footer-right{width:30%;padding-left:8px;}
 </style>
 </head>
 <body>
-<button onclick="window.print()" class="no-print" style="position:fixed;top:12px;right:12px;z-index:9999;padding:12px 24px;background:#1d4ed8;color:white;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);">🖨️ Cetak / Simpan PDF</button>
-<div class="page">
-  <div class="map-area">
-    <img src="${mapDataUrl}" alt="Peta FSVA">
-  </div>
-  <div class="sidebar">
-    <div class="sidebar-section">
-      <div class="gov-row">
-        <img src="${printConfig.logoPemda}" class="gov-logo" alt="Logo Pemda">
-        <div class="gov-name">${govName}</div>
-      </div>
-      <div class="gov-row">
-        <img src="${printConfig.logoBapanas}" class="gov-logo" alt="Logo Bapanas">
-        <div>
-          <div style="font-size:9px;font-weight:900;color:#15803d;">BADAN PANGAN</div>
-          <div style="font-size:9px;font-weight:900;color:#15803d;">NASIONAL</div>
+<button class="print-btn no-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+<p class="print-hint no-print">Tap tombol di atas, lalu pilih <b>Simpan sebagai PDF</b></p>
+<div class="page-wrapper">
+  <div class="page" id="map-page">
+    <div class="map-area">
+      <img src="${mapDataUrl}" alt="Peta FSVA">
+    </div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="gov-row">
+          <img src="${printConfig.logoPemda}" class="gov-logo" alt="Logo Pemda">
+          <div class="gov-name">${govName}</div>
+        </div>
+        <div class="gov-row">
+          <img src="${printConfig.logoBapanas}" class="gov-logo" alt="Logo Bapanas">
+          <div>
+            <div style="font-size:9px;font-weight:900;color:#15803d;">BADAN PANGAN</div>
+            <div style="font-size:9px;font-weight:900;color:#15803d;">NASIONAL</div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="sidebar-section">
-      <div class="map-title">${mapTitle}</div>
-    </div>
-    <div class="sidebar-section">
-      <div class="indicator-title">${indicatorName.toUpperCase() === 'KOMPOSIT' ? 'INDIKATOR KOMPOSIT' : 'INDIKATOR ' + indicatorName.toUpperCase()}</div>
-    </div>
-    <div class="sidebar-section">
-      <div class="legend-title">LEGENDA</div>
-      ${legendItemsHtml}
-      <div style="margin-top:8px;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-          <div style="width:18px;border-top:2px solid black;flex-shrink:0;"></div>
-          <span style="font-size:8px;">${isProvinsiLevel ? 'Batas Kabupaten/Kota' : 'Batas Kecamatan'}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <div style="width:18px;border-top:1px solid black;flex-shrink:0;"></div>
-          <span style="font-size:8px;">${isProvinsiLevel ? 'Batas Kecamatan' : 'Batas Kelurahan'}</span>
+      <div class="sidebar-section">
+        <div class="map-title">${mapTitle}</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="indicator-title">${indicatorName.toUpperCase() === 'KOMPOSIT' ? 'INDIKATOR KOMPOSIT' : 'INDIKATOR ' + indicatorName.toUpperCase()}</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="legend-title">LEGENDA</div>
+        ${legendItemsHtml}
+        <div style="margin-top:8px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <div style="width:18px;border-top:2px solid black;flex-shrink:0;"></div>
+            <span style="font-size:8px;">${isProvinsiLevel ? 'Batas Kabupaten/Kota' : 'Batas Kecamatan'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:18px;border-top:1px solid black;flex-shrink:0;"></div>
+            <span style="font-size:8px;">${isProvinsiLevel ? 'Batas Kecamatan' : 'Batas Kelurahan'}</span>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="sidebar-section">
-      <div class="scale-bar-wrap">
-        <div class="scale-bar-label"><span>0</span><span>1</span><span>2 km</span></div>
-        <div class="scale-bar"><div class="scale-black"></div><div class="scale-white"></div></div>
+      <div class="sidebar-section">
+        <div class="scale-bar-wrap">
+          <div class="scale-bar-label"><span>0</span><span>1</span><span>2 km</span></div>
+          <div class="scale-bar"><div class="scale-black"></div><div class="scale-white"></div></div>
+        </div>
+      </div>
+      <div class="sources-section">
+        <div class="sources-title">SUMBER DATA</div>
+        <div class="sources-text">${sources}</div>
       </div>
     </div>
-    <div class="sources-section">
-      <div class="sources-title">SUMBER DATA</div>
-      <div class="sources-text">${sources}</div>
+    <div class="footer-bar">
+      <div class="footer-left">${footer}</div>
+      <div class="footer-right"></div>
     </div>
-  </div>
-  <div class="footer-bar">
-    <div class="footer-left">${footer}</div>
-    <div class="footer-right"></div>
   </div>
 </div>
 <script>
-  // Auto-print only on desktop (window.matchMedia pointerCoarse = touch device)
-  // On mobile, user taps the blue Cetak button to avoid print-preview hang
+  // Scale .page to fit mobile viewport width (no horizontal scroll)
+  function scalePageToFit() {
+    var page = document.getElementById('map-page');
+    if (!page) return;
+    var padding = 16;
+    var availW = window.innerWidth - padding * 2;
+    var pageW = page.offsetWidth;
+    if (pageW > availW) {
+      var s = availW / pageW;
+      page.style.transform = 'scale(' + s + ')';
+      page.style.transformOrigin = 'top center';
+      // Adjust wrapper height so content below is not hidden behind scaled-down element
+      var wrapper = page.parentElement;
+      if (wrapper) wrapper.style.height = Math.round(page.offsetHeight * s) + 'px';
+    } else {
+      page.style.transform = '';
+      if (page.parentElement) page.parentElement.style.height = '';
+    }
+  }
+  window.addEventListener('load', scalePageToFit);
+  window.addEventListener('resize', scalePageToFit);
+
+  // Auto-print on desktop only; mobile user taps the button
   var isMobile = window.matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (!isMobile) {
-    window.onload = function() { window.print(); };
+    window.onload = function() { scalePageToFit(); window.print(); };
   }
 </script>
 </body>

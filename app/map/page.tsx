@@ -348,11 +348,33 @@ function FontToolbar({
     return `FSVA ${regionName} ${indicatorName}`.replace(/\s+/g, ' ').trim();
   };
 
-  const executePrint = () => {
+  const executePrint = async () => {
     setShowPrintModal(false);
     if (!mapInstance) return;
     setIsPrinting(true);
     const formattedFileName = getMapPdfFileName(kabupaten, level, activeLayer);
+
+    // Helper: convert any URL (relative or absolute) to base64 data URI
+    // Needed because blob:// pages cannot load relative paths like /bapanas logo.png
+    const toDataUri = async (src: string): Promise<string> => {
+      try {
+        const res = await fetch(src);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return src; // fallback: return original src unchanged
+      }
+    };
+
+    // Pre-fetch logos to base64 so they work inside a blob:// URL page
+    const [logoPemdaB64, logoBapanasB64] = await Promise.all([
+      toDataUri(printConfig.logoPemda),
+      toDataUri(printConfig.logoBapanas),
+    ]);
 
     let hasRendered = false;
 
@@ -405,6 +427,15 @@ function FontToolbar({
         const sources = printConfig.sources.replace(/\n/g, '<br>');
         const footer = printConfig.footer.replace(/\n/g, '<br>');
 
+        // North arrow SVG (inline — no external dependency)
+        const northArrowSvg = `<div style="position:absolute;top:14px;right:14px;z-index:10;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5));">
+  <svg width="26" height="38" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M16 2 L26 24 L16 18 L6 24 Z" fill="black" stroke="white" stroke-width="1.5" stroke-linejoin="miter"/>
+    <path d="M16 2 L16 18 L6 24 Z" fill="white"/>
+    <text x="16" y="42" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="black" text-anchor="middle" stroke="white" stroke-width="0.8">U</text>
+  </svg>
+</div>`;
+
         // Build self-contained print HTML (no external deps, no React)
         const printHtml = `<!DOCTYPE html>
 <html lang="id">
@@ -415,17 +446,10 @@ function FontToolbar({
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   @page{size:A4 portrait;margin:0;}
-  @media print{
-    html,body{width:210mm;height:297mm;background:white;}
-    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0;display:block;}
-    .no-print{display:none!important;}
-    .page-wrapper{padding:0;background:white;min-height:unset;}
-    .page{
-      transform:none!important;
-      margin:10mm auto!important;
-      box-shadow:none!important;
-    }
-  }
+
+  /* ============================================================
+     SCREEN STYLES (mobile preview)
+  ============================================================ */
   html,body{
     font-family:Arial,sans-serif;
     background:#e5e7eb;
@@ -454,29 +478,63 @@ function FontToolbar({
     letter-spacing:0.3px;
   }
   .print-hint{
-    font-size:12px;
-    color:#6b7280;
-    margin-bottom:14px;
-    text-align:center;
-    max-width:380px;
+    font-size:12px;color:#6b7280;
+    margin-bottom:14px;text-align:center;max-width:380px;
   }
   .page-wrapper{
     width:100%;
     display:flex;
     justify-content:center;
-    overflow-x:auto;
+    overflow-x:hidden;
   }
   .page{
-    width:190mm;
-    height:277mm;
+    width:190mm;height:277mm;
     border:2px solid black;
-    display:flex;
-    position:relative;
-    overflow:hidden;
-    background:white;
+    display:flex;position:relative;
+    overflow:hidden;background:white;
     flex-shrink:0;
     box-shadow:0 4px 24px rgba(0,0,0,0.18);
-    transform-origin:top center;
+    transform-origin:top left;
+  }
+
+  /* ============================================================
+     PRINT STYLES — reset ALL layout constraints for clean A4 PDF
+  ============================================================ */
+  @media print{
+    html{
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    html,body{
+      width:210mm!important;
+      height:297mm!important;
+      background:white!important;
+      padding:0!important;
+      margin:0!important;
+      display:block!important;
+      overflow:visible!important;
+    }
+    .no-print{display:none!important;}
+    .page-wrapper{
+      display:block!important;
+      width:210mm!important;
+      height:auto!important;
+      overflow:visible!important;
+      padding:0!important;
+      margin:0!important;
+      background:white!important;
+    }
+    .page{
+      display:flex!important;
+      width:190mm!important;
+      height:277mm!important;
+      transform:none!important;
+      margin:10mm auto!important;
+      box-shadow:none!important;
+      overflow:hidden!important;
+      position:relative!important;
+      border:2px solid black!important;
+    }
   }
   .map-area{
     width:70%;height:100%;
@@ -521,15 +579,16 @@ function FontToolbar({
   <div class="page" id="map-page">
     <div class="map-area">
       <img src="${mapDataUrl}" alt="Peta FSVA">
+      ${northArrowSvg}
     </div>
     <div class="sidebar">
       <div class="sidebar-section">
         <div class="gov-row">
-          <img src="${printConfig.logoPemda}" class="gov-logo" alt="Logo Pemda">
+          <img src="${logoPemdaB64}" class="gov-logo" alt="Logo Pemda">
           <div class="gov-name">${govName}</div>
         </div>
         <div class="gov-row">
-          <img src="${printConfig.logoBapanas}" class="gov-logo" alt="Logo Bapanas">
+          <img src="${logoBapanasB64}" class="gov-logo" alt="Logo Bapanas">
           <div>
             <div style="font-size:9px;font-weight:900;color:#15803d;">BADAN PANGAN</div>
             <div style="font-size:9px;font-weight:900;color:#15803d;">NASIONAL</div>
@@ -580,21 +639,42 @@ function FontToolbar({
     if (!page) return;
     var padding = 16;
     var availW = window.innerWidth - padding * 2;
+    // offsetWidth before transform is the natural A4 width in px
+    // Temporarily reset transform to measure true width
+    page.style.transform = '';
     var pageW = page.offsetWidth;
+    var pageH = page.offsetHeight;
     if (pageW > availW) {
       var s = availW / pageW;
       page.style.transform = 'scale(' + s + ')';
-      page.style.transformOrigin = 'top center';
-      // Adjust wrapper height so content below is not hidden behind scaled-down element
+      page.style.transformOrigin = 'top left';
+      page.style.marginLeft = '0';
+      // Shrink wrapper height to match scaled-down page height
       var wrapper = page.parentElement;
-      if (wrapper) wrapper.style.height = Math.round(page.offsetHeight * s) + 'px';
+      if (wrapper) wrapper.style.height = Math.round(pageH * s) + 'px';
     } else {
       page.style.transform = '';
       if (page.parentElement) page.parentElement.style.height = '';
     }
   }
+
+  // Before print: clear all JS-applied inline styles so @media print CSS takes full control
+  function resetForPrint() {
+    var page = document.getElementById('map-page');
+    if (page) {
+      page.style.transform = '';
+      page.style.transformOrigin = '';
+      page.style.marginLeft = '';
+    }
+    var wrapper = page && page.parentElement;
+    if (wrapper) wrapper.style.height = '';
+  }
+
   window.addEventListener('load', scalePageToFit);
   window.addEventListener('resize', scalePageToFit);
+  window.addEventListener('beforeprint', resetForPrint);
+  // Restore responsive scale after dialog closes
+  window.addEventListener('afterprint', scalePageToFit);
 
   // Auto-print on desktop only; mobile user taps the button
   var isMobile = window.matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);

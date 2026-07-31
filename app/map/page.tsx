@@ -386,13 +386,29 @@ function FontToolbar({
             const domImg = document.getElementById('print-layout-map-image') as HTMLImageElement | null;
             if ((domImg && domImg.complete && domImg.naturalWidth > 0) || attempts >= 20) {
               setTimeout(() => {
-                try {
-                  window.print();
-                } finally {
+                let cleanedUp = false;
+                const doCleanup = () => {
+                  if (cleanedUp) return;
+                  cleanedUp = true;
+                  window.removeEventListener('afterprint', doCleanup);
                   document.body.classList.remove('printing-map-pdf');
                   setIsPrinting(false);
                   document.title = originalTitle;
-                  setTimeout(() => setMapImage(null), 1500);
+                  setTimeout(() => setMapImage(null), 2000);
+                };
+
+                // Listen for browser afterprint event (fires when print dialog closes on desktop & mobile)
+                window.addEventListener('afterprint', doCleanup);
+
+                // Fallback cleanup timer for mobile browsers where window.print() returns asynchronously
+                // Keeps print layout & title active for 15s to allow mobile print preview engines to capture
+                setTimeout(doCleanup, 15000);
+
+                try {
+                  window.print();
+                } catch(err) {
+                  console.error(err);
+                  doCleanup();
                 }
               }, 400);
             } else {

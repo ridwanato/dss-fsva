@@ -352,10 +352,7 @@ function FontToolbar({
     setShowPrintModal(false);
     if (!mapInstance) return;
     setIsPrinting(true);
-
-    const originalTitle = document.title;
     const formattedFileName = getMapPdfFileName(kabupaten, level, activeLayer);
-    document.title = formattedFileName;
 
     let hasRendered = false;
 
@@ -364,22 +361,21 @@ function FontToolbar({
       hasRendered = true;
       try {
         const mapCanvas = mapInstance.getCanvas();
-
-        // Validate canvas has real content (not blank)
-        const ctx2d = mapCanvas.getContext('2d') || mapCanvas.getContext('webgl') || mapCanvas.getContext('webgl2');
         if (mapCanvas.width === 0 || mapCanvas.height === 0) {
-          throw new Error('Map canvas is not rendered yet');
+          throw new Error('Map canvas not ready');
         }
 
-        // Copy canvas to offscreen canvas to avoid WebGL context loss on mobile
-        const offscreen = document.createElement('canvas');
-        offscreen.width = mapCanvas.width;
-        offscreen.height = mapCanvas.height;
-        const offCtx = offscreen.getContext('2d');
-        if (offCtx) {
-          offCtx.drawImage(mapCanvas, 0, 0);
-        }
-        const mapDataUrl = offscreen.toDataURL('image/png');
+        // Resize to max 1200px wide — reduces 5–15 MB raw PNG to ~200 KB JPEG
+        const MAX_W = 1200;
+        const scale = Math.min(1, MAX_W / mapCanvas.width);
+        const printW = Math.round(mapCanvas.width * scale);
+        const printH = Math.round(mapCanvas.height * scale);
+        const resized = document.createElement('canvas');
+        resized.width = printW;
+        resized.height = printH;
+        const rCtx = resized.getContext('2d');
+        if (rCtx) rCtx.drawImage(mapCanvas, 0, 0, printW, printH);
+        const mapDataUrl = resized.toDataURL('image/jpeg', 0.92);
 
         // Build the print layout inline styles
         const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || 'Komposit';
@@ -496,6 +492,7 @@ function FontToolbar({
 </style>
 </head>
 <body>
+<button onclick="window.print()" class="no-print" style="position:fixed;top:12px;right:12px;z-index:9999;padding:12px 24px;background:#1d4ed8;color:white;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);">🖨️ Cetak / Simpan PDF</button>
 <div class="page">
   <div class="map-area">
     <img src="${mapDataUrl}" alt="Peta FSVA">
@@ -551,55 +548,44 @@ function FontToolbar({
   </div>
 </div>
 <script>
-  window.onload = function() {
-    window.print();
-    window.addEventListener('afterprint', function() { window.close(); });
-    // Fallback close for mobile where afterprint may not fire
-    setTimeout(function() { try { window.close(); } catch(e) {} }, 30000);
-  };
-<\/script>
+  // Auto-print only on desktop (window.matchMedia pointerCoarse = touch device)
+  // On mobile, user taps the blue Cetak button to avoid print-preview hang
+  var isMobile = window.matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isMobile) {
+    window.onload = function() { window.print(); };
+  }
+</script>
 </body>
 </html>`;
 
-        // Open a popup window with the print HTML — this bypasses all React state timing issues
-        const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
-        if (!printWindow) {
-          // Popup blocked — fallback: use blob URL
-          const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
-          const blobUrl = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-        } else {
-          printWindow.document.open();
-          printWindow.document.write(printHtml);
-          printWindow.document.close();
-        }
+        // Open via Blob URL anchor — reliable on Chrome Android & iOS, no popup blocker issue
+        const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = blobUrl;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 
-        document.title = originalTitle;
         setIsPrinting(false);
 
       } catch(e) {
         console.error(e);
         setIsPrinting(false);
-        document.title = originalTitle;
-        alert("Gagal memproses gambar peta untuk PDF. Pastikan peta sudah selesai dimuat.");
+        alert('Gagal memproses gambar peta. Pastikan peta sudah selesai dimuat.');
       }
     };
 
     mapInstance.once('render', doCapture);
     mapInstance.triggerRepaint();
 
-    // Fallback for mobile browsers where 'render' event may be suspended/throttled
+    // Fallback for mobile where render event may be throttled
     setTimeout(() => {
-      if (!hasRendered) {
-        console.log("Fallback print capture triggered");
-        doCapture();
-      }
-    }, 600);
+      if (!hasRendered) doCapture();
+    }, 800);
   };
 
   return (

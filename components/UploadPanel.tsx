@@ -36,8 +36,17 @@ export default function UploadPanel() {
     fetch('/api/wilayah')
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
+        if (data.success && data.data && data.data.length > 0) {
           setWilayahData(data.data);
+          // Preselect first region so page is active immediately from frame 1
+          if (!selectedKabupaten && !selectedProvinsi) {
+            const firstProv = data.data[0];
+            const firstKab = firstProv?.kabupaten?.[0] || 'KAB PEGUNUNGAN BINTANG';
+            setSelectedKabupaten(firstKab);
+            setKabQuery(firstKab);
+            setSelectedProvinsi(firstProv.provinsi);
+            setProvQuery(firstProv.provinsi);
+          }
         }
       })
       .catch(console.error);
@@ -100,6 +109,10 @@ export default function UploadPanel() {
 
   const handleUploadGeometry = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+    if (!targetMapName) {
+      alert('Silakan pilih Kabupaten/Kota atau Provinsi terlebih dahulu.');
+      return;
+    }
     setLoading(true);
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
@@ -118,6 +131,10 @@ export default function UploadPanel() {
 
   const handleUploadData = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+    if (!targetMapName) {
+      alert('Silakan pilih Kabupaten/Kota atau Provinsi terlebih dahulu.');
+      return;
+    }
     setLoading(true);
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
@@ -139,6 +156,10 @@ export default function UploadPanel() {
   };
 
   const handleCalculate = async () => {
+    if (!targetMapName) {
+      alert('Silakan pilih Kabupaten/Kota atau Provinsi terlebih dahulu.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/calculate', { 
@@ -171,8 +192,11 @@ export default function UploadPanel() {
             type="button"
             onClick={() => {
               setLevel('kab_kota');
-              setSelectedKabupaten('');
-              setKabQuery('');
+              if (!selectedKabupaten && wilayahData.length > 0) {
+                const firstKab = wilayahData[0]?.kabupaten?.[0] || 'KAB PEGUNUNGAN BINTANG';
+                setSelectedKabupaten(firstKab);
+                setKabQuery(firstKab);
+              }
             }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer ${
               level === 'kab_kota'
@@ -186,8 +210,10 @@ export default function UploadPanel() {
             type="button"
             onClick={() => {
               setLevel('provinsi');
-              setSelectedKabupaten('');
-              setKabQuery('');
+              if (!selectedProvinsi && wilayahData.length > 0) {
+                setSelectedProvinsi(wilayahData[0].provinsi);
+                setProvQuery(wilayahData[0].provinsi);
+              }
             }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer ${
               level === 'provinsi'
@@ -357,15 +383,10 @@ export default function UploadPanel() {
           </div>
         )}
 
-        {!activeKabupaten && (
-          <p className="text-xs text-[#7C3AED] font-semibold mt-4 flex items-center gap-1.5 justify-center">
-            <AlertCircle className="w-4 h-4" /> Wajib memilih wilayah sebelum mengunggah.
-          </p>
-        )}
       </div>
 
       {/* Main Action Steps Grid */}
-      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-300 ${!activeKabupaten ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-300 opacity-100">
         
         {/* Card 1: KML/KMZ / Shapefile */}
         <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#F5F3FF]/80 border border-[#D5CFFF] shadow-[0_8px_25px_rgba(109,94,245,0.05)]">

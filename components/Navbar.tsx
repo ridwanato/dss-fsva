@@ -320,83 +320,6 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* CATEGORY 2: PETUNJUK PENGGUNAAN & INFORMASI */}
-      <div className="flex flex-col">
-        <button
-          onClick={() => setPetunjukDropdownOpen(!petunjukDropdownOpen)}
-          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
-        >
-          <span className="flex items-center gap-2.5">
-            <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
-            PETUNJUK PENGGUNAAN
-          </span>
-          <ChevronDown 
-            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
-            style={{ transform: petunjukDropdownOpen ? 'rotate(180deg)' : 'none' }} 
-          />
-        </button>
-
-        {petunjukDropdownOpen && (
-          <TreeContainer>
-            <TreeItem>
-              <Link 
-                href="/petunjuk-penggunaan?type=kab_kota" 
-                onClick={() => onItemClick && onItemClick()} 
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
-                  pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Peta Kab/Kota
-              </Link>
-            </TreeItem>
-            <TreeItem>
-              <Link 
-                href="/petunjuk-penggunaan?type=provinsi" 
-                onClick={() => onItemClick && onItemClick()} 
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
-                  pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Peta Provinsi
-              </Link>
-            </TreeItem>
-            <TreeItem>
-              <Link 
-                href="/indikator-fsva" 
-                onClick={() => onItemClick && onItemClick()} 
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
-                  isActive('/indikator-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Indikator FSVA
-              </Link>
-            </TreeItem>
-            <TreeItem>
-              <Link 
-                href="/metodologi-fsva" 
-                onClick={() => onItemClick && onItemClick()} 
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
-                  isActive('/metodologi-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Metodologi FSVA
-              </Link>
-            </TreeItem>
-            <TreeItem>
-              <Link 
-                href="/tentang-fsva" 
-                onClick={() => onItemClick && onItemClick()} 
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
-                  isActive('/tentang-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Tentang Aplikasi
-              </Link>
-            </TreeItem>
-          </TreeContainer>
-        )}
-      </div>
-
       {/* CATEGORY 3: PETA TERSIMPAN KAB/KOTA */}
       <div className="flex flex-col">
         <button
@@ -541,6 +464,83 @@ export default function Navbar() {
                 <span className="px-2.5 py-1 text-xs text-emerald-300/60 italic font-medium">Belum ada peta</span>
               </TreeItem>
             )}
+          </TreeContainer>
+        )}
+      </div>
+
+      {/* CATEGORY 5: PETUNJUK PENGGUNAAN & INFORMASI (Posisi Terbawah Sidebar) */}
+      <div className="flex flex-col">
+        <button
+          onClick={() => setPetunjukDropdownOpen(!petunjukDropdownOpen)}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+        >
+          <span className="flex items-center gap-2.5">
+            <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
+            PETUNJUK PENGGUNAAN
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: petunjukDropdownOpen ? 'rotate(180deg)' : 'none' }} 
+          />
+        </button>
+
+        {petunjukDropdownOpen && (
+          <TreeContainer>
+            <TreeItem>
+              <Link 
+                href="/petunjuk-penggunaan?type=kab_kota" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'kab_kota' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Peta Kab/Kota
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/petunjuk-penggunaan?type=provinsi" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  pathname === '/petunjuk-penggunaan' && searchParams.get('type') === 'provinsi' ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Peta Provinsi
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/indikator-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/indikator-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Indikator FSVA
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/metodologi-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/metodologi-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Metodologi FSVA
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/tentang-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/tentang-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Tentang Aplikasi
+              </Link>
+            </TreeItem>
           </TreeContainer>
         )}
       </div>

@@ -34,6 +34,19 @@ export default function TentangFsvaPage() {
             <p>
               Dengan adanya pemetaan spasial ini, pemerintah daerah dan pemangku kebijakan dapat mengidentifikasi lokasi intervensi program ketahanan pangan secara lebih presisi dan efisien (target intervensi difokuskan pada desa Prioritas 1-3).
             </p>
+
+            {/* Inisiatif Pengembangan Mandiri & Informasi Afiliasi */}
+            <div className="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-2.5 text-slate-800 shadow-xs">
+              <h3 className="text-base font-extrabold text-emerald-950 flex items-center gap-2">
+                <span>Inisiatif Pengembangan & Informasi Afiliasi</span>
+              </h3>
+              <p className="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">
+                Platform web <strong>FSVA.my.id</strong> ini dikembangkan secara mandiri oleh seorang Analis Ketahanan Pangan sebagai inisiatif independen. Sistem ini <strong>tidak terafiliasi dengan instansi pemerintah maupun lembaga resmi manapun</strong>.
+              </p>
+              <p className="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">
+                Pengembangan aplikasi ini ditujukan semata-mata sebagai sarana bantu teknis untuk mendukung sesama Analis Ketahanan Pangan dan praktisi di daerah dalam menyusun, mengkalkulasi, serta memvisualisasikan Peta Ketahanan dan Kerentanan Pangan (FSVA) secara lebih efisien, akurat, serta mempersingkat waktu kerja dalam pembuatan peta FSVA.
+              </p>
+            </div>
           </div>
           
           <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">

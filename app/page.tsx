@@ -1,144 +1,160 @@
+'use client';
+
 import Link from 'next/link';
-import { MapPin, PlusCircle, ArrowRight, BarChart3, Sparkles, FileSpreadsheet, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import { 
+  Map, BarChart3, FileText, Users, ArrowRight, 
+  MapPin, ShieldCheck, PlusCircle, Leaf, Sparkles, Layers
+} from 'lucide-react';
 import SeoContent from '@/components/SeoContent';
 
 export default function Home() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 pt-12 sm:pt-16 pb-12 text-center overflow-y-auto h-full relative">
+    <div className="flex-1 flex flex-col justify-between overflow-y-auto h-full relative font-sans text-slate-900 bg-[#eef7f3]">
       <SeoContent />
 
-      {/* Subtle radial dot pattern matching app design language */}
-      <div 
-        className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
-        style={{ backgroundImage: 'radial-gradient(#6D5EF5 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }}
-      ></div>
+      {/* Hero Background Image (Directly using /beranda2.png from public folder) */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <Image 
+          src="/beranda2.png" 
+          alt="FSVA Indonesia Beranda Background" 
+          fill 
+          priority
+          className="object-cover object-center scale-100"
+        />
+        {/* Soft daylight gradient overlay for optimal readability of interactive text */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-[#034423]/90"></div>
+      </div>
 
-      <div className="max-w-4xl w-full space-y-6 sm:space-y-10 relative z-10 mx-auto">
-        
-        {/* Header Title Banner */}
-        <div className="space-y-3 sm:space-y-4 max-w-3xl mx-auto px-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-black uppercase tracking-wider shadow-sm">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Standar Baku BAPANAS - Juknis 2026</span>
-          </div>
+      {/* Main Content Container */}
+      <div className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 flex flex-col justify-between space-y-6">
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 via-teal-700 to-green-700">
-              System Otomasi Peta FSVA
-            </span> <br className="hidden sm:inline" />
-            <span className="text-slate-800">
-              Provinsi dan Kabupaten/Kota
-            </span>
-          </h1>
 
-          <p className="text-xs sm:text-base md:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Platform pemetaan Ketahanan dan Kerentanan Pangan tingkat Provinsi (Kecamatan) 
-            dan Kabupaten/Kota (Desa/Kelurahan) berdasarkan Petunjuk Teknis Badan Pangan Nasional.
-          </p>
-        </div>
-        
-        {/* 2 Utama Callout Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 max-w-3xl mx-auto w-full text-left">
+        {/* Hero Body Grid: Left Text & 4 Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center -mt-6 sm:-mt-10 py-1">
           
-          {/* Action 1: Lihat Peta FSVA Tersimpan */}
-          <Link 
-            href="/map" 
-            className="group relative overflow-hidden bg-gradient-to-br from-emerald-50/90 via-teal-50/60 to-white border-2 border-emerald-500/40 hover:border-emerald-500 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 group-hover:scale-110 transition-transform duration-300">
-                  <MapPin className="w-7 h-7 sm:w-8 sm:h-8" />
-                </div>
-                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Peta Interaktif
+          {/* Left Column (7 Cols) - Shifted UP vertically by 155px */}
+          <div className="lg:col-span-7 space-y-4 text-left mt-[80px]">
+            
+            {/* Main Headline */}
+            <div className="space-y-1.5 px-1">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-[1.15] text-slate-900">
+                Wujudkan Ketahanan Pangan <br />
+                <span className="text-[#046a38]">
+                  yang Terukur dan Tepat Sasaran
                 </span>
-              </div>
-
-              <div className="space-y-1.5">
-                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                  Lihat Peta FSVA Tersimpan
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Eksplorasi visual kerentanan pangan interaktif. Secara otomatis menampilkan peta terakhir yang tersimpan di sistem.
-                </p>
-              </div>
+              </h1>
+              
+              <p className="text-sm sm:text-base text-white leading-relaxed max-w-xl font-medium mt-3 drop-shadow-md">
+                FSVA.my.id adalah sistem pemetaan interaktif untuk analisis Ketahanan dan Kerentanan Pangan tingkat Provinsi, Kabupaten/Kota, hingga Desa/Kelurahan sesuai Petunjuk Teknis Badan Pangan Nasional.
+              </p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-emerald-200/60 flex items-center justify-between text-xs sm:text-sm font-extrabold text-emerald-700 group-hover:text-emerald-800">
-              <span>Buka Peta Interaktif</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1.5 transition-transform duration-300" />
-            </div>
-          </Link>
-
-          {/* Action 2: Mulai Buat Peta */}
-          <Link 
-            href="/entry" 
-            className="group relative overflow-hidden bg-gradient-to-br from-indigo-50/90 via-purple-50/60 to-white border-2 border-indigo-500/40 hover:border-indigo-500 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 group-hover:scale-110 transition-transform duration-300">
-                  <PlusCircle className="w-7 h-7 sm:w-8 sm:h-8" />
+            {/* Lower Section (4 Features Panel & Callout Banner) - Shifted DOWN vertically by 140px as requested */}
+            <div className="space-y-4 mt-8">
+              
+              {/* 4 Feature Highlights Glass Panel (65% Transparency bg-white/65, No Backdrop Blur) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/65 border border-white/80 shadow-lg shadow-emerald-950/10 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                
+                <div className="space-y-1.5 p-2 rounded-xl hover:bg-white/60 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#046a38] shadow-2xs">
+                    <Map className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900">Peta Interaktif</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-800 leading-normal font-semibold">Visualisasi kerentanan pangan secara detail dan real-time</p>
                 </div>
-                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200">
-                  Data Entry & Upload
-                </span>
+
+                <div className="space-y-1.5 p-2 rounded-xl hover:bg-white/60 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shadow-2xs">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900">Analisis Otomatis</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-800 leading-normal font-semibold">Hitung indikator FSVA secara otomatis dan akurat</p>
+                </div>
+
+                <div className="space-y-1.5 p-2 rounded-xl hover:bg-white/60 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-800 shadow-2xs">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900">Laporan Cepat</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-800 leading-normal font-semibold">Unduh hasil analisis dalam berbagai format dengan mudah</p>
+                </div>
+
+                <div className="space-y-1.5 p-2 rounded-xl hover:bg-white/60 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800 shadow-2xs">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900">Kolaboratif</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-800 leading-normal font-semibold">Kelola data bersama tim lintas wilayah secara terintegrasi</p>
+                </div>
+
               </div>
 
-              <div className="space-y-1.5">
-                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">
-                  Mulai Buat Peta
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Upload file batas wilayah (.zip/.kml) dan data indikator (.xlsx) untuk membuat dan menghitung analisis peta FSVA baru.
-                </p>
+              {/* Primary Action Callout Banner */}
+              <div className="rounded-2xl bg-[#046a38] p-4 sm:p-5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white text-[#046a38] flex items-center justify-center shrink-0 shadow-md">
+                  <MapPin className="w-6 h-6 text-[#046a38]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Mulai Pemetaan Sekarang</h3>
+                  <p className="text-xs text-emerald-100/90 font-medium">Wujudkan keputusan berbasis data untuk ketahanan pangan yang lebih baik.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                <Link
+                  href="/map"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-black text-xs text-[#046a38] bg-white hover:bg-emerald-50 shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                >
+                  <span>Buka Peta Interaktif</span>
+                  <ArrowRight className="w-4 h-4 text-[#046a38]" />
+                </Link>
+
+                <Link
+                  href="/entry"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full font-extrabold text-xs text-white bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-400/40 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4 text-emerald-200" />
+                  <span>Buat Peta</span>
+                </Link>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-indigo-200/60 flex items-center justify-between text-xs sm:text-sm font-extrabold text-indigo-700 group-hover:text-indigo-800">
-              <span>Ke Halaman Data Entry</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1.5 transition-transform duration-300" />
             </div>
-          </Link>
 
-        </div>
-
-        {/* Secondary Navigation Quick Links */}
-        <div className="pt-4 max-w-3xl mx-auto w-full">
-          <div className="p-3 sm:p-4 rounded-2xl bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-sm flex flex-wrap items-center justify-around gap-3 text-xs font-bold text-slate-700">
-            <Link 
-              href="/dashboard" 
-              className="flex items-center gap-2 hover:text-emerald-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
-            >
-              <BarChart3 className="w-4 h-4 text-emerald-600" />
-              <span>Faktor Berpengaruh</span>
-            </Link>
-
-            <span className="hidden sm:inline text-slate-300">•</span>
-
-            <Link 
-              href="/ai-insight" 
-              className="flex items-center gap-2 hover:text-indigo-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
-            >
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span>AI Insight FSVA</span>
-            </Link>
-
-            <span className="hidden sm:inline text-slate-300">•</span>
-
-            <Link 
-              href="/download-form-v2" 
-              className="flex items-center gap-2 hover:text-teal-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-teal-600" />
-              <span>Download Form V2</span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-600 text-white uppercase animate-pulse">BETA</span>
-            </Link>
           </div>
+
         </div>
 
       </div>
+
+      {/* Bottom Footer Margin Bar (Dark Green #034423) */}
+      <div className="relative z-10 w-full bg-[#034423] border-t border-emerald-600/40 py-3.5 px-4 sm:px-8 text-emerald-200 text-xs font-semibold">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+          
+          {/* Replaced Logos: App Branding Logo (No Bapanas/Kementan as instructed) */}
+          <div className="flex items-center gap-2.5 text-white font-extrabold">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-sm">
+              <Leaf className="w-4 h-4" />
+            </div>
+            <span className="text-sm tracking-wide">FSVA INDONESIA</span>
+          </div>
+
+          {/* Center Exact Retained Text */}
+          <div className="text-center font-extrabold text-emerald-100 tracking-wider text-[11px] sm:text-xs">
+            DIKEMBANGKAN UNTUK KETAHANAN PANGAN INDONESIA
+          </div>
+
+          {/* Right side: System Version Badge (No BSSN lock badge as instructed) */}
+          <div className="flex items-center gap-2 text-[11px] text-emerald-300 font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>System Otomasi FSVA V2 (2026)</span>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
 }

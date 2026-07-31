@@ -555,9 +555,8 @@ function FontToolbar({
   .map-area img{
     position:absolute;top:0;left:0;
     width:100%;height:100%;
-    object-fit:contain;
+    object-fit:cover;
     object-position:center;
-    background:white;
     display:block;
   }
   .sidebar{width:30%;height:100%;display:flex;flex-direction:column;background:white;}

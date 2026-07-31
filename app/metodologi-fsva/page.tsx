@@ -15,7 +15,7 @@ export default function MetodologiFsvaPage() {
           
           <div className="space-y-6 text-sm md:text-base text-slate-650 leading-relaxed">
             <p>
-              Sistem perhitungan FSVA menggunakan metode pembobotan dan penyusunan indeks komposit multi-kriteria untuk merangkum 11 indikator pangan dari 3 aspek ketahanan pangan.
+              Sistem perhitungan FSVA menggunakan metode pembobotan dan penyusunan indeks komposit multi-kriteria untuk merangkum 11 indikator pangan (Kabupaten/Kota) dan 12 indikator pangan (Provinsi) dari 3 aspek ketahanan pangan.
             </p>
             
             <h3 className="text-lg font-bold text-slate-850 mt-4">Tahapan Perhitungan:</h3>

@@ -39,13 +39,13 @@ export default function Home() {
             {/* Main Headline */}
             <div className="space-y-1.5 px-1">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-[1.15] text-slate-900">
-                Wujudkan Ketahanan Pangan <br />
+                Menganalisis Ketahanan Pangan <br />
                 <span className="text-[#046a38]">
-                  yang Terukur dan Tepat Sasaran
+                  secara Terukur dan Tepat Sasaran
                 </span>
               </h1>
               
-              <p className="text-sm sm:text-base text-white leading-relaxed max-w-xl font-medium mt-3 drop-shadow-md">
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed max-w-xl font-medium mt-3 drop-shadow-sm">
                 FSVA.my.id adalah sistem pemetaan interaktif untuk analisis Ketahanan dan Kerentanan Pangan tingkat Provinsi, Kabupaten/Kota, hingga Desa/Kelurahan sesuai Petunjuk Teknis Badan Pangan Nasional.
               </p>
             </div>
@@ -85,7 +85,7 @@ export default function Home() {
                     <Users className="w-4 h-4" />
                   </div>
                   <h3 className="text-xs sm:text-sm font-black text-slate-900">Kolaboratif</h3>
-                  <p className="text-[10px] sm:text-xs text-slate-800 leading-normal font-semibold">Kelola data bersama tim lintas wilayah secara terintegrasi</p>
+                  <p className="text-[10px] sm:text-xs text-slate-800 leading-normal font-semibold">Berbagi dan kelola data analisis FSVA antar wilayah</p>
                 </div>
 
               </div>
@@ -98,7 +98,6 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white">Mulai Pemetaan Sekarang</h3>
-                  <p className="text-xs text-emerald-100/90 font-medium">Wujudkan keputusan berbasis data untuk ketahanan pangan yang lebih baik.</p>
                 </div>
               </div>
 
@@ -133,12 +132,11 @@ export default function Home() {
       <div className="relative z-10 w-full bg-[#034423] border-t border-emerald-600/40 py-3.5 px-4 sm:px-8 text-emerald-200 text-xs font-semibold">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           
-          {/* Replaced Logos: App Branding Logo (No Bapanas/Kementan as instructed) */}
+          {/* App Branding */}
           <div className="flex items-center gap-2.5 text-white font-extrabold">
             <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-sm">
               <Leaf className="w-4 h-4" />
             </div>
-            <span className="text-sm tracking-wide">FSVA INDONESIA</span>
           </div>
 
           {/* Center Exact Retained Text */}

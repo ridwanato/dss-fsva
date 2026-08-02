@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   BookOpen, UserPlus, MapPin, FileSpreadsheet, Play, 
-  CheckCircle2, Printer, ShieldAlert, ChevronRight, Info
+  CheckCircle2, Printer, ShieldAlert, ChevronRight, Info,
+  Sparkles, Download, Layers
 } from 'lucide-react';
 
 function PetunjukPenggunaanContent() {
@@ -14,32 +15,53 @@ function PetunjukPenggunaanContent() {
 
   return (
     <div className="flex-1 bg-transparent py-12 pt-24 h-full overflow-y-auto relative">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#6D5EF5 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }}></div>
-
       <div className="max-w-4xl mx-auto px-6 relative z-10">
-        <div className="glass-card p-8 rounded-3xl border border-green-100/50 shadow-xl bg-white/80 backdrop-blur-md">
+        <div className="glass-card p-8 rounded-3xl border border-green-100/50 shadow-xl bg-white/90 backdrop-blur-md">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8 border-b border-slate-100 pb-6">
-            <div className="bg-gradient-to-br from-emerald-500 to-green-600 w-14 h-14 rounded-2xl flex items-center justify-center border border-green-400/25 shadow-lg">
+            <div className="bg-gradient-to-br from-emerald-600 to-green-700 w-14 h-14 rounded-2xl flex items-center justify-center border border-green-400/25 shadow-lg shrink-0">
               <BookOpen className="text-white w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-800 leading-tight">
+              <h1 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight">
                 Petunjuk Penggunaan {type === 'provinsi' ? 'FSVA Provinsi' : 'FSVA Kab/Kota'}
               </h1>
-              <p className="text-sm text-slate-500 font-medium mt-1">
-                Panduan langkah-langkah operasional analisis peta tingkat {type === 'provinsi' ? 'Kecamatan (Provinsi)' : 'Desa/Kelurahan (Kabupaten/Kota)'}
+              <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">
+                Panduan operasional lengkap analisis peta ketahanan pangan tingkat {type === 'provinsi' ? 'Kecamatan (Provinsi)' : 'Desa/Kelurahan (Kabupaten/Kota)'}
               </p>
             </div>
+          </div>
+
+          {/* Type Selector Tabs */}
+          <div className="flex gap-3 mb-8 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80">
+            <Link 
+              href="/petunjuk-penggunaan?type=kab_kota" 
+              className={`flex-1 text-center py-2.5 px-4 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                type === 'kab_kota'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              Petunjuk FSVA Kab/Kota (Desa)
+            </Link>
+            <Link 
+              href="/petunjuk-penggunaan?type=provinsi" 
+              className={`flex-1 text-center py-2.5 px-4 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                type === 'provinsi'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              Petunjuk FSVA Provinsi (Kecamatan)
+            </Link>
           </div>
 
           {/* Main Steps */}
           <div className="space-y-10">
             <div>
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 font-black text-sm">A</span>
-                Alur Input Data & Analisis Peta
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-black text-sm">A</span>
+                Alur Input Data &amp; Analisis Peta
               </h2>
               
               <div className="relative border-l-2 border-emerald-100 pl-6 ml-3.5 space-y-8">
@@ -49,12 +71,12 @@ function PetunjukPenggunaanContent() {
                   <span className="absolute -left-[35px] top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs shadow-sm">
                     1
                   </span>
-                  <div className="bg-white/60 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white/80 rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:shadow-md transition-shadow">
                     <h3 className="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-2">
-                      <UserPlus className="w-4 h-4 text-emerald-600" /> Registrasi & Login Akun
+                      <UserPlus className="w-4 h-4 text-emerald-600" /> Registrasi &amp; Login Akun
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed">
-                      Langkah pertama adalah mendaftarkan akun Anda. Masuk ke menu <strong className="text-slate-800">Masuk / Login</strong> pada sidebar, lalu daftarkan email aktif Anda. Setelah verifikasi email, masuk kembali untuk membuka hak akses unggah data.
+                      Langkah pertama adalah masuk atau mendaftar di menu <strong className="text-slate-800">Login / Masuk</strong> pada sidebar. Pengguna yang terautentikasi mendapatkan akses penuh untuk mengunggah peta baru, menyimpan hasil analisis, dan mengelola peta milik pribadi.
                     </p>
                   </div>
                 </div>
@@ -64,26 +86,26 @@ function PetunjukPenggunaanContent() {
                   <span className="absolute -left-[35px] top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs shadow-sm">
                     2
                   </span>
-                  <div className="bg-white/60 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white/80 rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:shadow-md transition-shadow">
                     <h3 className="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-emerald-600" /> Menyiapkan Berkas Peta (Geometri)
+                      <MapPin className="w-4 h-4 text-emerald-600" /> Menyiapkan Berkas Peta (Geometri Spasial)
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed mb-3">
-                      Siapkan file peta batas wilayah administrasi {type === 'provinsi' ? 'kecamatan se-provinsi' : 'desa/kelurahan se-kabupaten'} dalam format <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">.kml</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">.kmz</code>, atau <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">.zip</code>.
+                      Siapkan berkas batas wilayah administrasi {type === 'provinsi' ? 'kecamatan se-provinsi' : 'desa/kelurahan se-kabupaten/kota'} dalam format <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-emerald-800">.zip</code> (Shapefile 2D), <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-emerald-800">.kml</code>, atau <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-emerald-800">.kmz</code>.
                     </p>
-                    <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 space-y-2 text-xs text-slate-750">
-                      <p className="font-bold text-emerald-800 flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 shrink-0" /> Ketentuan Kompatibilitas Peta:
+                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4 space-y-2 text-xs text-slate-750">
+                      <p className="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 shrink-0 text-emerald-700" /> Ketentuan Spesifikasi Peta:
                       </p>
                       <ul className="list-disc pl-5 space-y-1.5">
                         <li>
-                          <strong>Format ZIP Shapefile:</strong> Wajib menyertakan berkas utama lengkap di dalam satu arsip (.shp, .dbf, .shx, dan .prj).
+                          <strong>Format ZIP Shapefile:</strong> Berkas ZIP wajib berisi 4 file utama (`.shp`, `.dbf`, `.shx`, dan `.prj`).
                         </li>
                         <li>
-                          <strong>ID Wilayah & Kode BPS:</strong> Peta harus memiliki kolom atribut yang berisi kode BPS ({type === 'provinsi' ? '7 digit untuk Kecamatan' : '10 digit untuk Desa'}).
+                          <strong>Atribut Kode BPS:</strong> Berkas peta harus memiliki atribut kode BPS ({type === 'provinsi' ? '7 digit Kode Kecamatan BPS' : '10 digit Kode Desa BPS'}).
                         </li>
                         <li>
-                          <strong>Sensitivitas Karakter & Ejaan:</strong> Sistem melakukan pencocokan nama secara cerdas (<em className="text-emerald-800">Case & Space Insensitive</em>) disertai <strong>Fuzzy Matching</strong> berbasis Levenshtein distance dengan toleransi salah ketik hingga 2 karakter.
+                          <strong>Auto 2D &amp; Fuzzy Matching:</strong> Sistem secara otomatis mengonversi koordinat 3D/Z menjadi 2D WKT dan mencocokkan ejaan nama wilayah dengan toleransi kesalahan ketik hingga 2 karakter.
                         </li>
                       </ul>
                     </div>
@@ -95,41 +117,40 @@ function PetunjukPenggunaanContent() {
                   <span className="absolute -left-[35px] top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs shadow-sm">
                     3
                   </span>
-                  <div className="bg-white/60 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white/80 rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:shadow-md transition-shadow">
                     <h3 className="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-2">
-                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Menyiapkan Berkas Indikator (Excel)
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Menyiapkan Berkas Indikator (Form Excel)
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed mb-3">
-                      Sebelum melakukan pengunggahan data indikator, pastikan Anda menggunakan template Excel resmi agar format kolom sesuai dengan sistem.
+                      Unduh template Form FSVA V2 resmi yang telah disesuaikan dengan Petunjuk Teknis Badan Pangan Nasional.
                     </p>
                     {type === 'provinsi' ? (
-                      <div className="bg-indigo-50 border border-indigo-150 rounded-xl p-4 text-xs text-indigo-900 mb-3 space-y-2">
-                        <p className="font-extrabold flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 shrink-0" /> Ketentuan Form Validasi Provinsi:
+                      <div className="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 text-xs text-indigo-950 mb-3 space-y-2">
+                        <p className="font-extrabold flex items-center gap-1.5 text-indigo-900">
+                          <Info className="w-3.5 h-3.5 shrink-0 text-indigo-700" /> Ketentuan Form FSVA Provinsi (12 Indikator):
                         </p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>Form Excel harus berupa file multi-sheet yang memiliki lembar kerja <strong>0.1 s.d. 0.6</strong>.</li>
-                          <li>Tingkat analisis adalah <strong>Kecamatan</strong> se-Provinsi.</li>
-                          <li>Menghitung <strong>12 indikator</strong> yang meliputi aspek Ketersediaan, Keterjangkauan, dan Pemanfaatan Pangan (termasuk Keamanan Pangan Segar & Siap Saji).</li>
+                        <ul className="list-disc pl-5 space-y-1 font-medium">
+                          <li>File Excel multi-sheet resmi dengan sheet <strong>0.1 s.d. 0.6</strong>.</li>
+                          <li>Analisis tingkat <strong>Kecamatan</strong> se-Provinsi.</li>
+                          <li>Mencakup 12 Indikator (termasuk Keamanan Pangan Segar &amp; Siap Saji).</li>
                         </ul>
                       </div>
                     ) : (
-                      <div className="bg-emerald-50 border border-emerald-150 rounded-xl p-4 text-xs text-emerald-900 mb-3 space-y-2">
-                        <p className="font-extrabold flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 shrink-0" /> Ketentuan Form Template Kabupaten/Kota:
+                      <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 text-xs text-emerald-950 mb-3 space-y-2">
+                        <p className="font-extrabold flex items-center gap-1.5 text-emerald-900">
+                          <Info className="w-3.5 h-3.5 shrink-0 text-emerald-700" /> Ketentuan Form FSVA Kab/Kota (11 Indikator):
                         </p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>Form Excel berupa file single-sheet berisi data indikator per desa/kelurahan.</li>
-                          <li>Tingkat analisis adalah <strong>Desa/Kelurahan</strong> se-Kabupaten/Kota.</li>
-                          <li>Menghitung <strong>11 indikator</strong> ketahanan pangan.</li>
+                        <ul className="list-disc pl-5 space-y-1 font-medium">
+                          <li>File Excel single-sheet / Form V2 berisi data indikator per desa/kelurahan.</li>
+                          <li>Analisis tingkat <strong>Desa/Kelurahan</strong> se-Kabupaten/Kota.</li>
+                          <li>Mencakup 11 Indikator Utama Ketahanan Pangan.</li>
                         </ul>
                       </div>
                     )}
-                    <ul className="list-decimal pl-5 space-y-1.5 text-xs text-slate-650">
-                      <li>Buka menu <strong className="text-slate-800">Data Entry</strong> pada sidebar.</li>
-                      <li>Pilih level <strong className="text-slate-800">{type === 'provinsi' ? 'PROVINSI' : 'KABUPATEN / KOTA'}</strong>.</li>
-                      <li>Klik tautan <strong className="text-emerald-700">Download Template XLSX</strong> untuk mendapatkan berkas yang tepat.</li>
-                      <li>Isi data lengkap sesuai format, lalu upload file untuk memproses hasil akhir.</li>
+                    <ul className="list-decimal pl-5 space-y-1.5 text-xs text-slate-700 font-medium">
+                      <li>Buka menu <strong className="text-slate-800">Download Form FSVA V2</strong> di sidebar.</li>
+                      <li>Pilih level <strong className="text-slate-800">{type === 'provinsi' ? 'Form FSVA Prov V2' : 'Form FSVA Kab/Kota V2'}</strong>.</li>
+                      <li>Unduh file, isi data indikator secara lengkap, lalu simpan.</li>
                     </ul>
                   </div>
                 </div>
@@ -139,33 +160,33 @@ function PetunjukPenggunaanContent() {
                   <span className="absolute -left-[35px] top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs shadow-sm">
                     4
                   </span>
-                  <div className="bg-white/60 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white/80 rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:shadow-md transition-shadow">
                     <h3 className="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-2">
-                      <Play className="w-4 h-4 text-emerald-600 fill-emerald-600" /> Mengunggah Berkas & Menjalankan Analisis
+                      <Play className="w-4 h-4 text-emerald-600 fill-emerald-600" /> Mengunggah Berkas &amp; Menjalankan Kalkulasi
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                      Masuk ke menu <strong className="text-slate-800">Data Entry</strong> dan lakukan langkah-langkah pengisian secara berurutan:
+                      Masuk ke menu <strong className="text-slate-800">Data Entry</strong> dan jalankan 3 langkah sistematis:
                     </p>
                     <div className="space-y-3">
-                      <div className="flex gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs text-slate-650">
+                      <div className="flex gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 text-xs text-slate-700">
                         <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-black shrink-0">a</div>
                         <div>
-                          <p className="font-bold text-slate-850 mb-0.5">Pilih Wilayah</p>
-                          <p className="leading-relaxed">Pilih Provinsi dan Kabupaten/Kota (jika level Kab/Kota) menggunakan pencarian fuzzy autocomplete agar nama terekam dengan akurat di database.</p>
+                          <p className="font-bold text-slate-900 mb-0.5">Pilih Nama Wilayah</p>
+                          <p className="leading-relaxed">Pilih Nama Provinsi / Kabupaten/Kota menggunakan fitur autokomplit agar terekam presisi di database.</p>
                         </div>
                       </div>
-                      <div className="flex gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs text-slate-650">
+                      <div className="flex gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 text-xs text-slate-700">
                         <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-black shrink-0">b</div>
                         <div>
-                          <p className="font-bold text-slate-850 mb-0.5">Upload Geometri & Excel</p>
-                          <p className="leading-relaxed">Unggah file batas wilayah administrasi di kolom <strong>01</strong> dan template Excel indikator di kolom <strong>02</strong>.</p>
+                          <p className="font-bold text-slate-900 mb-0.5">Unggah Geometri &amp; Excel</p>
+                          <p className="leading-relaxed">Unggah file peta pada kolom <strong>01</strong> dan file Excel indikator pada kolom <strong>02</strong>.</p>
                         </div>
                       </div>
-                      <div className="flex gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs text-slate-650">
+                      <div className="flex gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 text-xs text-slate-700">
                         <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-black shrink-0">c</div>
                         <div>
-                          <p className="font-bold text-slate-850 mb-0.5">Jalankan Kalkulasi</p>
-                          <p className="leading-relaxed">Pada kolom <strong>03</strong>, klik tombol <strong className="text-pink-700">"Hitung FSVA Sekarang"</strong> untuk memproses rumusan juknis Bapanas secara real-time.</p>
+                          <p className="font-bold text-slate-900 mb-0.5">Proses Kalkulasi</p>
+                          <p className="leading-relaxed">Pada kolom <strong>03</strong>, klik tombol <strong className="text-pink-700">"Hitung FSVA Sekarang"</strong> untuk mengotomasi kalkulasi normalisasi, bobot, dan prioritas akhir secara real-time.</p>
                         </div>
                       </div>
                     </div>
@@ -177,12 +198,12 @@ function PetunjukPenggunaanContent() {
                   <span className="absolute -left-[35px] top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs shadow-sm">
                     5
                   </span>
-                  <div className="bg-white/60 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white/80 rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:shadow-md transition-shadow">
                     <h3 className="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Visualisasi & Penyimpanan
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Visualisasi &amp; AI Insight
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed">
-                      Setelah kalkulasi selesai, seluruh data dan hasil peta secara otomatis tersimpan secara permanen di server. Anda dapat mengeksplorasi peta choropleth berwarna di menu <strong className="text-slate-800">Peta Interaktif</strong> atau grafik komparatif di menu <strong className="text-slate-800">Faktor yang Berpengaruh</strong>.
+                      Setelah kalkulasi berhasil, data langsung tersimpan secara permanen. Anda dapat berpindah ke menu <strong className="text-slate-800">Peta Interaktif</strong> untuk mengeksplorasi layer choropleth, menu <strong className="text-slate-800">Faktor yang Berpengaruh</strong> untuk grafik analisis, serta menu <strong className="text-slate-800">AI Insight FSVA</strong> untuk generasi narasi rekomendasi kebijakan berbasis AI.
                     </p>
                   </div>
                 </div>
@@ -190,32 +211,25 @@ function PetunjukPenggunaanContent() {
               </div>
             </div>
 
-            {/* Printing Guide */}
+            {/* Printing & Export Guide */}
             <div className="border-t border-slate-100 pt-8">
               <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 font-black text-sm">B</span>
-                Tata Cara Mencetak Peta (PDF/Kertas)
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-black text-sm">B</span>
+                Cetak Peta (PDF) &amp; Ekspor Data (Excel)
               </h2>
-              <p className="text-slate-600 text-sm leading-relaxed mb-5">
-                Sistem menyediakan modul cetak peta berkualitas tinggi yang siap dicetak ke kertas atau diekspor menjadi dokumen PDF. Ikuti langkah-langkah berikut:
-              </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-slate-50/70 p-4.5 rounded-2xl border border-slate-105 text-xs text-slate-650 leading-relaxed">
-                  <strong className="text-slate-800 block mb-1">1. Atur Posisi Peta (Fit to Box)</strong>
-                  Buka menu <strong className="text-slate-800">Peta Interaktif</strong> dan pilih daerah yang ingin dicetak. Sistem akan menampilkan kotak pembatas merah muda melayang (<em>guidance box</em>). Geser peta (drag) serta sesuaikan perbesaran (zoom) agar wilayah tercakup penuh di dalam kotak panduan.
+                <div className="bg-slate-50/80 p-4.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 leading-relaxed">
+                  <strong className="text-slate-900 block mb-1 text-sm font-bold flex items-center gap-1.5">
+                    <Printer className="w-4 h-4 text-emerald-600" /> 1. Cetak Peta PDF KOP Resmi
+                  </strong>
+                  Buka menu <strong className="text-slate-800">Peta Interaktif</strong>, klik <strong className="text-slate-800">Cetak Peta FSVA</strong>. Unggah logo Pemda &amp; Bapanas, atur judul peta, sumber data, dan instansi penanggung jawab, lalu ekspor ke file PDF.
                 </div>
-                <div className="bg-slate-50/70 p-4.5 rounded-2xl border border-slate-105 text-xs text-slate-650 leading-relaxed">
-                  <strong className="text-slate-800 block mb-1">2. Klik Tombol Cetak</strong>
-                  Klik tombol <strong className="text-slate-800">Cetak Peta FSVA</strong> di sidebar menu atau di panel layer peta.
-                </div>
-                <div className="bg-slate-50/70 p-4.5 rounded-2xl border border-slate-105 text-xs text-slate-650 leading-relaxed">
-                  <strong className="text-slate-800 block mb-1">3. Sesuaikan Opsi KOP & Tanda Tangan</strong>
-                  Modal pengaturan cetak akan muncul. Di sini, Anda dapat mengunggah file logo Pemda daerah Anda, logo Bapanas, menyesuaikan judul peta, daftar sumber data, serta instansi penanggung jawab.
-                </div>
-                <div className="bg-slate-50/70 p-4.5 rounded-2xl border border-slate-105 text-xs text-slate-650 leading-relaxed">
-                  <strong className="text-slate-800 block mb-1">4. Ekspor atau Cetak</strong>
-                  Klik <strong className="text-blue-700">"Lanjut Cetak PDF"</strong>. Jendela cetak bawaan browser akan terbuka. Pilih opsi tujuan pencetakan ke mesin printer fisik atau simpan sebagai file PDF.
+                <div className="bg-slate-50/80 p-4.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 leading-relaxed">
+                  <strong className="text-slate-900 block mb-1 text-sm font-bold flex items-center gap-1.5">
+                    <Download className="w-4 h-4 text-emerald-600" /> 2. Ekspor Hasil Analisis (Excel V2)
+                  </strong>
+                  Klik <strong className="text-slate-800">Download Hasil Analisis FSVA</strong> di sidebar untuk mengunduh seluruh data indikator mentah dan nilai prioritas komposit dalam format spreadsheet yang rapi.
                 </div>
               </div>
             </div>
@@ -223,25 +237,22 @@ function PetunjukPenggunaanContent() {
             {/* Governance Deletion */}
             <div className="border-t border-slate-100 pt-8">
               <h2 className="text-xl font-bold text-slate-800 mb-3 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-[#DB2777]" />
-                Ketentuan Hak Penghapusan Peta (Governance)
+                <ShieldAlert className="w-5 h-5 text-rose-600" />
+                Tata Kelola Hak Penghapusan Peta (Governance)
               </h2>
-              <div className="bg-rose-50 border border-rose-200/60 rounded-2xl p-5 text-sm text-rose-850 leading-relaxed shadow-sm">
-                <p className="font-extrabold flex items-center gap-2 mb-2 text-rose-900">
-                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-700" /> PENTING UNTUK DIKETAHUI:
+              <div className="bg-rose-50/80 border border-rose-200/80 rounded-2xl p-5 text-sm text-rose-900 leading-relaxed shadow-xs">
+                <p className="font-extrabold flex items-center gap-2 mb-2 text-rose-950">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-700" /> Ketentuan Hak Akses Hapus Peta:
                 </p>
-                <p className="mb-2">
-                  Untuk menjaga integritas data serta keamanan informasi antar-pengguna, platform FSVA menerapkan aturan tata kelola penghapusan data secara ketat:
-                </p>
-                <ul className="list-disc pl-5 space-y-1.5 font-medium">
+                <ul className="list-disc pl-5 space-y-1.5 font-medium text-xs md:text-sm">
                   <li>
-                    <strong className="text-rose-950">Hak Penghapusan Mandiri:</strong> Pengguna hanya memiliki izin untuk menghapus peta yang diunggah oleh dirinya sendiri (pemilik peta asli).
+                    <strong>Pengunggah Asli:</strong> Anda hanya dapat menghapus peta yang diunggah dari akun milik Anda sendiri.
                   </li>
                   <li>
-                    <strong className="text-rose-950">Proteksi Peta Lain:</strong> Peta yang diunggah oleh pengguna lain tidak dapat dihapus.
+                    <strong>Proteksi Peta Lain:</strong> Peta yang diunggah oleh pengguna/daerah lain tidak dapat dihapus.
                   </li>
                   <li>
-                    <strong className="text-rose-950">Proteksi Peta Publik/Sistem:</strong> Peta dasar bawaan sistem yang bersifat publik tidak dapat dihapus oleh pengguna umum.
+                    <strong>Proteksi Peta Sistem:</strong> Peta bawaan/publik sistem diproteksi penuh dan tidak dapat dihapus pengguna umum.
                   </li>
                 </ul>
               </div>
@@ -254,7 +265,7 @@ function PetunjukPenggunaanContent() {
             <Link href="/" className="px-6 py-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition text-center">
               Kembali ke Beranda
             </Link>
-            <Link href="/map" className="px-6 py-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] transition-all shadow-md flex items-center justify-center gap-1.5">
+            <Link href="/map" className="px-6 py-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-1.5">
               Lihat Peta Interaktif <ChevronRight className="w-4 h-4" />
             </Link>
           </div>

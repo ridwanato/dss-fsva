@@ -20,7 +20,9 @@ export async function GET(req: NextRequest) {
         .from('geometries')
         .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
         .eq('nama_kabupaten', kabupaten)
-        .eq('level', level);
+        .eq('level', level)
+        .not('nama_desa', 'is', null)
+        .neq('nama_desa', '');
 
       if (geomError) throw geomError;
 

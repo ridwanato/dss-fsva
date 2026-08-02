@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
             kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, '');
           }
           
-          if (!kode_bps) continue;
+          if (!kode_bps || (level === 'kab_kota' && (!name || kode_bps.length <= 2))) continue;
           
           // CRITICAL FIX: Force geometry coordinates to be 2D (remove Z dimension if exists)
           if (feature.geometry && feature.geometry.coordinates) {
@@ -271,6 +271,7 @@ export async function POST(req: NextRequest) {
         let name = '';
         let kode_bps = '';
         let kecamatan = '';
+        let kode_kecamatan = '';
         
         // Extract name
         const nameNode = placemark.getElementsByTagName('name')[0];
@@ -298,6 +299,11 @@ export async function POST(req: NextRequest) {
                 const valueNode = dataNodes[j].getElementsByTagName('value')[0];
                 if (valueNode && valueNode.textContent) kecamatan = valueNode.textContent.trim();
               }
+              // Extract kode kecamatan BPS
+              if (nameAttrLower === 'kodekec' || nameAttrLower === 'kdkec' || nameAttrLower === 'kdpkec' || nameAttrLower === 'keccode' || nameAttrLower === 'kodekecamatan') {
+                const valueNode = dataNodes[j].getElementsByTagName('value')[0];
+                if (valueNode && valueNode.textContent) kode_kecamatan = valueNode.textContent.trim();
+              }
             }
           }
           
@@ -320,6 +326,11 @@ export async function POST(req: NextRequest) {
                 const textContent = simpleDataNodes[j].textContent;
                 if (textContent) kecamatan = textContent.trim();
               }
+              // Extract kode kecamatan BPS
+              if (nameAttrLower === 'kodekec' || nameAttrLower === 'kdkec' || nameAttrLower === 'kdpkec' || nameAttrLower === 'keccode' || nameAttrLower === 'kodekecamatan') {
+                const textContent = simpleDataNodes[j].textContent;
+                if (textContent) kode_kecamatan = textContent.trim();
+              }
             }
           }
         }
@@ -329,7 +340,12 @@ export async function POST(req: NextRequest) {
           kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
         }
         
-        if (!kode_bps) continue;
+        // Fallback kode_kecamatan dari kode_bps jika tidak ditemukan di KML
+        if (!kode_kecamatan && kode_bps && kode_bps.length >= 7) {
+          kode_kecamatan = kode_bps.substring(0, 7);
+        }
+        
+        if (!kode_bps || (level === 'kab_kota' && (!name || kode_bps.length <= 2))) continue;
 
         // Extract Coordinates (simplistic approach for Polygon)
         const polygonNodes = placemark.getElementsByTagName('Polygon');
@@ -360,6 +376,7 @@ export async function POST(req: NextRequest) {
             kode_bps,
             nama_desa: name,
             nama_kecamatan: kecamatan,
+            kode_kecamatan,
             wkt
           });
         }
@@ -381,11 +398,15 @@ export async function POST(req: NextRequest) {
         
         if (!error) {
           inserted++;
-          // Update nama_kecamatan in geometries table if it was extracted
-          if (feature.nama_kecamatan) {
+          // Update nama_kecamatan and kode_kecamatan in geometries if extracted from KML
+          const kmlUpdatePayload: any = {};
+          if (feature.nama_kecamatan) kmlUpdatePayload.nama_kecamatan = feature.nama_kecamatan;
+          if (feature.kode_kecamatan) kmlUpdatePayload.kode_kecamatan = feature.kode_kecamatan;
+
+          if (Object.keys(kmlUpdatePayload).length > 0) {
             await authClient
               .from('geometries')
-              .update({ nama_kecamatan: feature.nama_kecamatan })
+              .update(kmlUpdatePayload)
               .eq('kode_bps', feature.kode_bps)
               .eq('nama_kabupaten', kabupaten)
               .eq('level', level);

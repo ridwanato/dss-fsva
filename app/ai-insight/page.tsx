@@ -191,46 +191,49 @@ export default function AIInsightPage() {
   const filteredMaps = maps.filter(m => m.level === level);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#F5F3FF]/40 custom-scrollbar h-full w-full">
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-transparent custom-scrollbar h-full w-full">
       {/* no-print container for headers and configuration */}
       <div className="max-w-4xl mx-auto no-print">
         {/* Breadcrumb / Title */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-              <Sparkles className="w-6 h-6 text-amber-500 fill-amber-500/20" /> AI Insight FSVA
+              <span className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-2xs">
+                <Sparkles className="w-5 h-5 text-emerald-700 fill-emerald-700/20" />
+              </span>
+              <span>AI Insight FSVA</span>
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Analisis otomatis ketahanan pangan berbasis kecerdasan buatan Gemini AI & Caching Supabase.
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Analisis otomatis ketahanan pangan berbasis kecerdasan buatan Gemini AI &amp; Caching Supabase.
             </p>
           </div>
         </div>
 
         {/* Configuration Card */}
-        <div className="bg-white rounded-2xl border border-[rgba(109,94,245,0.12)] p-4 md:p-6 shadow-sm mb-6 flex flex-col gap-4">
+        <div className="glass-card bg-white/90 backdrop-blur-md rounded-3xl border border-emerald-100 p-4 md:p-6 shadow-lg mb-6 flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Level Selector */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
                 Tingkat Wilayah
               </label>
-              <div className="flex bg-[#F5F3FF] p-1 rounded-xl border border-[#E8E4FF]">
+              <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/80">
                 <button
                   onClick={() => setLevel('kab_kota')}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                     level === 'kab_kota'
-                      ? 'bg-[#6D5EF5] text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-emerald-700 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Kabupaten/Kota
                 </button>
                 <button
                   onClick={() => setLevel('provinsi')}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                     level === 'provinsi'
-                      ? 'bg-[#6D5EF5] text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-emerald-700 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Provinsi
@@ -358,20 +361,20 @@ export default function AIInsightPage() {
         <div className="max-w-4xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           
           {/* Header Action Row (no-print) */}
-          <div className="flex justify-between items-center bg-white rounded-xl border border-slate-100 p-3 shadow-xs no-print">
-            <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5 pl-2">
-              <FileText className="w-4 h-4 text-[#6D5EF5]" /> Laporan AI Insight FSVA
+          <div className="flex justify-between items-center glass-card bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-4 shadow-sm no-print">
+            <span className="text-xs md:text-sm font-bold text-slate-800 flex items-center gap-2 pl-1">
+              <FileText className="w-4 h-4 text-emerald-600" /> Laporan AI Insight FSVA
               {cachedInfo?.cached && (
-                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80">
                   ⚡ Cache Supabase (&lt; 100ms)
                 </span>
               )}
             </span>
             <button
               onClick={handlePrint}
-              className="bg-slate-900 hover:bg-slate-800 text-white py-1.5 px-4 rounded-lg font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-xs"
+              className="bg-emerald-800 hover:bg-emerald-900 text-white py-2 px-5 rounded-xl font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm"
             >
-              <Printer className="w-3.5 h-3.5" /> Cetak Laporan PDF
+              <Printer className="w-3.5 h-3.5 text-white" /> Cetak Laporan PDF
             </button>
           </div>
 

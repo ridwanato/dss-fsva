@@ -25,6 +25,7 @@ export default function Navbar() {
   const [petunjukDropdownOpen, setPetunjukDropdownOpen] = useState(true);
   const [savedKabDropdownOpen, setSavedKabDropdownOpen] = useState(true);
   const [savedProvDropdownOpen, setSavedProvDropdownOpen] = useState(true);
+  const [tentangDropdownOpen, setTentangDropdownOpen] = useState(true);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -55,7 +56,13 @@ export default function Navbar() {
       .then(res => res.json())
       .then(data => {
         if (data.success && data.mapDetails) {
-          setMaps(data.mapDetails);
+          // Sort by newest timestamp first so maps[0] is always the most recently saved map
+          const sorted = [...data.mapDetails].sort((a, b) => {
+            const ta = a.updated_at || a.created_at || '';
+            const tb = b.updated_at || b.created_at || '';
+            return tb.localeCompare(ta);
+          });
+          setMaps(sorted);
         }
       })
       .catch(console.error);
@@ -338,22 +345,6 @@ export default function Navbar() {
 
         {savedKabDropdownOpen && (
           <TreeContainer>
-            <TreeItem>
-              <button
-                onClick={() => {
-                  onItemClick && onItemClick();
-                  router.push('/map?level=kab_kota');
-                }}
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
-                  isSemuaPetaActive && activeLevel === 'kab_kota'
-                    ? 'text-white bg-emerald-800/40 border border-emerald-500/30'
-                    : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Semua Peta Kab/Kota
-              </button>
-            </TreeItem>
-
             {kabKotaMaps.length > 0 ? (
               kabKotaMaps.map((kab, i) => {
                 const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'kab_kota';
@@ -412,22 +403,6 @@ export default function Navbar() {
 
         {savedProvDropdownOpen && (
           <TreeContainer>
-            <TreeItem>
-              <button
-                onClick={() => {
-                  onItemClick && onItemClick();
-                  router.push('/map?level=provinsi');
-                }}
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer truncate ${
-                  isSemuaPetaActive && activeLevel === 'provinsi'
-                    ? 'text-white bg-emerald-800/40 border border-emerald-500/30'
-                    : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Semua Peta Provinsi
-              </button>
-            </TreeItem>
-
             {provinsiMaps.length > 0 ? (
               provinsiMaps.map((kab, i) => {
                 const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'provinsi';
@@ -468,7 +443,7 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* CATEGORY 5: PETUNJUK PENGGUNAAN & INFORMASI (Posisi Terbawah Sidebar) */}
+      {/* CATEGORY 5: PETUNJUK PENGGUNAAN */}
       <div className="flex flex-col">
         <button
           onClick={() => setPetunjukDropdownOpen(!petunjukDropdownOpen)}
@@ -519,17 +494,28 @@ export default function Navbar() {
                 Indikator FSVA
               </Link>
             </TreeItem>
-            <TreeItem>
-              <Link 
-                href="/metodologi-fsva" 
-                onClick={() => onItemClick && onItemClick()} 
-                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
-                  isActive('/metodologi-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
-                }`}
-              >
-                Metodologi FSVA
-              </Link>
-            </TreeItem>
+          </TreeContainer>
+        )}
+      </div>
+
+      {/* CATEGORY 6: TENTANG APLIKASI (Posisi Terbawah Sidebar) */}
+      <div className="flex flex-col">
+        <button
+          onClick={() => setTentangDropdownOpen(!tentangDropdownOpen)}
+          className="flex items-center justify-between px-2 py-1.5 text-xs font-black text-white hover:text-emerald-200 uppercase tracking-wider transition-colors cursor-pointer w-full text-left"
+        >
+          <span className="flex items-center gap-2.5">
+            <Info className="w-4 h-4 text-emerald-400 shrink-0" />
+            TENTANG APLIKASI
+          </span>
+          <ChevronDown 
+            className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200" 
+            style={{ transform: tentangDropdownOpen ? 'rotate(180deg)' : 'none' }} 
+          />
+        </button>
+
+        {tentangDropdownOpen && (
+          <TreeContainer>
             <TreeItem>
               <Link 
                 href="/tentang-fsva" 
@@ -539,6 +525,17 @@ export default function Navbar() {
                 }`}
               >
                 Tentang Aplikasi
+              </Link>
+            </TreeItem>
+            <TreeItem>
+              <Link 
+                href="/metodologi-fsva" 
+                onClick={() => onItemClick && onItemClick()} 
+                className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors truncate ${
+                  isActive('/metodologi-fsva') ? 'text-white font-bold bg-emerald-800/40 border border-emerald-500/30' : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/30'
+                }`}
+              >
+                Pernyataan Independensi dan Metodologi
               </Link>
             </TreeItem>
           </TreeContainer>

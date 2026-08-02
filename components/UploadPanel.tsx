@@ -183,11 +183,11 @@ export default function UploadPanel() {
     <div className="relative">
       
       {/* Selection Control Panel */}
-      <div className="mb-10 max-w-xl mx-auto glass-card p-6 rounded-3xl relative z-40 border border-[#6D5EF5]/15 shadow-[0_12px_30px_rgba(109,94,245,0.08)]">
-        <h2 className="text-center font-black text-[#1E1B4B] text-lg mb-4">Pengaturan Level & Wilayah Analisis</h2>
+      <div className="mb-10 max-w-xl mx-auto glass-card bg-white/90 backdrop-blur-md p-6 rounded-3xl relative z-40 border border-emerald-100 shadow-md">
+        <h2 className="text-center font-black text-slate-800 text-base md:text-lg mb-4">Pengaturan Level &amp; Wilayah Analisis</h2>
         
         {/* Toggle Level Peta */}
-        <div className="flex bg-[#F5F3FF] p-1.5 rounded-2xl mb-6 border border-[#E8E4FF]">
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-6 border border-slate-200/80">
           <button
             type="button"
             onClick={() => {
@@ -198,13 +198,14 @@ export default function UploadPanel() {
                 setKabQuery(firstKab);
               }
             }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer flex items-center justify-center gap-2 ${
               level === 'kab_kota'
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-[#046a38] text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            KABUPATEN / KOTA
+            <MapPin className="w-3.5 h-3.5" />
+            <span>KABUPATEN / KOTA</span>
           </button>
           <button
             type="button"
@@ -215,13 +216,14 @@ export default function UploadPanel() {
                 setProvQuery(wilayahData[0].provinsi);
               }
             }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer flex items-center justify-center gap-2 ${
               level === 'provinsi'
-                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-[#046a38] text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            PROVINSI
+            <MapPin className="w-3.5 h-3.5" />
+            <span>PROVINSI</span>
           </button>
         </div>
 
@@ -389,32 +391,32 @@ export default function UploadPanel() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-300 opacity-100">
         
         {/* Card 1: KML/KMZ / Shapefile */}
-        <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#F5F3FF]/80 border border-[#D5CFFF] shadow-[0_8px_25px_rgba(109,94,245,0.05)]">
-          <div className="absolute top-0 left-0 bg-[#6D5EF5] text-white font-black px-4 py-1.5 rounded-tl-2xl rounded-br-xl text-[10px] shadow-sm">
+        <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#f4faf6]/90 border border-emerald-200/80 shadow-xs">
+          <div className="absolute top-0 left-0 bg-[#046a38] text-white font-black px-4 py-1.5 rounded-tl-2xl rounded-br-xl text-[11px] shadow-xs">
             01
           </div>
           
           <div className="w-20 h-20 mb-5 relative">
-            <div className="absolute inset-0 bg-[#E8E4FF] rounded-2xl rotate-6 scale-90 transition-transform group-hover:rotate-12"></div>
-            <div className="absolute inset-0 bg-white shadow-md rounded-xl border border-[#D5CFFF] flex items-center justify-center -rotate-3 z-10 transition-transform group-hover:rotate-0">
-              <MapPin className="w-8 h-8 text-[#6D5EF5]" />
+            <div className="absolute inset-0 bg-emerald-100/80 rounded-2xl rotate-6 scale-90 transition-transform group-hover:rotate-12"></div>
+            <div className="absolute inset-0 bg-white shadow-md rounded-xl border border-emerald-200 flex items-center justify-center -rotate-3 z-10 transition-transform group-hover:rotate-0">
+              <MapPin className="w-8 h-8 text-[#046a38]" />
             </div>
-            <div className="absolute -top-2 -right-2 bg-white p-1.5 rounded-full shadow border border-[#E8E4FF] z-20 animate-bounce-slow">
-              <UploadCloud className="w-4 h-4 text-[#8B5CF6]" />
+            <div className="absolute -top-2 -right-2 bg-white p-1.5 rounded-full shadow border border-emerald-100 z-20">
+              <UploadCloud className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
 
-          <h3 className="font-extrabold text-[#1E1B4B] text-base mb-2 leading-tight">
+          <h3 className="font-extrabold text-slate-800 text-base mb-2 leading-tight">
             {level === 'provinsi' ? 'Upload Batas Kecamatan' : 'Upload Batas Desa'} <br/>
             <span className="text-xs font-bold text-slate-500">(ZIP/KML/KMZ)</span>
           </h3>
-          <p className="text-slate-500 text-[11px] mb-5 px-1 flex-grow leading-relaxed">
-            Upload file <code className="bg-[#EDE9FE] px-1 py-0.5 rounded text-[#7C3AED] text-[10px]">.zip</code> (SHP, DBF, SHX, PRJ) atau <code className="bg-[#EDE9FE] px-1 py-0.5 rounded text-[#7C3AED] text-[10px]">.kml/.kmz</code>. Pastikan terdapat atribut <code className="bg-[#EDE9FE] px-1 py-0.5 rounded text-[#7C3AED] text-[10px]">kode_bps</code>.
+          <p className="text-slate-600 text-[11px] mb-5 px-1 flex-grow leading-relaxed font-medium">
+            Upload file <code className="bg-emerald-100/60 px-1 py-0.5 rounded text-[#046a38] font-mono text-[10px]">.zip</code> (SHP, DBF, SHX, PRJ) atau <code className="bg-emerald-100/60 px-1 py-0.5 rounded text-[#046a38] font-mono text-[10px]">.kml/.kmz</code>. Pastikan terdapat atribut <code className="bg-emerald-100/60 px-1 py-0.5 rounded text-[#046a38] font-mono text-[10px]">kode_bps</code>.
           </p>
 
           <div className="w-full relative">
             <input type="file" accept=".kml,.kmz,.zip" onChange={handleUploadGeometry} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih File (ZIP/KML/KMZ)" />
-            <div className="w-full py-2.5 px-3 rounded-xl btn-secondary text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-[#6D5EF5] border-[#6D5EF5]/30 hover:border-[#6D5EF5]">
+            <div className="w-full py-2.5 px-3 rounded-xl bg-white text-emerald-700 border border-emerald-500/30 hover:border-emerald-600 hover:bg-emerald-50 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
               <UploadCloud className="w-4 h-4" /> Upload File Batas
             </div>
           </div>
@@ -457,23 +459,23 @@ export default function UploadPanel() {
         </div>
 
         {/* Card 2: XLSX */}
-        <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#E0F2FE]/80 border border-[#B9E0FF] shadow-[0_8px_25px_rgba(2,132,199,0.05)]">
-          <div className="absolute top-0 left-0 bg-[#0284C7] text-white font-black px-4 py-1.5 rounded-tl-2xl rounded-br-xl text-[10px] shadow-sm">
+        <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#f0fdfa]/90 border border-teal-200/80 shadow-xs">
+          <div className="absolute top-0 left-0 bg-teal-700 text-white font-black px-4 py-1.5 rounded-tl-2xl rounded-br-xl text-[11px] shadow-xs">
             02
           </div>
           
           <div className="w-20 h-20 mb-5 relative">
-            <div className="absolute inset-0 bg-[#E0F2FE] rounded-2xl -rotate-6 scale-90 transition-transform group-hover:-rotate-12"></div>
-            <div className="absolute inset-0 bg-white shadow-md rounded-xl border border-[#B9E0FF] flex items-center justify-center rotate-3 z-10 transition-transform group-hover:rotate-0">
-              <FileSpreadsheet className="w-8 h-8 text-[#0284C7]" />
+            <div className="absolute inset-0 bg-teal-100/80 rounded-2xl -rotate-6 scale-90 transition-transform group-hover:-rotate-12"></div>
+            <div className="absolute inset-0 bg-white shadow-md rounded-xl border border-teal-200 flex items-center justify-center rotate-3 z-10 transition-transform group-hover:rotate-0">
+              <FileSpreadsheet className="w-8 h-8 text-teal-700" />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-full shadow border border-[#E0F2FE] z-20">
-              <UploadCloud className="w-4 h-4 text-[#0284C7]" />
+            <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-full shadow border border-teal-100 z-20">
+              <UploadCloud className="w-4 h-4 text-teal-600" />
             </div>
           </div>
 
-          <h3 className="font-extrabold text-[#1E1B4B] text-base mb-2 leading-tight">Upload Data Indikator <br/><span className="text-xs font-bold text-slate-500">(XLSX)</span></h3>
-          <p className="text-slate-500 text-[11px] mb-4 px-1 flex-grow leading-relaxed">
+          <h3 className="font-extrabold text-slate-800 text-base mb-2 leading-tight">Upload Data Indikator <br/><span className="text-xs font-bold text-slate-500">(XLSX)</span></h3>
+          <p className="text-slate-600 text-[11px] mb-4 px-1 flex-grow leading-relaxed font-medium">
             {level === 'provinsi' 
               ? 'Download Form Validasi Data Provinsi, isi sheet 0.1 s.d. 0.6, lalu upload.' 
               : 'Download template XLSX kabupaten, isi data indikator desa, lalu upload.'}
@@ -481,13 +483,13 @@ export default function UploadPanel() {
 
           <div className="w-full relative mb-3">
             <input type="file" accept=".xlsx" onChange={handleUploadData} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih XLSX" />
-            <div className="w-full py-2.5 px-3 rounded-xl btn-secondary text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-[#0284C7] border-[#0284C7]/30 hover:border-[#0284C7]">
+            <div className="w-full py-2.5 px-3 rounded-xl bg-white text-teal-700 border border-teal-500/30 hover:border-teal-600 hover:bg-teal-50 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
               <UploadCloud className="w-4 h-4" /> Upload XLSX
             </div>
           </div>
           <a 
             href={`/api/template?level=${level}`} 
-            className="text-[#0284C7] text-[11px] font-bold hover:underline flex items-center gap-1 transition-colors hover:text-[#0369A1]"
+            className="text-teal-700 text-[11px] font-extrabold hover:underline flex items-center gap-1 transition-colors hover:text-teal-900"
           >
             <Download className="w-3.5 h-3.5" /> Download Template XLSX
           </a>
@@ -524,33 +526,33 @@ export default function UploadPanel() {
         </div>
 
         {/* Card 3: Calculate */}
-        <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#FFF0F5]/80 border border-[#FFCCD9] shadow-[0_8px_25px_rgba(219,39,119,0.05)]">
-          <div className="absolute top-0 left-0 bg-[#DB2777] text-white font-black px-4 py-1.5 rounded-tl-2xl rounded-br-xl text-[10px] shadow-sm">
+        <div className="relative rounded-3xl p-6 pt-8 flex flex-col items-center text-center group glass-card-hover bg-[#fefce8]/90 border border-amber-200/80 shadow-xs">
+          <div className="absolute top-0 left-0 bg-[#046a38] text-white font-black px-4 py-1.5 rounded-tl-2xl rounded-br-xl text-[11px] shadow-xs">
             03
           </div>
           
           <div className="w-20 h-20 mb-5 relative">
-            <div className="absolute inset-0 bg-[#FFF0F5] rounded-2xl rotate-3 scale-90 transition-transform group-hover:-rotate-6"></div>
-            <div className="absolute inset-0 bg-white shadow-md rounded-xl border border-[#FFCCD9] flex items-center justify-center -rotate-3 z-10 transition-transform group-hover:rotate-0">
-              <PieChart className="w-8 h-8 text-[#DB2777]" />
+            <div className="absolute inset-0 bg-amber-100/80 rounded-2xl rotate-3 scale-90 transition-transform group-hover:-rotate-6"></div>
+            <div className="absolute inset-0 bg-white shadow-md rounded-xl border border-amber-200 flex items-center justify-center -rotate-3 z-10 transition-transform group-hover:rotate-0">
+              <PieChart className="w-8 h-8 text-[#046a38]" />
             </div>
-            <div className="absolute -bottom-2 -left-2 bg-white p-1.5 rounded-full shadow border border-[#FFF0F5] z-20">
-              <CheckCircle2 className="w-4 h-4 text-[#DB2777]" />
+            <div className="absolute -bottom-2 -left-2 bg-white p-1.5 rounded-full shadow border border-amber-100 z-20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
 
-          <h3 className="font-extrabold text-[#1E1B4B] text-base mb-2 leading-tight">Kalkulasi / Analisis <br/><span className="text-xs font-bold text-slate-500">FSVA</span></h3>
-          <p className="text-slate-500 text-[11px] mb-5 px-1 flex-grow leading-relaxed">
+          <h3 className="font-extrabold text-slate-800 text-base mb-2 leading-tight">Kalkulasi / Analisis <br/><span className="text-xs font-bold text-slate-500">FSVA</span></h3>
+          <p className="text-slate-600 text-[11px] mb-5 px-1 flex-grow leading-relaxed font-medium">
             Jalankan pipeline algoritma FSVA berdasarkan juknis Bapanas tingkat {level === 'provinsi' ? 'Provinsi' : 'Kabupaten/Kota'} untuk data tahun {uploadedYear || 'kalkulasi'}.
           </p>
 
           <button 
             onClick={handleCalculate}
             disabled={loading}
-            className="w-full py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed text-xs transition-all text-white bg-gradient-to-r from-[#DB2777] to-[#EC4899] hover:from-[#C2185B] hover:to-[#DB2777] hover:scale-[1.02] shadow-[0_4px_10px_rgba(219,39,119,0.1)] hover:shadow-[0_6px_15px_rgba(219,39,119,0.2)] cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl font-extrabold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs transition-all text-white bg-[#046a38] hover:bg-[#034423] hover:scale-[1.01] shadow-md cursor-pointer"
           >
-            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-            Hitung FSVA Sekarang
+            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+            <span>Hitung FSVA Sekarang</span>
           </button>
 
           {/* Feedback */}

@@ -219,14 +219,11 @@ function FontToolbar({
             const filteredMaps = fetchedDetails.filter((d: any) => d.level === level).map((d: any) => d.nama_kabupaten);
             setMaps(filteredMaps);
 
-            // Auto-select map if none is selected
+            // Auto-select map if none is selected — use the most recent map (by index 0 since API returns newest first)
             if (!kabupaten && filteredMaps.length > 0) {
               const lastActive = localStorage.getItem(`last_active_map_${level}`);
-              if (lastActive && filteredMaps.includes(lastActive)) {
-                router.replace(`/map?kabupaten=${encodeURIComponent(lastActive)}&level=${level}`);
-              } else {
-                router.replace(`/map?kabupaten=${encodeURIComponent(filteredMaps[0])}&level=${level}`);
-              }
+              const target = (lastActive && filteredMaps.includes(lastActive)) ? lastActive : filteredMaps[0];
+              router.replace(`/map?kabupaten=${encodeURIComponent(target)}&level=${level}`);
             }
           }
         })
@@ -240,31 +237,56 @@ function FontToolbar({
       }
     }, [kabupaten, level]);
 
-    // Fetch GeoJSON with dynamic year based on the selected map
+    // GeoJSON fetch — waits until kabupaten AND mapDetails are both ready.
+    // When kabupaten is set: blocks until mapDetails is loaded (to get correct year).
+    // When kabupaten is empty: skips fetch entirely (no map selected).
+    // Uses AbortController to cancel stale requests on re-run.
     useEffect(() => {
-      let year = 2025;
-      if (kabupaten && mapDetails.length > 0) {
-        const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
-        if (detail) {
-          year = detail.tahun;
-        }
+      // Never fetch if no specific map is selected
+      if (!kabupaten) {
+        setLoading(false);
+        setGeoData(null);
+        return;
       }
+      // If mapDetails not loaded yet, wait for next run when it arrives
+      if (mapDetails.length === 0) {
+        setLoading(true);
+        return;
+      }
+
+      const abortController = new AbortController();
+      
+      // Resolve year from mapDetails synchronously (no extra state needed)
+      const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
+      const year = detail?.tahun || 2025;
       setSelectedYear(year);
 
-      let url = `/api/geojson?tahun=${year}&level=${level}`;
-      if (kabupaten) url += `&kabupaten=${encodeURIComponent(kabupaten)}`;
+      const url = `/api/geojson?tahun=${year}&level=${level}&kabupaten=${encodeURIComponent(kabupaten)}`;
       
       setLoading(true);
-      fetch(url)
-        .then(res => res.json())
+      fetch(url, { signal: abortController.signal })
+        .then(res => {
+          if (!res.ok) throw new Error(`GeoJSON API error: ${res.status} ${res.statusText}`);
+          return res.json();
+        })
         .then(data => {
-          setGeoData(data);
+          // Validate that we got a proper GeoJSON FeatureCollection
+          if (data && data.type === 'FeatureCollection') {
+            setGeoData(data);
+          } else {
+            console.error('Invalid GeoJSON response:', data);
+            setGeoData({ type: 'FeatureCollection', features: [] });
+          }
           setLoading(false);
         })
         .catch(err => {
-          console.error(err);
+          if (err.name === 'AbortError') return;
+          console.error('GeoJSON fetch error:', err);
+          setGeoData({ type: 'FeatureCollection', features: [] });
           setLoading(false);
         });
+
+      return () => abortController.abort();
     }, [kabupaten, level, mapDetails]);
 
     // Re-synchronize printConfig dynamically when map or year changes
@@ -742,7 +764,7 @@ function FontToolbar({
         setShowLabels={setShowLabels}
         level={level as any}
         onLevelChange={(lvl) => {
-          router.push(`/map?level=${lvl}`);
+          router.replace(`/map?level=${lvl}`);
         }}
       >
         {/* Dropdown Peta (di atas tombol) */}
@@ -751,18 +773,18 @@ function FontToolbar({
             Pilih Peta:
           </label>
           <select
-            value={kabupaten || 'semua'}
+            value={kabupaten || ''}
             onChange={(e) => {
               const val = e.target.value;
-              if (val === 'semua' || val === '') {
-                router.push(`/map?level=${level}`);
+              if (val === '') {
+                router.replace(`/map?level=${level}`);
               } else {
-                router.push(`/map?kabupaten=${encodeURIComponent(val)}&level=${level}`);
+                router.replace(`/map?kabupaten=${encodeURIComponent(val)}&level=${level}`);
               }
             }}
             className="w-full text-[10px] bg-white border border-slate-200 rounded-lg py-1 px-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none text-slate-800 font-extrabold cursor-pointer"
           >
-            <option value="semua">Semua Peta</option>
+            <option value="" disabled>— Pilih Peta —</option>
             {maps.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}

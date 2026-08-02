@@ -50,38 +50,17 @@
     border-color: var(--color-primary-light);
   }
 
-  .bg-app-gradient {
-    background: linear-gradient(135deg, #F5F3FF 0%, #EFEAFE 35%, #E9E1FF 100%);
-    position: relative;
-    overflow-x: hidden;
-  }
-  
-  .bg-app-gradient::before {
-    content: "";
-    position: fixed;
-    top: -20%;
-    right: -10%;
-    width: 60%;
-    height: 60%;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, rgba(255, 255, 255, 0) 70%);
-    pointer-events: none;
-    z-index: -1;
-  }
-  
-  .bg-app-gradient::after {
-    content: "";
-    position: fixed;
-    bottom: -10%;
-    left: -10%;
-    width: 50%;
-    height: 50%;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(20, 184, 166, 0.04) 0%, rgba(255, 255, 255, 0) 70%);
-    pointer-events: none;
-    z-index: -1;
-  }
 }
+
+/* Force master background image bg.png globally */
+body.bg-app-gradient,
+.bg-app-gradient {
+  background: url('/bg.png') no-repeat center center fixed !important;
+  background-size: cover !important;
+  position: relative;
+  overflow-x: hidden;
+}
+
 
 .maplibregl-ctrl-top-left {
   margin-top: 240px !important;

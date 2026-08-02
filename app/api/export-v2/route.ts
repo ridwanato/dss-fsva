@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       .from('raw_indicators')
       .select(`
         *,
-        geometries ( nama_kabupaten, nama_provinsi, level, kode_bps, kode_kemendagri, nama_kecamatan, nama_desa )
+        geometries ( nama_kabupaten, nama_provinsi, level, kode_bps, kode_kemendagri, kode_kecamatan, nama_kecamatan, nama_desa )
       `)
       .eq('tahun', tahun)
       .eq('user_id', userId)

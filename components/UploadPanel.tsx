@@ -125,10 +125,24 @@ export default function UploadPanel() {
       alert('Silakan pilih Kabupaten/Kota atau Provinsi terlebih dahulu.');
       return;
     }
+
+    const file = e.target.files[0];
+    const MAX_SIZE_BYTES = 4.5 * 1024 * 1024; // 4.5 MB
+
+    if (file.size > MAX_SIZE_BYTES) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setGeomResult({
+        success: false,
+        isOverSize: true,
+        error: `Ukuran file ZIP (${fileSizeMB} MB) melebihi batas maksimal 4.5 MB.`
+      });
+      return;
+    }
+
     setLoading(true);
     setGeomResult(null);
     const formData = new FormData();
-    formData.append('file', e.target.files[0]);
+    formData.append('file', file);
     formData.append('kabupaten', targetMapName);
     formData.append('level', level);
 
@@ -457,45 +471,23 @@ export default function UploadPanel() {
             {level === 'provinsi' ? 'Upload Batas Kecamatan' : 'Upload Batas Desa'} <br/>
             <span className="text-xs font-bold text-slate-500">(ZIP/KML/KMZ)</span>
           </h3>
-          <p className="text-slate-600 text-[11px] mb-3 px-1 flex-grow leading-relaxed font-medium">
+          <p className="text-slate-600 text-[11px] mb-5 px-1 flex-grow leading-relaxed font-medium">
             Upload file <code className="bg-emerald-100/60 px-1 py-0.5 rounded text-[#046a38] font-mono text-[10px]">.zip</code> (SHP, DBF, SHX, PRJ) atau <code className="bg-emerald-100/60 px-1 py-0.5 rounded text-[#046a38] font-mono text-[10px]">.kml/.kmz</code>. Pastikan terdapat atribut <code className="bg-emerald-100/60 px-1 py-0.5 rounded text-[#046a38] font-mono text-[10px]">kode_bps</code>.
           </p>
-
-          <div className="w-full bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 mb-3 text-[10px] text-amber-900 leading-snug">
-            <span className="font-extrabold flex items-center gap-1 text-amber-950 mb-1">
-              ⚠️ Batas Maksimal Upload: 4.5 MB (Hanya 4 File Utama)
-            </span>
-            <p className="text-[10px] text-amber-800 font-medium">
-              Pilih &amp; ZIP <strong>hanya 4 file wajib dari 1 pasang peta saja</strong>: <code className="font-mono bg-amber-100 px-1 rounded text-amber-950 font-bold">.shp, .dbf, .shx, .prj</code> (hapus file duplikat/layer lain). Ukuran ZIP akan turun drastis ke <strong>~2.8 MB</strong>.
-            </p>
-          </div>
 
           <div className="w-full relative">
             <input type="file" accept=".kml,.kmz,.zip" onChange={handleUploadGeometry} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih File (ZIP/KML/KMZ)" />
             <div className="w-full py-2.5 px-3 rounded-xl bg-white text-emerald-700 border border-emerald-500/30 hover:border-emerald-600 hover:bg-emerald-50 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
-              <UploadCloud className="w-4 h-4" /> Upload File Batas (&lt; 4.5 MB)
+              <UploadCloud className="w-4 h-4" /> Upload File Batas
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => handleUploadFromPublic('BATAS KECAMATAN KOMPOSITCOBA.zip')}
-            className="w-full mt-2.5 py-2 px-3 rounded-xl bg-emerald-100/80 hover:bg-emerald-200 text-emerald-950 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all border border-emerald-300/80 cursor-pointer shadow-2xs"
-            title="Proses langsung file sampel dari folder public/ di server utama"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-            <span>Gunakan File Sampel Server (BATAS KECAMATAN KOMPOSITCOBA.zip)</span>
-          </button>
-          <p className="text-[10px] text-emerald-800/80 mt-1 px-1 text-center font-medium">
-            📍 Lokasi file: folder <code className="bg-emerald-200/60 px-1 py-0.5 rounded font-mono font-bold text-emerald-900">public/</code> pada root proyek web server (contoh: <code className="bg-emerald-200/60 px-1 py-0.5 rounded font-mono text-emerald-900">dss-fsva/public/</code>)
-          </p>
-
           {/* Feedback */}
           {geomResult && (
-            <div className="absolute top-[105%] left-0 w-full p-2.5 glass-card rounded-xl text-left z-30 animate-in fade-in slide-in-from-top-4">
+            <div className="absolute top-[105%] left-0 w-full p-3 glass-card rounded-xl text-left z-30 animate-in fade-in slide-in-from-top-4 shadow-lg border border-slate-200">
               <div className="flex items-start gap-1.5">
                 {geomResult.success ? <CheckCircle2 className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />}
-                <div>
+                <div className="w-full">
                   <p className={`text-xs font-bold ${geomResult.success ? 'text-[#14B8A6]' : 'text-red-600'}`}>
                     {geomResult.success 
                       ? (geomResult.desaCount !== undefined || geomResult.kecCount !== undefined)
@@ -505,6 +497,30 @@ export default function UploadPanel() {
                         : `Berhasil upload ${geomResult.features} wilayah.`
                       : `Gagal Upload: ${geomResult.error || 'Terjadi kesalahan'}`}
                   </p>
+
+                  {/* Special dynamic solution banner for oversize file (> 4.5 MB) */}
+                  {geomResult.isOverSize && (
+                    <div className="mt-2.5 pt-2 border-t border-amber-200/60 space-y-2">
+                      <p className="text-[10px] text-amber-900 font-medium leading-relaxed">
+                        💡 <strong>Solusi:</strong> Ekstrak ZIP Anda &amp; kompres ulang <strong>hanya 4 file utama saja</strong> (<code className="font-mono bg-amber-100 px-1 rounded text-amber-950 font-bold">.shp, .dbf, .shx, .prj</code>). Atau gunakan sampel server di bawah:
+                      </p>
+                      
+                      <button
+                        type="button"
+                        onClick={() => handleUploadFromPublic('BATAS KECAMATAN KOMPOSITCOBA.zip')}
+                        className="w-full py-2 px-3 rounded-xl bg-emerald-100/90 hover:bg-emerald-200 text-emerald-950 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all border border-emerald-300 cursor-pointer shadow-2xs"
+                        title="Proses langsung file sampel dari folder public/ di server utama"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                        <span>Gunakan File Sampel Server (BATAS KECAMATAN KOMPOSITCOBA.zip)</span>
+                      </button>
+
+                      <p className="text-[9px] text-emerald-800/80 text-center font-medium">
+                        📍 Lokasi file: folder <code className="bg-emerald-200/60 px-1 py-0.5 rounded font-mono font-bold text-emerald-900">public/</code> pada root proyek web server
+                      </p>
+                    </div>
+                  )}
+
                   {geomResult.errors?.length > 0 && (
                     <ul className="text-[10px] text-red-600 list-disc pl-3 mt-0.5 max-h-20 overflow-y-auto custom-scrollbar">
                       {geomResult.errors.map((e:string, i:number) => <li key={i}>{e}</li>)}
@@ -675,7 +691,7 @@ export default function UploadPanel() {
             <div>
               <p className="text-sm font-black text-slate-800">Sedang Memproses Data &amp; Geometri Wilayah...</p>
               <p className="text-[11px] font-medium text-slate-500 mt-1 leading-relaxed">
-                Estimasi waktu: <strong className="text-[#046a38] font-bold">~5 s.d. 15 detik</strong> (untuk hingga 1.000 batas desa/kelurahan). Mohon tunggu sejenak...
+                Estimasi waktu: <strong className="text-[#046a38] font-bold">~1 s.d. 2 menit</strong> (tergantung koneksi internet &amp; jumlah desa/kelurahan). Mohon tunggu sejenak...
               </p>
             </div>
           </div>

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       // 1. Ambil seluruh geometri untuk kabupaten/provinsi ini dari tabel geometries.
       const { data: geomData, error: geomError } = await supabase
         .from('geometries')
-        .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
+        .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom, tipe_wilayah')
         .eq('nama_kabupaten', kabupaten)
         .eq('level', level)
         .not('nama_desa', 'is', null)

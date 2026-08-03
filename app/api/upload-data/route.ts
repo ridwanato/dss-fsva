@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     // Ambil daftar geometri untuk kabupaten/provinsi tertentu saja untuk auto-matching
     const { data: geomData } = await authClient
       .from('geometries')
-      .select('kode_bps, nama_desa')
+      .select('kode_bps, nama_desa, kode_kemendagri')
       .eq('nama_kabupaten', kabupaten)
       .eq('level', level);
     const geomList = geomData || [];
@@ -361,17 +361,38 @@ export async function POST(req: NextRequest) {
         }
 
         let rawKodeBps = String(norm['kodedesabps'] || norm['kodebps'] || '').trim();
+        let rawKodeKemendagri = String(norm['kodekemendagri'] || norm['kodekmd'] || '').trim();
         let namaDesaExcel = String(norm['namadesakelurahan'] || norm['namadesa'] || '').trim();
         
-        if (!rawKodeBps && !namaDesaExcel) return null;
+        if (!rawKodeBps && !rawKodeKemendagri && !namaDesaExcel) return null;
 
-        let matchedGeom = geomList.find(g => g.kode_bps.replace(/\./g, '') === rawKodeBps.replace(/\./g, ''));
-        
+        let matchedGeom = null;
+
+        // 1. Coba match Kemendagri code (e.g. 35.07.01.2008 or 3507012008)
+        if (rawKodeKemendagri) {
+          const cleanKmd = rawKodeKemendagri.replace(/\./g, '');
+          matchedGeom = geomList.find(g => 
+            (g.kode_bps && g.kode_bps.replace(/\./g, '') === cleanKmd) ||
+            (g.kode_kemendagri && g.kode_kemendagri.replace(/\./g, '') === cleanKmd)
+          );
+        }
+
+        // 2. Coba match BPS code (e.g. 3507010001 or 35.07.01.2008)
+        if (!matchedGeom && rawKodeBps) {
+          const cleanBps = rawKodeBps.replace(/\./g, '');
+          matchedGeom = geomList.find(g => 
+            (g.kode_bps && g.kode_bps.replace(/\./g, '') === cleanBps) ||
+            (g.kode_kemendagri && g.kode_kemendagri.replace(/\./g, '') === cleanBps)
+          );
+        }
+
+        // 3. Coba match nama desa persis
         if (!matchedGeom && namaDesaExcel) {
           const cleanedExcelName = cleanName(namaDesaExcel);
           matchedGeom = geomList.find(g => cleanName(g.nama_desa) === cleanedExcelName);
         }
 
+        // 4. Coba fuzzy Levenshtein name match
         if (!matchedGeom && namaDesaExcel) {
           const cleanedExcelName = cleanName(namaDesaExcel);
           let bestMatch = null;
@@ -391,7 +412,8 @@ export async function POST(req: NextRequest) {
           if (bestMatch) matchedGeom = bestMatch;
         }
 
-        const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : rawKodeBps;
+        // PERLINDUNGAN FOREIGN KEY: Wajib menggunakan matchedGeom.kode_bps dari tabel geometries
+        const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : null;
         if (!finalKodeBps) return null;
         
         return {

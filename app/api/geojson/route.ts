@@ -15,11 +15,12 @@ export async function GET(req: NextRequest) {
     let features: string[] = [];
 
     if (kabupaten) {
+      const cleanKab = kabupaten.replace(/^(kabupaten|kota|kab\.?)\s+/i, '').trim();
       // 1. Ambil seluruh geometri untuk kabupaten/provinsi ini dari tabel geometries.
       const { data: geomData, error: geomError } = await supabase
         .from('geometries')
-        .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom, tipe_wilayah')
-        .eq('nama_kabupaten', kabupaten)
+        .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
+        .ilike('nama_kabupaten', `%${cleanKab}%`)
         .eq('level', level)
         .not('nama_desa', 'is', null)
         .neq('nama_desa', '');
@@ -63,8 +64,20 @@ export async function GET(req: NextRequest) {
           const fsvaRes = resMap[row.kode_bps] || {};
           const rawInd = rawMap[row.kode_bps] || {};
           
+          const code = row.kode_kemendagri || row.kode_bps || '';
+          const parts = code.split('.');
+          const clean = code.replace(/\./g, '').trim();
+          const nameLower = (row.nama_desa || '').toLowerCase();
+          
+          let derivedTipe = 'Desa';
+          if (level === 'provinsi') derivedTipe = 'Kecamatan';
+          else if (nameLower.startsWith('kel.') || nameLower.startsWith('kelurahan')) derivedTipe = 'Kelurahan';
+          else if (parts.length >= 4 && parts[3].startsWith('1')) derivedTipe = 'Kelurahan';
+          else if (clean.length === 10 && clean.substring(6, 7) === '1') derivedTipe = 'Kelurahan';
+
           const properties = {
             ...geoProps,
+            tipe_wilayah: derivedTipe,
             kode_kecamatan: row.kode_kecamatan || (row.kode_bps && String(row.kode_bps).length >= 7 ? String(row.kode_bps).substring(0, 7) : ''),
             tahun: fsvaRes.tahun || tahun,
             prioritas: fsvaRes.prioritas || null,

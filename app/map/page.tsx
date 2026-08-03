@@ -151,7 +151,8 @@ function FontToolbar({
       govName: 'PEMERINTAH\n' + (kabupaten ? kabupaten.toUpperCase() : 'DAERAH'),
       title: `FSVA ${kabupaten ? kabupaten.toUpperCase() : 'DAERAH'}\nTAHUN 2025`,
       sources: '1. Data Penduduk (DKB), DISDUKCAPIL, 2024.\n2. Data PPH Konsumsi, BAPANAS, 2024.\n3. Data CPPD, DKPP, 2024.\n4. Data DTSEN, Dinas Sosial, 2024.\n5. Data PoU, BAPANAS, 2024.\n6. Susenas BPS, Podes, SKI, 2024.\n7. Harga Komoditas, Disperindag, 2024.\n8. Batas Administrasi BPS & BIG.',
-      footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`
+      footer: `Disusun oleh:\nTIM PENYUSUN PETA KETAHANAN DAN KERENTANAN PANGAN TAHUN 2025\nBIDANG KETAHANAN PANGAN\nDINAS KETAHANAN PANGAN DAN PERTANIAN ${kabupaten ? kabupaten.toUpperCase() : ''}`,
+      mapLabelFontSize: 8.5
     });
 
     const [fontStyles, setFontStyles] = useState<Record<string, FontStyle>>({
@@ -431,8 +432,8 @@ function FontToolbar({
         const priorities = isStunting ? [1,2,3,4] : [1,2,3,4,5,6];
 
         const PRIORITY_COLORS: Record<number, string> = isStunting
-          ? { 1:'#FF0000', 2:'#FF8C00', 3:'#FFD700', 4:'#92D050' }
-          : { 1:'#C00000', 2:'#FF0000', 3:'#FF8C00', 4:'#FFD700', 5:'#92D050', 6:'#FFFFFF' };
+          ? { 1:'#6e1f1f', 2:'#f4a1a7', 3:'#c9e077', 4:'#3b703b' }
+          : { 1:'#6e1f1f', 2:'#e85961', 3:'#f4a1a7', 4:'#c9e077', 5:'#94c945', 6:'#3b703b' };
         const PRIORITY_LABELS_MAP: Record<number, string> = isStunting
           ? { 1:'Sangat Rentan (≥40%)', 2:'Rentan (30–<40%)', 3:'Agak Rentan (20–<30%)', 4:'Tidak Rentan (<20%)' }
           : { 1:'Sangat Rawan Pangan', 2:'Rawan Pangan', 3:'Agak Rawan Pangan', 4:'Cukup Tahan Pangan', 5:'Tahan Pangan', 6:'Sangat Tahan Pangan' };
@@ -929,6 +930,28 @@ function FontToolbar({
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Logo Bapanas (Kanan)</label>
                   <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, 'bapanas')} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" />
+                </div>
+              </div>
+              
+               <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Ukuran Huruf Nama Desa / Kelurahan / Kecamatan di Peta</label>
+                <div className="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-gray-300">
+                  <input
+                    type="number"
+                    min={6}
+                    max={30}
+                    step={0.5}
+                    value={printConfig.mapLabelFontSize || 8.5}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 8.5;
+                      setPrintConfig(prev => ({ ...prev, mapLabelFontSize: val }));
+                      if (mapInstance && mapInstance.getLayer('fsva-labels')) {
+                        mapInstance.setLayoutProperty('fsva-labels', 'text-size', val);
+                      }
+                    }}
+                    className="w-20 text-sm border border-gray-300 rounded-md p-1.5 font-bold text-gray-800 text-center focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <span className="text-xs text-gray-500 font-medium">pt (Standar: 8.5 pt. Ubah angka ini untuk memperbesar/memperkecil teks nama wilayah di peta)</span>
                 </div>
               </div>
               

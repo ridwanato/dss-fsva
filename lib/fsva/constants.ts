@@ -58,7 +58,7 @@ export const COMPOSITE_CUTOFF_PROV = {
 // breaks: batas antara P1-P2, P2-P3, P3-P4, P4-P5, P5-P6
 // inverse: true = nilai BESAR = lebih BURUK (rentan)
 export const INDICATOR_RANGES = {
-  ncpr:     { breaks: [0.50, 0.75, 1.00, 1.25, 1.50], inverse: true,  min: 0,  max: 10 },
+  ncpr:     { breaks: [0.50, 0.75, 1.00, 1.25, 1.50], inverse: false, min: 0,  max: 10 },
   energy:   { breaks: [70,   80,   90,   100,  110],  inverse: false, min: 50, max: 120 },
   protein:  { breaks: [70,   80,   90,   100,  110],  inverse: false, min: 28, max: 120 },
   cadangan: { breaks: [0.25, 0.375, 0.50, 0.625, 0.75], inverse: false, min: 0,  max: 3.5 },
@@ -75,7 +75,7 @@ export const INDICATOR_RANGES = {
 
 // Range indikator individu tingkat provinsi (12 Indikator)
 export const INDICATOR_RANGES_PROV = {
-  ncpr:        { breaks: [0.50, 0.75, 1.00, 1.25, 1.50], inverse: true,  min: 0,  max: 10 },
+  ncpr:        { breaks: [0.50, 0.75, 1.00, 1.25, 1.50], inverse: false, min: 0,  max: 10 },
   energy:      { breaks: [70,   80,   90,   100,  110],  inverse: false, min: 50, max: 120 },
   protein:     { breaks: [70,   80,   90,   100,  110],  inverse: false, min: 28, max: 120 },
   cadangan:    { breaks: [0.25, 0.375, 0.50, 0.625, 0.75], inverse: false, min: 0,  max: 3.5 },

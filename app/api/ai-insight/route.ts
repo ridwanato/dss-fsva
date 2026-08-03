@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // 1. Fetch geometries to map BPS codes to names (using case-insensitive ilike)
     const { data: geomData, error: geomError } = await supabase
       .from('geometries')
-      .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri, tipe_wilayah')
+      .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri')
       .ilike('nama_kabupaten', kabupaten)
       .eq('level', level);
 
@@ -36,22 +36,20 @@ export async function GET(req: NextRequest) {
 
     if (geomData) {
       geomData.forEach(g => {
-        let tipe = g.tipe_wilayah;
-        if (!tipe) {
-          if (level === 'provinsi') tipe = 'Kecamatan';
-          else {
-            const code = g.kode_kemendagri || g.kode_bps || '';
-            const parts = code.split('.');
-            const clean = code.replace(/\./g, '').trim();
-            const nameLower = (g.nama_desa || '').toLowerCase();
-            
-            if (nameLower.startsWith('kel.') || nameLower.startsWith('kelurahan')) tipe = 'Kelurahan';
-            else if (nameLower.startsWith('desa')) tipe = 'Desa';
-            else if (parts.length >= 4 && parts[3].startsWith('1')) tipe = 'Kelurahan';
-            else if (parts.length >= 4 && parts[3].startsWith('2')) tipe = 'Desa';
-            else if (clean.length === 10 && clean.substring(6, 7) === '1') tipe = 'Kelurahan';
-            else tipe = 'Desa';
-          }
+        let tipe = 'Desa';
+        if (level === 'provinsi') tipe = 'Kecamatan';
+        else {
+          const code = g.kode_kemendagri || g.kode_bps || '';
+          const parts = code.split('.');
+          const clean = code.replace(/\./g, '').trim();
+          const nameLower = (g.nama_desa || '').toLowerCase();
+          
+          if (nameLower.startsWith('kel.') || nameLower.startsWith('kelurahan')) tipe = 'Kelurahan';
+          else if (nameLower.startsWith('desa')) tipe = 'Desa';
+          else if (parts.length >= 4 && parts[3].startsWith('1')) tipe = 'Kelurahan';
+          else if (parts.length >= 4 && parts[3].startsWith('2')) tipe = 'Desa';
+          else if (clean.length === 10 && clean.substring(6, 7) === '1') tipe = 'Kelurahan';
+          else tipe = 'Desa';
         }
         if (tipe === 'Kelurahan') totalKelurahan++;
         else if (tipe === 'Desa') totalDesa++;

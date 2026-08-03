@@ -296,7 +296,6 @@ export async function POST(req: NextRequest) {
               if (feature.nama_kecamatan) updatePayload.nama_kecamatan = feature.nama_kecamatan;
               if (feature.kode_kemendagri) updatePayload.kode_kemendagri = feature.kode_kemendagri;
               if (feature.kode_kecamatan) updatePayload.kode_kecamatan = feature.kode_kecamatan;
-              if (feature.tipe_wilayah) updatePayload.tipe_wilayah = feature.tipe_wilayah;
 
               if (Object.keys(updatePayload).length > 0) {
                 await authClient

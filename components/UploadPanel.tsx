@@ -480,8 +480,8 @@ export default function UploadPanel() {
                     {geomResult.success 
                       ? (geomResult.desaCount !== undefined || geomResult.kecCount !== undefined)
                         ? level === 'kab_kota'
-                          ? `Berhasil mengunggah ${geomResult.desaCount || 0} wilayah desa/kelurahan (melewati ${geomResult.skippedKecCount || 0} wilayah kecamatan).`
-                          : `Berhasil mengunggah ${geomResult.kecCount || 0} wilayah kecamatan (melewati ${geomResult.skippedDesaCount || 0} wilayah desa/kelurahan).`
+                          ? `Berhasil mengunggah ${geomResult.features || ((geomResult.desaCount || 0) + (geomResult.kelurahanCount || 0))} wilayah (${geomResult.desaCount || 0} Desa, ${geomResult.kelurahanCount || 0} Kelurahan)${geomResult.skippedKecCount ? ` (melewati ${geomResult.skippedKecCount} wilayah kecamatan)` : ''}.`
+                          : `Berhasil mengunggah ${geomResult.kecCount || 0} wilayah kecamatan${geomResult.skippedDesaCount ? ` (melewati ${geomResult.skippedDesaCount} wilayah desa/kelurahan)` : ''}.`
                         : `Berhasil upload ${geomResult.features} wilayah.`
                       : `Gagal Upload: ${geomResult.error || 'Terjadi kesalahan'}`}
                   </p>

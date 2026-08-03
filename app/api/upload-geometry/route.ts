@@ -281,10 +281,18 @@ export async function POST(req: NextRequest) {
         );
       }
       
+      let realDesaCount = 0;
+      let realKelurahanCount = 0;
+      for (const feat of uniqueFeatures) {
+        if (feat.tipe_wilayah === 'Kelurahan') realKelurahanCount++;
+        else realDesaCount++;
+      }
+
       return NextResponse.json({ 
         success: true, 
         features: inserted, 
-        desaCount: level === 'kab_kota' ? inserted : 0,
+        desaCount: realDesaCount,
+        kelurahanCount: realKelurahanCount,
         kecCount: level === 'provinsi' ? inserted : 0,
         skippedDesaCount: skippedDesaFeatures,
         skippedKecCount: skippedKecFeatures,

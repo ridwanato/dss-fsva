@@ -370,7 +370,7 @@ function FontToolbar({
     return `FSVA ${regionName} ${indicatorName}`.replace(/\s+/g, ' ').trim();
   };
 
-  const executePrint = async () => {
+  const executePrint = async (isHighRes: boolean = false) => {
     setShowPrintModal(false);
     if (!mapInstance) return;
     setIsPrinting(true);
@@ -409,17 +409,21 @@ function FontToolbar({
           throw new Error('Map canvas not ready');
         }
 
-        // Resize to max 1200px wide — reduces 5–15 MB raw PNG to ~200 KB JPEG
-        const MAX_W = 1200;
-        const scale = Math.min(1, MAX_W / mapCanvas.width);
+        // Standard: max 1600px JPEG; High Resolution 4K: max 3840px PNG for crisp labels & crisp borders
+        const MAX_W = isHighRes ? 3840 : 1600;
+        const scale = isHighRes ? Math.max(1.5, MAX_W / mapCanvas.width) : Math.min(1, MAX_W / mapCanvas.width);
         const printW = Math.round(mapCanvas.width * scale);
         const printH = Math.round(mapCanvas.height * scale);
         const resized = document.createElement('canvas');
         resized.width = printW;
         resized.height = printH;
         const rCtx = resized.getContext('2d');
-        if (rCtx) rCtx.drawImage(mapCanvas, 0, 0, printW, printH);
-        const mapDataUrl = resized.toDataURL('image/jpeg', 0.92);
+        if (rCtx) {
+          rCtx.imageSmoothingEnabled = true;
+          rCtx.imageSmoothingQuality = 'high';
+          rCtx.drawImage(mapCanvas, 0, 0, printW, printH);
+        }
+        const mapDataUrl = isHighRes ? resized.toDataURL('image/png') : resized.toDataURL('image/jpeg', 0.95);
 
         // Build the print layout inline styles
         const indicatorName = getLayersForLevel(level as any).find(l => l.id === activeLayer)?.label || 'Komposit';
@@ -970,16 +974,23 @@ function FontToolbar({
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-wrap items-center justify-end gap-2.5">
               <button 
                 onClick={() => setShowPrintModal(false)}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition"
+                className="px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 transition cursor-pointer"
               >
                 Batal
               </button>
               <button 
-                onClick={executePrint}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition shadow-md flex items-center gap-2"
+                onClick={() => executePrint(true)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#E11D48] hover:bg-[#BE123C] active:scale-95 transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer text-center leading-tight border border-rose-700"
+                title="Hasilkan gambar peta resolusi tinggi 4K (3840px) tajam & tidak blur untuk wilayah luas. Membutuhkan waktu 2-4 detik."
+              >
+                <span>Cetak Peta ukuran besar<br className="hidden sm:inline" /> <span className="text-[10px] opacity-90 font-normal">(waktu download lebih lama)</span></span>
+              </button>
+              <button 
+                onClick={() => executePrint(false)}
+                className="px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-95 transition shadow-md flex items-center justify-center gap-2 cursor-pointer border border-blue-700"
               >
                 Lanjut Cetak PDF
               </button>

@@ -89,7 +89,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
         /* 2. If a map is selected and data exists, render the charts */
         fsvaData.length > 0 && (
           <div className="max-w-6xl mx-auto">
-            <DashboardCharts data={fsvaData} />
+            <DashboardCharts data={fsvaData} kabupaten={kabupaten} tahun={latestYear || 2025} />
           </div>
         )
       )}

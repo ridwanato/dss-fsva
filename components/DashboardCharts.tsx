@@ -1,12 +1,16 @@
 'use client';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { PRIORITY_LABELS, WEIGHTS } from '@/lib/fsva/constants';
+import { Download, FileSpreadsheet } from 'lucide-react';
+import { downloadFaktorBerpengaruhDocx } from '@/lib/docx-generator';
 
 interface DashboardChartsProps {
   data: any[];
+  kabupaten?: string;
+  tahun?: number | string;
 }
 
-export default function DashboardCharts({ data }: DashboardChartsProps) {
+export default function DashboardCharts({ data, kabupaten, tahun }: DashboardChartsProps) {
   // 1. Hitung Distribusi Prioritas (Pie Chart)
   const priorityCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   data.forEach(row => {
@@ -93,7 +97,25 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
     .sort((a, b) => b['Total Bobot'] - a['Total Bobot']);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+    <div className="flex flex-col gap-4">
+      {/* Action Header Row */}
+      {kabupaten && (
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 pt-2 pb-1 no-print">
+          <div>
+            <h2 className="text-xl font-extrabold text-[#1E1B4B]">Analisis Faktor Berpengaruh</h2>
+            <p className="text-xs text-slate-500 font-medium">Data sebaran prioritas dan indikator dominan per segmen</p>
+          </div>
+          <button
+            onClick={() => downloadFaktorBerpengaruhDocx(kabupaten, tahun || 2025, data)}
+            className="bg-[#10B981] hover:bg-[#059669] text-white py-2 px-5 rounded-xl font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm"
+            title="Unduh laporan analisis faktor berpengaruh per segmen dalam format Microsoft Word (.docx)"
+          >
+            <Download className="w-3.5 h-3.5 text-white" /> Download DOCX (Segmen 1-3)
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 pt-0">
       <div className="glass-card p-6 rounded-2xl">
         <h3 className="font-bold text-[#1E1B4B] mb-4">Distribusi Prioritas FSVA</h3>
         <div className="h-64">
@@ -161,6 +183,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

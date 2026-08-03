@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Printer, AlertTriangle, RefreshCw, ChevronRight, FileText, CheckCircle2, Database, Zap } from 'lucide-react';
+import { Sparkles, Printer, AlertTriangle, RefreshCw, ChevronRight, FileText, CheckCircle2, Database, Zap, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { downloadAiInsightDocx } from '@/lib/docx-generator';
 
 interface MapDetail {
   nama_kabupaten: string;
@@ -370,12 +371,25 @@ export default function AIInsightPage() {
                 </span>
               )}
             </span>
-            <button
-              onClick={handlePrint}
-              className="bg-emerald-800 hover:bg-emerald-900 text-white py-2 px-5 rounded-xl font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm"
-            >
-              <Printer className="w-3.5 h-3.5 text-white" /> Cetak Laporan PDF
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrint}
+                className="bg-emerald-800 hover:bg-emerald-900 text-white py-2 px-4 md:px-5 rounded-xl font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Printer className="w-3.5 h-3.5 text-white" /> Cetak Laporan PDF
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedMap && insight) {
+                    downloadAiInsightDocx(selectedMap.nama_kabupaten, selectedMap.tahun, insight);
+                  }
+                }}
+                className="bg-[#10B981] hover:bg-[#059669] text-white py-2 px-4 md:px-5 rounded-xl font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Unduh laporan lengkap dalam format Microsoft Word (.docx)"
+              >
+                <Download className="w-3.5 h-3.5 text-white" /> Download DOCX
+              </button>
+            </div>
           </div>
 
           {/* Actual Printable Report Card */}

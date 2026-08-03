@@ -107,6 +107,18 @@ export default function UploadPanel() {
     ? `${activeKabupaten} ${uploadedYear || 2025} v.2`
     : activeKabupaten;
 
+  const parseApiResponse = async (res: Response) => {
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await res.json();
+    }
+    const text = await res.text();
+    if (res.status === 413 || text.toLowerCase().includes('entity too large')) {
+      return { success: false, error: 'Ukuran file terlalu besar (413 Payload Too Large). Silakan kompres atau perkecil file ZIP.' };
+    }
+    return { success: false, error: text.substring(0, 200) || `Terjadi kesalahan server (${res.status})` };
+  };
+
   const handleUploadGeometry = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     if (!targetMapName) {
@@ -122,7 +134,7 @@ export default function UploadPanel() {
 
     try {
       const res = await fetch('/api/upload-geometry', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
       setGeomResult(data);
     } catch(err: any) {
       console.error(err);
@@ -153,7 +165,7 @@ export default function UploadPanel() {
       formData.append('level', level);
 
       const res = await fetch('/api/upload-geometry', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
       setGeomResult(data);
     } catch (err: any) {
       console.error(err);
@@ -178,7 +190,7 @@ export default function UploadPanel() {
 
     try {
       const res = await fetch('/api/upload-data', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
       setDataResult(data);
       if (data.success && data.tahun) {
         setUploadedYear(data.tahun);
@@ -208,7 +220,7 @@ export default function UploadPanel() {
           level
         }) 
       });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
       setCalcResult(data);
     } catch(err: any) {
       console.error(err);

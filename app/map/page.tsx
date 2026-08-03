@@ -409,9 +409,9 @@ function FontToolbar({
           throw new Error('Map canvas not ready');
         }
 
-        // Standard: max 1600px JPEG; High Resolution 4K: max 3840px PNG for crisp labels & crisp borders
-        const MAX_W = isHighRes ? 3840 : 1600;
-        const scale = isHighRes ? Math.max(1.5, MAX_W / mapCanvas.width) : Math.min(1, MAX_W / mapCanvas.width);
+        // Standard: max 1600px JPEG; High Resolution Ultra 8K (4-5 MB): max 6000px PNG for ultra-crisp labels & sharp vector borders
+        const MAX_W = isHighRes ? 6000 : 1600;
+        const scale = isHighRes ? Math.max(3.5, MAX_W / mapCanvas.width) : Math.min(1, MAX_W / mapCanvas.width);
         const printW = Math.round(mapCanvas.width * scale);
         const printH = Math.round(mapCanvas.height * scale);
         const resized = document.createElement('canvas');
@@ -984,7 +984,7 @@ function FontToolbar({
               <button 
                 onClick={() => executePrint(true)}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#E11D48] hover:bg-[#BE123C] active:scale-95 transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer text-center leading-tight border border-rose-700"
-                title="Hasilkan gambar peta resolusi tinggi 4K (3840px) tajam & tidak blur untuk wilayah luas. Membutuhkan waktu 2-4 detik."
+                title="Hasilkan gambar peta resolusi Ultra-HD 8K (6000px, ukuran file ~4-5 MB) super tajam & tidak blur untuk wilayah luas. Membutuhkan waktu 3-5 detik."
               >
                 <span>Cetak Peta ukuran besar<br className="hidden sm:inline" /> <span className="text-[10px] opacity-90 font-normal">(waktu download lebih lama)</span></span>
               </button>

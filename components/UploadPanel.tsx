@@ -114,6 +114,7 @@ export default function UploadPanel() {
       return;
     }
     setLoading(true);
+    setGeomResult(null);
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
     formData.append('kabupaten', targetMapName);
@@ -123,10 +124,43 @@ export default function UploadPanel() {
       const res = await fetch('/api/upload-geometry', { method: 'POST', body: formData });
       const data = await res.json();
       setGeomResult(data);
-    } catch(err) {
+    } catch(err: any) {
       console.error(err);
+      setGeomResult({ success: false, error: err.message || 'Terjadi kesalahan koneksi saat mengunggah file.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleUploadFromPublic = async (fileName: string) => {
+    if (!targetMapName) {
+      alert('Silakan pilih Kabupaten/Kota atau Provinsi terlebih dahulu.');
+      return;
+    }
+    setLoading(true);
+    setGeomResult(null);
+    try {
+      const response = await fetch(`/${encodeURIComponent(fileName)}`);
+      if (!response.ok) {
+        throw new Error(`File ${fileName} tidak ditemukan di folder public.`);
+      }
+      const blob = await response.blob();
+      const file = new File([blob], fileName, { type: 'application/zip' });
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('kabupaten', targetMapName);
+      formData.append('level', level);
+
+      const res = await fetch('/api/upload-geometry', { method: 'POST', body: formData });
+      const data = await res.json();
+      setGeomResult(data);
+    } catch (err: any) {
+      console.error(err);
+      setGeomResult({ success: false, error: err.message || 'Gagal memproses file dari folder public.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUploadData = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,10 +183,12 @@ export default function UploadPanel() {
       if (data.success && data.tahun) {
         setUploadedYear(data.tahun);
       }
-    } catch(err) {
+    } catch(err: any) {
       console.error(err);
+      setDataResult({ success: false, error: err.message || 'Terjadi kesalahan koneksi saat mengunggah file data.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCalculate = async () => {
@@ -161,6 +197,7 @@ export default function UploadPanel() {
       return;
     }
     setLoading(true);
+    setCalcResult(null);
     try {
       const res = await fetch('/api/calculate', { 
         method: 'POST',
@@ -173,10 +210,12 @@ export default function UploadPanel() {
       });
       const data = await res.json();
       setCalcResult(data);
-    } catch(err) {
+    } catch(err: any) {
       console.error(err);
+      setCalcResult({ success: false, error: err.message || 'Terjadi kesalahan koneksi saat melakukan kalkulasi.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -421,6 +460,16 @@ export default function UploadPanel() {
             </div>
           </div>
 
+          <button
+            type="button"
+            onClick={() => handleUploadFromPublic('BATAS KECAMATAN KOMPOSITCOBA.zip')}
+            className="w-full mt-2 py-1.5 px-3 rounded-xl bg-emerald-100/70 hover:bg-emerald-200/90 text-emerald-900 text-[10px] font-extrabold flex items-center justify-center gap-1.5 transition-all border border-emerald-300/60 cursor-pointer shadow-2xs"
+            title="Proses langsung file BATAS KECAMATAN KOMPOSITCOBA.zip di folder public"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            <span>Proses File di Folder public (BATAS KECAMATAN KOMPOSITCOBA.zip)</span>
+          </button>
+
           {/* Feedback */}
           {geomResult && (
             <div className="absolute top-[105%] left-0 w-full p-2.5 glass-card rounded-xl text-left z-30 animate-in fade-in slide-in-from-top-4">
@@ -434,7 +483,7 @@ export default function UploadPanel() {
                           ? `Berhasil mengunggah ${geomResult.desaCount || 0} wilayah desa/kelurahan (melewati ${geomResult.skippedKecCount || 0} wilayah kecamatan).`
                           : `Berhasil mengunggah ${geomResult.kecCount || 0} wilayah kecamatan (melewati ${geomResult.skippedDesaCount || 0} wilayah desa/kelurahan).`
                         : `Berhasil upload ${geomResult.features} wilayah.`
-                      : 'Gagal Upload'}
+                      : `Gagal Upload: ${geomResult.error || 'Terjadi kesalahan'}`}
                   </p>
                   {geomResult.errors?.length > 0 && (
                     <ul className="text-[10px] text-red-600 list-disc pl-3 mt-0.5 max-h-20 overflow-y-auto custom-scrollbar">
@@ -501,7 +550,7 @@ export default function UploadPanel() {
                 {dataResult.success ? <CheckCircle2 className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />}
                 <div>
                   <p className={`text-xs font-bold ${dataResult.success ? 'text-[#14B8A6]' : 'text-red-600'}`}>
-                    {dataResult.success ? `Berhasil menyimpan data ${dataResult.inserted} wilayah (Tahun: ${dataResult.tahun || uploadedYear}).` : 'Gagal Upload'}
+                    {dataResult.success ? `Berhasil menyimpan data ${dataResult.inserted} wilayah (Tahun: ${dataResult.tahun || uploadedYear}).` : `Gagal Upload: ${dataResult.error || 'Terjadi kesalahan'}`}
                   </p>
                   {dataResult.errors?.length > 0 && (
                     <ul className="text-[10px] text-red-600 list-disc pl-3 mt-0.5 max-h-20 overflow-y-auto custom-scrollbar">
@@ -598,10 +647,17 @@ export default function UploadPanel() {
       
       {/* Absolute Loading Backdrop */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/10 backdrop-blur-sm">
-          <div className="bg-white/95 border border-slate-100 px-6 py-4 rounded-2xl shadow-2xl text-slate-700 flex items-center gap-3 font-extrabold text-sm">
-            <Loader2 className="animate-spin text-[#6D5EF5] w-5 h-5" />
-            Sedang memproses...
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white/95 border border-emerald-100 p-6 rounded-3xl shadow-2xl text-slate-800 flex flex-col items-center max-w-sm text-center font-extrabold text-sm gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+              <Loader2 className="animate-spin text-[#046a38] w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-800">Sedang Memproses Data &amp; Geometri Wilayah...</p>
+              <p className="text-[11px] font-medium text-slate-500 mt-1 leading-relaxed">
+                Estimasi waktu: <strong className="text-[#046a38] font-bold">~5 s.d. 15 detik</strong> (untuk hingga 1.000 batas desa/kelurahan). Mohon tunggu sejenak...
+              </p>
+            </div>
           </div>
         </div>
       )}

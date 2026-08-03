@@ -21,6 +21,31 @@ function convertTo2D(coordinates: any): any {
   return coordinates.map(convertTo2D);
 }
 
+// Helper to detect administrative area type ('Desa' | 'Kelurahan' | 'Kecamatan')
+function detectTipeWilayah(kodeKemendagri: string, kodeBps: string, name: string, level: string, tipadm?: any): 'Desa' | 'Kelurahan' | 'Kecamatan' {
+  if (level === 'provinsi') return 'Kecamatan';
+  if (name.toLowerCase().startsWith('kel.') || name.toLowerCase().startsWith('kelurahan')) return 'Kelurahan';
+  if (name.toLowerCase().startsWith('desa')) return 'Desa';
+
+  if (tipadm === 2 || String(tipadm) === '2') return 'Kelurahan';
+  if (tipadm === 1 || String(tipadm) === '1') return 'Desa';
+
+  const code = kodeKemendagri || kodeBps || '';
+  const clean = code.replace(/\./g, '').trim();
+  const parts = code.split('.');
+
+  if (parts.length >= 4) {
+    if (parts[3].startsWith('1')) return 'Kelurahan';
+    if (parts[3].startsWith('2')) return 'Desa';
+  } else if (clean.length === 10) {
+    const villageDigit = clean.substring(6, 7);
+    if (villageDigit === '1') return 'Kelurahan';
+    if (villageDigit === '2') return 'Desa';
+  }
+
+  return 'Desa';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -181,6 +206,9 @@ export async function POST(req: NextRequest) {
           // Konversi GeoJSON geometry ke WKT menggunakan wellknown (sekarang dijamin 2D WKT)
           const wkt = wkx.stringify(feature.geometry);
           
+          // 6. Deteksi tipe wilayah ('Desa' | 'Kelurahan' | 'Kecamatan')
+          const tipe_wilayah = detectTipeWilayah(kode_kemendagri, kode_bps, name, level, feature.properties.TIPADM);
+
           if (wkt) {
             featuresToInsert.push({
               kode_bps,
@@ -188,6 +216,7 @@ export async function POST(req: NextRequest) {
               nama_kecamatan: kecamatan,
               kode_kemendagri,
               kode_kecamatan,
+              tipe_wilayah,
               wkt
             });
           }
@@ -205,6 +234,7 @@ export async function POST(req: NextRequest) {
           if (!existing.nama_kecamatan && feat.nama_kecamatan) existing.nama_kecamatan = feat.nama_kecamatan;
           if (!existing.kode_kemendagri && feat.kode_kemendagri) existing.kode_kemendagri = feat.kode_kemendagri;
           if (!existing.kode_kecamatan && feat.kode_kecamatan) existing.kode_kecamatan = feat.kode_kecamatan;
+          if (!existing.tipe_wilayah && feat.tipe_wilayah) existing.tipe_wilayah = feat.tipe_wilayah;
         }
       }
       const uniqueFeatures = Array.from(uniqueMap.values());
@@ -233,6 +263,7 @@ export async function POST(req: NextRequest) {
               if (feature.nama_kecamatan) updatePayload.nama_kecamatan = feature.nama_kecamatan;
               if (feature.kode_kemendagri) updatePayload.kode_kemendagri = feature.kode_kemendagri;
               if (feature.kode_kecamatan) updatePayload.kode_kecamatan = feature.kode_kecamatan;
+              if (feature.tipe_wilayah) updatePayload.tipe_wilayah = feature.tipe_wilayah;
 
               if (Object.keys(updatePayload).length > 0) {
                 await authClient

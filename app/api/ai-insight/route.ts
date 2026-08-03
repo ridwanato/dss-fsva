@@ -24,16 +24,38 @@ export async function GET(req: NextRequest) {
     // 1. Fetch geometries to map BPS codes to names (using case-insensitive ilike)
     const { data: geomData, error: geomError } = await supabase
       .from('geometries')
-      .select('kode_bps, nama_desa, nama_kecamatan')
+      .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri, tipe_wilayah')
       .ilike('nama_kabupaten', kabupaten)
       .eq('level', level);
 
     if (geomError) throw geomError;
 
-    const geomMap = new Map<string, { nama_desa: string; nama_kecamatan: string }>();
+    const geomMap = new Map<string, { nama_desa: string; nama_kecamatan: string; tipe_wilayah: string }>();
+    let totalKelurahan = 0;
+    let totalDesa = 0;
+
     if (geomData) {
       geomData.forEach(g => {
-        geomMap.set(g.kode_bps, { nama_desa: g.nama_desa, nama_kecamatan: g.nama_kecamatan });
+        let tipe = g.tipe_wilayah;
+        if (!tipe) {
+          if (level === 'provinsi') tipe = 'Kecamatan';
+          else {
+            const code = g.kode_kemendagri || g.kode_bps || '';
+            const parts = code.split('.');
+            const clean = code.replace(/\./g, '').trim();
+            const nameLower = (g.nama_desa || '').toLowerCase();
+            
+            if (nameLower.startsWith('kel.') || nameLower.startsWith('kelurahan')) tipe = 'Kelurahan';
+            else if (nameLower.startsWith('desa')) tipe = 'Desa';
+            else if (parts.length >= 4 && parts[3].startsWith('1')) tipe = 'Kelurahan';
+            else if (parts.length >= 4 && parts[3].startsWith('2')) tipe = 'Desa';
+            else if (clean.length === 10 && clean.substring(6, 7) === '1') tipe = 'Kelurahan';
+            else tipe = 'Desa';
+          }
+        }
+        if (tipe === 'Kelurahan') totalKelurahan++;
+        else if (tipe === 'Desa') totalDesa++;
+        geomMap.set(g.kode_bps, { nama_desa: g.nama_desa, nama_kecamatan: g.nama_kecamatan, tipe_wilayah: tipe });
       });
     }
 
@@ -66,12 +88,20 @@ export async function GET(req: NextRequest) {
       }
     });
 
+    let kelurahanRentanCount = 0;
+    let desaRentanCount = 0;
+
     const rentanWilayah = results
       .filter(r => r.prioritas >= 1 && r.prioritas <= 3)
       .map(r => {
         const geom = geomMap.get(r.kode_bps);
+        const tipe = geom?.tipe_wilayah || 'Desa';
+        if (tipe === 'Kelurahan') kelurahanRentanCount++;
+        else if (tipe === 'Desa') desaRentanCount++;
+
         return {
           nama: geom?.nama_desa || 'Tidak diketahui',
+          tipe_wilayah: tipe,
           induk: geom?.nama_kecamatan || '',
           prioritas: r.prioritas
         };
@@ -201,7 +231,7 @@ Tulis laporan dalam Bahasa Indonesia yang formal, objektif, profesional, dan kay
 Berikut adalah data statistik FSVA hasil agregasi untuk:
 - Wilayah: ${canonicalKabupaten} (${isProv ? 'Provinsi' : 'Kabupaten/Kota'})
 - Tahun Analisis: ${tahun} (menggunakan data basis tahun ${tahun - 1})
-- Total Unit Analisis (${levelLabel}): ${totalWilayah}
+- Total Unit Analisis (${levelLabel}): ${totalWilayah} ${!isProv ? `(terdiri dari ${totalDesa} Desa dan ${totalKelurahan} Kelurahan)` : ''}
 - Distribusi Prioritas Komposit (P1 = Sangat Rentan, P6 = Sangat Tahan):
   * Prioritas 1 (Sangat Rentan): ${priorityDist.P1} ${levelLabel}
   * Prioritas 2 (Rentan): ${priorityDist.P2} ${levelLabel}
@@ -209,13 +239,13 @@ Berikut adalah data statistik FSVA hasil agregasi untuk:
   * Prioritas 4 (Cukup Tahan): ${priorityDist.P4} ${levelLabel}
   * Prioritas 5 (Tahan): ${priorityDist.P5} ${levelLabel}
   * Prioritas 6 (Sangat Tahan): ${priorityDist.P6} ${levelLabel}
-- Jumlah Wilayah Rentan Pangan (Prioritas 1-3): ${rentanWilayah.length} dari ${totalWilayah}
-- Daftar Wilayah Rentan Pangan (Prioritas 1-3) Beserta Prioritasnya:
+- Jumlah Wilayah Rentan Pangan (Prioritas 1-3): ${rentanWilayah.length} dari ${totalWilayah} ${!isProv ? `(${kelurahanRentanCount} Kelurahan rentan, ${desaRentanCount} Desa rentan)` : ''}
+- Daftar Wilayah Rentan Pangan (Prioritas 1-3) Beserta Prioritas dan Tipe Wilayahnya (Desa/Kelurahan):
   ${JSON.stringify(rentanWilayah)}
 - Rata-rata Nilai Indikator (Nilai Mentah & Kelas Prioritas 1-6):
   ${JSON.stringify(avgMetrics)}
 
-(Catatan: Kelas prioritas indikator berskala 1 s/d 6, di mana angka yang semakin kecil berarti kerentanan semakin tinggi/semakin buruk, dan angka yang besar berarti kondisi semakin baik/tahan).
+(Catatan Penting: Pahami dan bedakan karakteristik wilayah Desa vs Kelurahan dalam pembahasan dan rekomendasi kebijakan jika relevan, contohnya Kelurahan cenderung memiliki mata pencaharian non-pertanian dan perkotaan, sedangkan Desa memiliki karakteristik agraris dan pedesaan).
 
 FORMAT LAPORAN HARUS MENGIKUTI STRUKTUR BERIKUT (Gunakan Markdown tebal untuk Judul Bab dan Poin-Poin Utama):
 

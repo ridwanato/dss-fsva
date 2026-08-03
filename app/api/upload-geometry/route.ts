@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
 import AdmZip from 'adm-zip';
 import { DOMParser } from '@xmldom/xmldom';
+import fs from 'fs';
+import path from 'path';
 
 if (typeof (globalThis as any).self === 'undefined') {
   (globalThis as any).self = globalThis;
@@ -46,15 +48,47 @@ function detectTipeWilayah(kodeKemendagri: string, kodeBps: string, name: string
   return 'Desa';
 }
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const kabupaten = formData.get('kabupaten') as string;
-    const level = (formData.get('level') as string) || 'kab_kota';
-    
-    if (!file || !kabupaten) {
-      return NextResponse.json({ success: false, error: 'No file uploaded or missing map name' }, { status: 400 });
+    let buffer: Buffer;
+    let fileName = '';
+    let kabupaten = '';
+    let level = 'kab_kota';
+
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
+      kabupaten = body.kabupaten;
+      level = body.level || 'kab_kota';
+      const publicFileName = body.publicFile;
+
+      if (!publicFileName || !kabupaten) {
+        return NextResponse.json({ success: false, error: 'Missing publicFile or map name' }, { status: 400 });
+      }
+
+      const publicFilePath = path.join(process.cwd(), 'public', publicFileName);
+      if (!fs.existsSync(publicFilePath)) {
+        return NextResponse.json({ success: false, error: `File ${publicFileName} tidak ditemukan di folder public` }, { status: 404 });
+      }
+
+      buffer = fs.readFileSync(publicFilePath);
+      fileName = publicFileName;
+    } else {
+      const formData = await req.formData();
+      const file = formData.get('file') as File;
+      kabupaten = formData.get('kabupaten') as string;
+      level = (formData.get('level') as string) || 'kab_kota';
+      
+      if (!file || !kabupaten) {
+        return NextResponse.json({ success: false, error: 'No file uploaded or missing map name' }, { status: 400 });
+      }
+
+      buffer = Buffer.from(await file.arrayBuffer());
+      fileName = file.name;
     }
 
     const { createClient } = await import('@/lib/supabase-server');
@@ -66,10 +100,9 @@ export async function POST(req: NextRequest) {
     }
     const userId = session.user.id;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     let kmlString = '';
 
-    if (file.name.toLowerCase().endsWith('.kmz')) {
+    if (fileName.toLowerCase().endsWith('.kmz')) {
       const zip = new AdmZip(buffer);
       const zipEntries = zip.getEntries();
       const kmlEntry = zipEntries.find(entry => entry.entryName.toLowerCase().endsWith('.kml'));
@@ -78,9 +111,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'No KML file found inside KMZ' }, { status: 400 });
       }
       kmlString = zip.readAsText(kmlEntry);
-    } else if (file.name.toLowerCase().endsWith('.kml')) {
+    } else if (fileName.toLowerCase().endsWith('.kml')) {
       kmlString = buffer.toString('utf-8');
-    } else if (file.name.toLowerCase().endsWith('.zip')) {
+    } else if (fileName.toLowerCase().endsWith('.zip')) {
       // Shapefile processing using shpjs
       const shpModule = await import('shpjs');
       const shp = shpModule.default;

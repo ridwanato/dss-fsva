@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { 
   UploadCloud, FileSpreadsheet, MapPin, Loader2, 
   ArrowRight, ArrowDown, Play, Download, PieChart, 
-  CheckCircle2, AlertCircle, ChevronDown, Search
+  CheckCircle2, AlertCircle, ChevronDown, Search, Lock, LogIn
 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase-client';
 
 export default function UploadPanel() {
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,9 @@ export default function UploadPanel() {
   const [dataResult, setDataResult] = useState<any>(null);
   const [calcResult, setCalcResult] = useState<any>(null);
   const [uploadedYear, setUploadedYear] = useState<number | null>(null);
+
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [checkResult, setCheckResult] = useState<{ exists: boolean; isOwner?: boolean; hasOwner?: boolean } | null>(null);
   const [overwriteMode, setOverwriteMode] = useState<'overwrite' | 'version_v2' | null>(null);
@@ -32,6 +36,17 @@ export default function UploadPanel() {
   const kabRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
     // Fetch wilayah data
     fetch('/api/wilayah')
       .then(res => res.json())
@@ -61,7 +76,10 @@ export default function UploadPanel() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const activeKabupaten = level === 'provinsi' ? selectedProvinsi : selectedKabupaten;
@@ -246,12 +264,42 @@ export default function UploadPanel() {
       {/* Selection Control Panel */}
       <div className="mb-10 max-w-xl mx-auto glass-card bg-white/90 backdrop-blur-md p-6 rounded-3xl relative z-40 border border-emerald-100 shadow-md">
         <h2 className="text-center font-black text-slate-800 text-base md:text-lg mb-4">Pengaturan Level &amp; Wilayah Analisis</h2>
+
+        {/* Professional Notice when user is NOT logged in */}
+        {!session && !authLoading && (
+          <div className="mb-6 p-4 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 text-amber-900 shadow-xs animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-100/80 text-amber-800 rounded-xl shrink-0 mt-0.5 border border-amber-200">
+                <Lock className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 mb-1 flex items-center gap-1.5">
+                  <span>Autentikasi Diperlukan</span>
+                </h4>
+                <p className="text-xs font-semibold text-amber-900 leading-relaxed">
+                  Silakan <strong className="font-extrabold text-amber-950">Masuk (Sign In)</strong> atau <strong className="font-extrabold text-amber-950">Daftar Akun</strong> terlebih dahulu jika Anda ingin memilih wilayah analisis, mengunggah data indikator, dan membuat peta FSVA.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#046a38] hover:bg-[#034423] text-white text-xs font-extrabold rounded-xl shadow-xs transition-all hover:scale-[1.02]"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Masuk / Daftar Akun Sekarang</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Toggle Level Peta */}
         <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-6 border border-slate-200/80">
           <button
             type="button"
+            disabled={!session}
             onClick={() => {
+              if (!session) return;
               setLevel('kab_kota');
               if (!selectedKabupaten && wilayahData.length > 0) {
                 const firstKab = wilayahData[0]?.kabupaten?.[0] || 'KAB PEGUNUNGAN BINTANG';
@@ -259,10 +307,12 @@ export default function UploadPanel() {
                 setKabQuery(firstKab);
               }
             }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer flex items-center justify-center gap-2 ${
-              level === 'kab_kota'
-                ? 'bg-[#046a38] text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900'
+            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none flex items-center justify-center gap-2 ${
+              !session
+                ? 'bg-slate-200/60 text-slate-400 cursor-not-allowed opacity-60'
+                : level === 'kab_kota'
+                  ? 'bg-[#046a38] text-white shadow-md cursor-pointer'
+                  : 'text-slate-600 hover:text-slate-900 cursor-pointer'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
@@ -270,17 +320,21 @@ export default function UploadPanel() {
           </button>
           <button
             type="button"
+            disabled={!session}
             onClick={() => {
+              if (!session) return;
               setLevel('provinsi');
               if (!selectedProvinsi && wilayahData.length > 0) {
                 setSelectedProvinsi(wilayahData[0].provinsi);
                 setProvQuery(wilayahData[0].provinsi);
               }
             }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none cursor-pointer flex items-center justify-center gap-2 ${
-              level === 'provinsi'
-                ? 'bg-[#046a38] text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900'
+            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wider transition-all select-none flex items-center justify-center gap-2 ${
+              !session
+                ? 'bg-slate-200/60 text-slate-400 cursor-not-allowed opacity-60'
+                : level === 'provinsi'
+                  ? 'bg-[#046a38] text-white shadow-md cursor-pointer'
+                  : 'text-slate-600 hover:text-slate-900 cursor-pointer'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
@@ -296,24 +350,31 @@ export default function UploadPanel() {
               <div className="relative">
                 <input
                   type="text"
+                  disabled={!session}
                   value={provQuery}
                   onFocus={() => {
+                    if (!session) return;
                     setShowProvDropdown(true);
                     setProvQuery('');
                   }}
                   onChange={(e) => {
+                    if (!session) return;
                     setProvQuery(e.target.value);
                     setSelectedProvinsi('');
                     setShowProvDropdown(true);
                   }}
-                  placeholder="Cari & Pilih Provinsi..."
-                  className="w-full pl-10 pr-4 py-3 border border-[rgba(109,94,245,0.2)] bg-white/60 rounded-xl focus:ring-[#6D5EF5] focus:border-[#6D5EF5] font-extrabold text-sm text-[#1E1B4B] transition-all"
+                  placeholder={session ? "Cari & Pilih Provinsi..." : "Silakan login terlebih dahulu..."}
+                  className={`w-full pl-10 pr-4 py-3 border font-extrabold text-sm transition-all rounded-xl ${
+                    session 
+                      ? 'border-[rgba(109,94,245,0.2)] bg-white/60 focus:ring-[#6D5EF5] focus:border-[#6D5EF5] text-[#1E1B4B]'
+                      : 'border-slate-200 bg-slate-100/80 text-slate-400 cursor-not-allowed opacity-60'
+                  }`}
                 />
                 <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
                 <ChevronDown className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
 
-              {showProvDropdown && filteredProvinsi.length > 0 && (
+              {session && showProvDropdown && filteredProvinsi.length > 0 && (
                 <div className="absolute left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-[100] custom-scrollbar animate-in fade-in slide-in-from-top-2">
                   {filteredProvinsi.map((p, idx) => (
                     <button
@@ -341,24 +402,31 @@ export default function UploadPanel() {
               <div className="relative">
                 <input
                   type="text"
+                  disabled={!session}
                   value={kabQuery}
                   onFocus={() => {
+                    if (!session) return;
                     setShowKabDropdown(true);
                     setKabQuery('');
                   }}
                   onChange={(e) => {
+                    if (!session) return;
                     setKabQuery(e.target.value);
                     setSelectedKabupaten('');
                     setShowKabDropdown(true);
                   }}
-                  placeholder="Cari & Pilih Kabupaten/Kota..."
-                  className="w-full pl-10 pr-4 py-3 border border-[rgba(109,94,245,0.2)] bg-white/60 rounded-xl focus:ring-[#6D5EF5] focus:border-[#6D5EF5] font-extrabold text-sm text-[#1E1B4B] transition-all"
+                  placeholder={session ? "Cari & Pilih Kabupaten/Kota..." : "Silakan login terlebih dahulu..."}
+                  className={`w-full pl-10 pr-4 py-3 border font-extrabold text-sm transition-all rounded-xl ${
+                    session 
+                      ? 'border-[rgba(109,94,245,0.2)] bg-white/60 focus:ring-[#6D5EF5] focus:border-[#6D5EF5] text-[#1E1B4B]'
+                      : 'border-slate-200 bg-slate-100/80 text-slate-400 cursor-not-allowed opacity-60'
+                  }`}
                 />
                 <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
                 <ChevronDown className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
 
-              {showKabDropdown && filteredKabupaten.length > 0 && (
+              {session && showKabDropdown && filteredKabupaten.length > 0 && (
                 <div className="absolute left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-[100] custom-scrollbar animate-in fade-in slide-in-from-top-2">
                   {filteredKabupaten.map((k: string, idx: number) => (
                     <button
@@ -388,7 +456,7 @@ export default function UploadPanel() {
         </div>
 
         {checkResult && checkResult.exists && activeKabupaten && (
-          <div className="mt-6 p-5 rounded-2xl border bg-amber-50/50 border-amber-200/60 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="mt-6 p-5 rounded-2xl border bg-amber-50/50 border-amber-200/60 shadow-xs animate-in fade-in slide-in-from-top-2">
             <div className="flex gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -400,17 +468,17 @@ export default function UploadPanel() {
                 </p>
                 
                 <div className="mt-4 space-y-2">
-                  {/* Option 1: Overwrite (Disabled if not owner) */}
-                  <label className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer text-xs font-bold ${
+                  {/* Option 1: Overwrite (Disabled if not owner or not logged in) */}
+                  <label className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all text-xs font-bold ${
                     overwriteMode === 'overwrite'
                       ? 'bg-amber-100/50 border-amber-300 text-amber-900 shadow-xs'
                       : 'border-transparent text-amber-600 hover:bg-amber-100/20'
-                  } ${!checkResult.isOwner ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  } ${(!checkResult.isOwner || !session) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                     <input
                       type="radio"
                       name="overwriteOption"
                       value="overwrite"
-                      disabled={!checkResult.isOwner}
+                      disabled={!checkResult.isOwner || !session}
                       checked={overwriteMode === 'overwrite'}
                       onChange={() => setOverwriteMode('overwrite')}
                       className="text-amber-600 focus:ring-amber-500"
@@ -422,15 +490,16 @@ export default function UploadPanel() {
                   </label>
 
                   {/* Option 2: Version v.2 */}
-                  <label className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer text-xs font-bold ${
+                  <label className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all text-xs font-bold ${
                     overwriteMode === 'version_v2'
                       ? 'bg-amber-100/50 border-amber-300 text-amber-900 shadow-xs'
                       : 'border-transparent text-amber-600 hover:bg-amber-100/20'
-                  }`}>
+                  } ${!session ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                     <input
                       type="radio"
                       name="overwriteOption"
                       value="version_v2"
+                      disabled={!session}
                       checked={overwriteMode === 'version_v2'}
                       onChange={() => setOverwriteMode('version_v2')}
                       className="text-amber-600 focus:ring-amber-500"
@@ -476,10 +545,25 @@ export default function UploadPanel() {
           </p>
 
           <div className="w-full relative">
-            <input type="file" accept=".kml,.kmz,.zip" onChange={handleUploadGeometry} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih File (ZIP/KML/KMZ)" />
-            <div className="w-full py-2.5 px-3 rounded-xl bg-white text-emerald-700 border border-emerald-500/30 hover:border-emerald-600 hover:bg-emerald-50 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
+            <input 
+              type="file" 
+              accept=".kml,.kmz,.zip" 
+              onChange={handleUploadGeometry} 
+              disabled={!session}
+              className={`absolute inset-0 w-full h-full opacity-0 z-10 ${session ? 'cursor-pointer' : 'cursor-not-allowed pointer-events-none'}`} 
+              title={session ? "Pilih File (ZIP/KML/KMZ)" : "Silakan masuk terlebih dahulu untuk mengunggah file"} 
+            />
+            <button
+              type="button"
+              disabled={!session}
+              className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs ${
+                session
+                  ? 'bg-white text-emerald-700 border border-emerald-500/30 hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer'
+                  : 'bg-slate-100/90 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+              }`}
+            >
               <UploadCloud className="w-4 h-4" /> Upload File Batas
-            </div>
+            </button>
           </div>
 
           {/* Feedback */}
@@ -507,8 +591,13 @@ export default function UploadPanel() {
                       
                       <button
                         type="button"
+                        disabled={!session}
                         onClick={() => handleUploadFromPublic('BATAS KECAMATAN KOMPOSITCOBA.zip')}
-                        className="w-full py-2 px-3 rounded-xl bg-emerald-100/90 hover:bg-emerald-200 text-emerald-950 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all border border-emerald-300 cursor-pointer shadow-2xs"
+                        className={`w-full py-2 px-3 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all border shadow-2xs ${
+                          session
+                            ? 'bg-emerald-100/90 hover:bg-emerald-200 text-emerald-950 border-emerald-300 cursor-pointer'
+                            : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                        }`}
                         title="Proses langsung file sampel dari folder public/ di server utama"
                       >
                         <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
@@ -567,10 +656,25 @@ export default function UploadPanel() {
           </p>
 
           <div className="w-full relative mb-3">
-            <input type="file" accept=".xlsx" onChange={handleUploadData} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih XLSX" />
-            <div className="w-full py-2.5 px-3 rounded-xl bg-white text-teal-700 border border-teal-500/30 hover:border-teal-600 hover:bg-teal-50 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
+            <input 
+              type="file" 
+              accept=".xlsx" 
+              onChange={handleUploadData} 
+              disabled={!session}
+              className={`absolute inset-0 w-full h-full opacity-0 z-10 ${session ? 'cursor-pointer' : 'cursor-not-allowed pointer-events-none'}`} 
+              title={session ? "Pilih XLSX" : "Silakan masuk terlebih dahulu untuk mengunggah file"} 
+            />
+            <button
+              type="button"
+              disabled={!session}
+              className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-2xs ${
+                session
+                  ? 'bg-white text-teal-700 border border-teal-500/30 hover:border-teal-600 hover:bg-teal-50 cursor-pointer'
+                  : 'bg-slate-100/90 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+              }`}
+            >
               <UploadCloud className="w-4 h-4" /> Upload XLSX
-            </div>
+            </button>
           </div>
           <a 
             href={`/api/template?level=${level}`} 
@@ -633,10 +737,14 @@ export default function UploadPanel() {
 
           <button 
             onClick={handleCalculate}
-            disabled={loading}
-            className="w-full py-3 px-4 rounded-xl font-extrabold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs transition-all text-white bg-[#046a38] hover:bg-[#034423] hover:scale-[1.01] shadow-md cursor-pointer"
+            disabled={loading || !session}
+            className={`w-full py-3 px-4 rounded-xl font-extrabold flex items-center justify-center gap-2 text-xs transition-all shadow-md ${
+              session
+                ? 'text-white bg-[#046a38] hover:bg-[#034423] hover:scale-[1.01] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
+                : 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed opacity-60'
+            }`}
           >
-            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Play className={`w-4 h-4 ${session ? 'fill-white' : 'fill-slate-400'}`} />}
             <span>Hitung FSVA Sekarang</span>
           </button>
 

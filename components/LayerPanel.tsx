@@ -46,6 +46,8 @@ interface LayerPanelProps {
   setShowLabels: (val: boolean) => void;
   showDistrictLabels?: boolean;
   setShowDistrictLabels?: (val: boolean) => void;
+  showDistrictBorders?: boolean;
+  setShowDistrictBorders?: (val: boolean) => void;
   children?: React.ReactNode;
   level: 'kab_kota' | 'provinsi';
   onLevelChange: (lvl: 'kab_kota' | 'provinsi') => void;
@@ -53,7 +55,8 @@ interface LayerPanelProps {
 
 export default function LayerPanel({
   activeLayer, setActiveLayer, opacity, setOpacity, 
-  showLabels, setShowLabels, showDistrictLabels = true, setShowDistrictLabels, children, level, onLevelChange
+  showLabels, setShowLabels, showDistrictLabels = true, setShowDistrictLabels,
+  showDistrictBorders = true, setShowDistrictBorders, children, level, onLevelChange
 }: LayerPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -193,6 +196,17 @@ export default function LayerPanel({
                 >
                   <span className={`absolute left-0.5 text-[5px] font-black text-white ${showDistrictLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
                   <span className={`absolute z-10 inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow transition-transform ${showDistrictLabels ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[7.5px] font-bold text-emerald-200/90 uppercase leading-none whitespace-nowrap">Batas Kec</span>
+                <button 
+                  onClick={() => setShowDistrictBorders && setShowDistrictBorders(!showDistrictBorders)}
+                  className={`relative inline-flex h-3.5 w-7 items-center rounded-full transition-colors ${showDistrictBorders ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
+                >
+                  <span className={`absolute left-0.5 text-[5px] font-black text-white ${showDistrictBorders ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute z-10 inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow transition-transform ${showDistrictBorders ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                 </button>
               </div>
             </div>
@@ -335,6 +349,17 @@ export default function LayerPanel({
                 >
                   <span className={`absolute left-0.5 text-[6px] font-black text-white ${showDistrictLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
                   <span className={`absolute z-10 inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showDistrictLabels ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] font-bold text-emerald-200/90 uppercase leading-none whitespace-nowrap">Batas Kec</span>
+                <button 
+                  onClick={() => setShowDistrictBorders && setShowDistrictBorders(!showDistrictBorders)}
+                  className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showDistrictBorders ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
+                >
+                  <span className={`absolute left-0.5 text-[6px] font-black text-white ${showDistrictBorders ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute z-10 inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showDistrictBorders ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </button>
               </div>
             </div>

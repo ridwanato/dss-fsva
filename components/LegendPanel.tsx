@@ -31,6 +31,18 @@ export default function LegendPanel({ activeLayer = 'prioritas' }: LegendPanelPr
                 </div>
               </div>
             ))}
+            
+            {/* Batas Wilayah Legend */}
+            <div className="pt-2.5 mt-1 border-t border-gray-200/80 flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-0.5 bg-[#0f172a] rounded-full shrink-0 shadow-sm" />
+                <span className="text-[10px] font-bold text-slate-800">Batas Kecamatan</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-0 border-t border-slate-300 shrink-0" />
+                <span className="text-[10px] font-semibold text-slate-500">Batas Desa / Kelurahan</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

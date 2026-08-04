@@ -137,6 +137,7 @@ function FontToolbar({
     const [opacity, setOpacity] = useState(0);
     const [showLabels, setShowLabels] = useState(true);
     const [showDistrictLabels, setShowDistrictLabels] = useState(true);
+    const [showDistrictBorders, setShowDistrictBorders] = useState(true);
     const [loading, setLoading] = useState(true);
     const [maps, setMaps] = useState<string[]>([]);
     const [mapDetails, setMapDetails] = useState<any[]>([]);
@@ -823,6 +824,8 @@ function FontToolbar({
         setShowLabels={setShowLabels}
         showDistrictLabels={showDistrictLabels}
         setShowDistrictLabels={setShowDistrictLabels}
+        showDistrictBorders={showDistrictBorders}
+        setShowDistrictBorders={setShowDistrictBorders}
         level={level as any}
         onLevelChange={(lvl) => {
           router.replace(`/map?level=${lvl}`);
@@ -908,6 +911,7 @@ function FontToolbar({
           opacity={opacity}
           showLabels={showLabels}
           showDistrictLabels={showDistrictLabels}
+          showDistrictBorders={showDistrictBorders}
           onPolygonClick={(props) => setSelectedPolygon(props)} 
           onMapReady={(m) => setMapInstance(m)}
         />

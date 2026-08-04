@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
-import { Eye, EyeOff, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowLeft, X } from 'lucide-react';
 
 const supabase = createClient();
 
@@ -19,6 +19,14 @@ export default function LoginPage() {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   const router = useRouter();
+
+  const handleCancel = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/entry');
+    }
+  };
 
   useEffect(() => {
     // Listen for thePASSWORD_RECOVERY event from Supabase
@@ -122,7 +130,18 @@ export default function LoginPage() {
 
   return (
     <div className="flex-1 bg-transparent flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 h-full">
-      <div className="max-w-md w-full space-y-8 glass-card p-8 rounded-2xl">
+      <div className="max-w-md w-full space-y-8 glass-card p-8 rounded-2xl relative shadow-xl">
+        {/* Close / Cancel Button at Top Right */}
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all cursor-pointer"
+          title="Batal / Kembali"
+          aria-label="Batal"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         <div>
           <div className="w-12 h-12 bg-gradient-to-br from-green-700 to-green-500 rounded-xl flex items-center justify-center text-white font-black text-2xl mx-auto shadow-md">
             F

@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
+    "@turf/turf": "^7.4.0",
     "@types/papaparse": "^5.5.2",
     "@types/shpjs": "^3.4.7",
     "@types/wellknown": "^0.5.8",

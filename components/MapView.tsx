@@ -4,14 +4,74 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { PRIORITY_LABELS, STUNTING_PRIORITY_LABELS } from '@/lib/fsva/constants';
 
+import dissolve from '@turf/dissolve';
+
 interface MapViewProps {
   geoJsonData: any;
   activeLayer: string;
   opacity: number;
   showLabels: boolean;
   showDistrictLabels?: boolean;
+  showDistrictBorders?: boolean;
   onPolygonClick: (properties: any) => void;
   onMapReady?: (map: maplibregl.Map) => void;
+}
+
+// Helper function to dissolve polygons per kecamatan
+function computeKecamatanBoundaries(data: any) {
+  if (!data || !data.features || data.features.length === 0) {
+    return { type: 'FeatureCollection' as const, features: [] };
+  }
+
+  try {
+    const hasKec = data.features.some((f: any) => Boolean(f?.properties?.nama_kecamatan));
+    const propKey = hasKec ? 'nama_kecamatan' : 'nama_kabupaten';
+
+    const flattenedFeatures: any[] = [];
+
+    data.features.forEach((f: any) => {
+      if (!f || !f.geometry || !f.properties) return;
+      const val = f.properties[propKey];
+      if (!val) return;
+      const cleanVal = String(val).trim();
+      if (!cleanVal) return;
+
+      const geom = f.geometry;
+      if (geom.type === 'Polygon') {
+        flattenedFeatures.push({
+          type: 'Feature' as const,
+          geometry: geom,
+          properties: { [propKey]: cleanVal }
+        });
+      } else if (geom.type === 'MultiPolygon' && Array.isArray(geom.coordinates)) {
+        geom.coordinates.forEach((coords: any) => {
+          flattenedFeatures.push({
+            type: 'Feature' as const,
+            geometry: {
+              type: 'Polygon' as const,
+              coordinates: coords
+            },
+            properties: { [propKey]: cleanVal }
+          });
+        });
+      }
+    });
+
+    if (flattenedFeatures.length === 0) {
+      return { type: 'FeatureCollection' as const, features: [] };
+    }
+
+    const inputCollection = {
+      type: 'FeatureCollection' as const,
+      features: flattenedFeatures
+    };
+
+    const dissolved = dissolve(inputCollection as any, { propertyName: propKey });
+    return dissolved;
+  } catch (err) {
+    console.error('Error computing kecamatan boundaries:', err);
+    return { type: 'FeatureCollection' as const, features: [] };
+  }
 }
 
 // Helper function to calculate exact geometric centroid per kecamatan
@@ -124,7 +184,16 @@ function computeVillageCentroids(data: any) {
   };
 }
 
-export default function MapView({ geoJsonData, activeLayer, opacity, showLabels, showDistrictLabels = true, onPolygonClick, onMapReady }: MapViewProps) {
+export default function MapView({ 
+  geoJsonData, 
+  activeLayer, 
+  opacity, 
+  showLabels, 
+  showDistrictLabels = true, 
+  showDistrictBorders = true, 
+  onPolygonClick, 
+  onMapReady 
+}: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -174,10 +243,17 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       if (map.current.getLayer('fsva-kecamatan-labels')) {
         map.current.setLayoutProperty('fsva-kecamatan-labels', 'visibility', showDistrictLabels ? 'visible' : 'none');
       }
+
+      if (map.current.getLayer('fsva-kecamatan-borders')) {
+        map.current.setLayoutProperty('fsva-kecamatan-borders', 'visibility', showDistrictBorders ? 'visible' : 'none');
+      }
+      if (map.current.getLayer('fsva-kecamatan-borders-halo')) {
+        map.current.setLayoutProperty('fsva-kecamatan-borders-halo', 'visibility', showDistrictBorders ? 'visible' : 'none');
+      }
     } catch (e) {
       // Map may be in transition; silently ignore
     }
-  }, [activeLayer, opacity, showLabels, showDistrictLabels, mapLoaded]);
+  }, [activeLayer, opacity, showLabels, showDistrictLabels, showDistrictBorders, mapLoaded]);
 
   // Map initialization — re-runs only when mapContainer is available
   useEffect(() => {
@@ -216,6 +292,11 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       }
 
       map.current.addSource('fsva', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.current.addSource('fsva-kecamatan', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
       });
@@ -265,7 +346,37 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
         source: 'fsva',
         paint: {
           'line-color': '#ffffff',
-          'line-width': 1
+          'line-width': 0.8,
+          'line-opacity': 0.8
+        }
+      });
+
+      // Distinct, bold Kecamatan boundaries (halo + core line)
+      map.current.addLayer({
+        id: 'fsva-kecamatan-borders-halo',
+        type: 'line',
+        source: 'fsva-kecamatan',
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 4.2,
+          'line-opacity': 0.95
+        },
+        layout: {
+          'visibility': showDistrictBorders ? 'visible' : 'none'
+        }
+      });
+
+      map.current.addLayer({
+        id: 'fsva-kecamatan-borders',
+        type: 'line',
+        source: 'fsva-kecamatan',
+        paint: {
+          'line-color': '#0f172a',
+          'line-width': 2.4,
+          'line-opacity': 1.0
+        },
+        layout: {
+          'visibility': showDistrictBorders ? 'visible' : 'none'
         }
       });
 
@@ -383,6 +494,12 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       if (!source) return;
 
       source.setData(data);
+
+      const kecBorderSource = map.current.getSource('fsva-kecamatan') as maplibregl.GeoJSONSource;
+      if (kecBorderSource) {
+        const kecBoundaries = computeKecamatanBoundaries(data);
+        kecBorderSource.setData(kecBoundaries);
+      }
 
       const kecSource = map.current.getSource('fsva-kecamatan-points') as maplibregl.GeoJSONSource;
       if (kecSource) {

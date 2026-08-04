@@ -9,11 +9,122 @@ interface MapViewProps {
   activeLayer: string;
   opacity: number;
   showLabels: boolean;
+  showDistrictLabels?: boolean;
   onPolygonClick: (properties: any) => void;
   onMapReady?: (map: maplibregl.Map) => void;
 }
 
-export default function MapView({ geoJsonData, activeLayer, opacity, showLabels, onPolygonClick, onMapReady }: MapViewProps) {
+// Helper function to calculate exact geometric centroid per kecamatan
+function computeKecamatanCentroids(data: any) {
+  if (!data || !data.features || data.features.length === 0) {
+    return { type: 'FeatureCollection' as const, features: [] };
+  }
+
+  const groups: Record<string, { sumLng: number; sumLat: number; count: number }> = {};
+
+  data.features.forEach((feature: any) => {
+    const name = feature.properties?.nama_kecamatan;
+    if (!name || typeof name !== 'string') return;
+    const cleanName = name.trim();
+    if (!cleanName) return;
+
+    if (!groups[cleanName]) {
+      groups[cleanName] = { sumLng: 0, sumLat: 0, count: 0 };
+    }
+
+    const geom = feature.geometry;
+    if (!geom || !geom.coordinates) return;
+
+    const extractCoords = (coords: any) => {
+      if (Array.isArray(coords) && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+        groups[cleanName].sumLng += coords[0];
+        groups[cleanName].sumLat += coords[1];
+        groups[cleanName].count += 1;
+      } else if (Array.isArray(coords)) {
+        coords.forEach(extractCoords);
+      }
+    };
+
+    extractCoords(geom.coordinates);
+  });
+
+  const features = Object.entries(groups)
+    .filter(([_, d]) => d.count > 0)
+    .map(([namaKec, d]) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [d.sumLng / d.count, d.sumLat / d.count]
+      },
+      properties: {
+        nama_kecamatan: namaKec
+      }
+    }));
+
+  return {
+    type: 'FeatureCollection' as const,
+    features
+  };
+}
+
+// Helper function to calculate exact geometric centroid per village
+function computeVillageCentroids(data: any) {
+  if (!data || !data.features || data.features.length === 0) {
+    return { type: 'FeatureCollection' as const, features: [] };
+  }
+
+  const groups: Record<string, { nama_desa: string; sumLng: number; sumLat: number; count: number }> = {};
+
+  data.features.forEach((feature: any) => {
+    const name = feature.properties?.nama_desa;
+    if (!name || typeof name !== 'string') return;
+    const cleanName = name.trim();
+    if (!cleanName) return;
+
+    const key = feature.properties?.kode_bps || 
+      `${feature.properties?.nama_kecamatan || ''}_${cleanName}`;
+
+    if (!groups[key]) {
+      groups[key] = { nama_desa: cleanName, sumLng: 0, sumLat: 0, count: 0 };
+    }
+
+    const geom = feature.geometry;
+    if (!geom || !geom.coordinates) return;
+
+    const extractCoords = (coords: any) => {
+      if (Array.isArray(coords) && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+        groups[key].sumLng += coords[0];
+        groups[key].sumLat += coords[1];
+        groups[key].count += 1;
+      } else if (Array.isArray(coords)) {
+        coords.forEach(extractCoords);
+      }
+    };
+
+    extractCoords(geom.coordinates);
+  });
+
+  const features = Object.entries(groups)
+    .filter(([_, d]) => d.count > 0)
+    .map(([key, d]) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [d.sumLng / d.count, d.sumLat / d.count]
+      },
+      properties: {
+        kode_bps: key,
+        nama_desa: d.nama_desa
+      }
+    }));
+
+  return {
+    type: 'FeatureCollection' as const,
+    features
+  };
+}
+
+export default function MapView({ geoJsonData, activeLayer, opacity, showLabels, showDistrictLabels = true, onPolygonClick, onMapReady }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -59,10 +170,14 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       if (map.current.getLayer('fsva-labels')) {
         map.current.setLayoutProperty('fsva-labels', 'visibility', showLabels ? 'visible' : 'none');
       }
+
+      if (map.current.getLayer('fsva-kecamatan-labels')) {
+        map.current.setLayoutProperty('fsva-kecamatan-labels', 'visibility', showDistrictLabels ? 'visible' : 'none');
+      }
     } catch (e) {
       // Map may be in transition; silently ignore
     }
-  }, [activeLayer, opacity, showLabels, mapLoaded]);
+  }, [activeLayer, opacity, showLabels, showDistrictLabels, mapLoaded]);
 
   // Map initialization — re-runs only when mapContainer is available
   useEffect(() => {
@@ -101,6 +216,16 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       }
 
       map.current.addSource('fsva', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.current.addSource('fsva-kecamatan-points', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.current.addSource('fsva-village-points', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
       });
@@ -147,16 +272,36 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       map.current.addLayer({
         id: 'fsva-labels',
         type: 'symbol',
-        source: 'fsva',
+        source: 'fsva-village-points',
         layout: {
           'text-field': ['get', 'nama_desa'],
           'text-size': 8.5,
-          'text-anchor': 'center'
+          'text-anchor': 'center',
+          'visibility': showLabels ? 'visible' : 'none'
         },
         paint: {
           'text-color': '#111827',
           'text-halo-color': '#ffffff',
           'text-halo-width': 1.5,
+          'text-halo-blur': 0.5
+        }
+      });
+
+      map.current.addLayer({
+        id: 'fsva-kecamatan-labels',
+        type: 'symbol',
+        source: 'fsva-kecamatan-points',
+        layout: {
+          'text-field': ['get', 'nama_kecamatan'],
+          'text-size': 9.5,
+          'text-transform': 'uppercase',
+          'text-anchor': 'center',
+          'visibility': showDistrictLabels ? 'visible' : 'none'
+        },
+        paint: {
+          'text-color': '#042f2e',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2.5,
           'text-halo-blur': 0.5
         }
       });
@@ -238,6 +383,18 @@ export default function MapView({ geoJsonData, activeLayer, opacity, showLabels,
       if (!source) return;
 
       source.setData(data);
+
+      const kecSource = map.current.getSource('fsva-kecamatan-points') as maplibregl.GeoJSONSource;
+      if (kecSource) {
+        const kecPoints = computeKecamatanCentroids(data);
+        kecSource.setData(kecPoints);
+      }
+
+      const villageSource = map.current.getSource('fsva-village-points') as maplibregl.GeoJSONSource;
+      if (villageSource) {
+        const villagePoints = computeVillageCentroids(data);
+        villageSource.setData(villagePoints);
+      }
 
       if (data.features && data.features.length > 0) {
         let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;

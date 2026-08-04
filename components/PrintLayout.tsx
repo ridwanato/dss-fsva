@@ -25,6 +25,7 @@ interface PrintLayoutProps {
   config: PrintConfig;
   fontStyles?: Record<string, FontStyle>;
   level?: string;
+  orientation?: 'portrait' | 'landscape';
 }
 
 export default function PrintLayout({ 
@@ -33,7 +34,8 @@ export default function PrintLayout({
   activeLayer = 'prioritas', 
   config,
   fontStyles,
-  level = 'kab_kota'
+  level = 'kab_kota',
+  orientation = 'portrait'
 }: PrintLayoutProps) {
   if (!mapImage) return null;
 
@@ -42,6 +44,7 @@ export default function PrintLayout({
   const labels = isStunting ? STUNTING_PRIORITY_LABELS : PRIORITY_LABELS;
 
   const isProvinsi = level === 'provinsi';
+  const isLandscape = orientation === 'landscape';
 
   // Helper to convert FontStyle to inline CSS style object
   const getTextStyle = (style?: FontStyle) => {
@@ -58,11 +61,11 @@ export default function PrintLayout({
   };
 
   return (
-    <div className="print-only bg-white w-[210mm] h-[297mm] overflow-hidden p-[10mm] mx-auto text-black relative" style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div className={`print-only bg-white ${isLandscape ? 'w-[297mm] h-[210mm]' : 'w-[210mm] h-[297mm]'} overflow-hidden p-[10mm] mx-auto text-black relative`} style={{ fontFamily: 'Arial, sans-serif' }}>
       <div className="border-[2px] border-black w-full h-full flex flex-col relative">
         
         {/* Main Map Area (Left side) */}
-        <div className="absolute top-0 left-0 bottom-0 w-[70%] border-r-[2px] border-black bg-[#99d9ea] overflow-hidden">
+        <div className={`absolute top-0 left-0 bottom-0 ${isLandscape ? 'w-[73%]' : 'w-[70%]'} border-r-[2px] border-black bg-[#99d9ea] overflow-hidden`}>
           {/* Base Map Image */}
           <img 
             id="print-layout-map-image"
@@ -107,7 +110,7 @@ export default function PrintLayout({
         </div>
 
         {/* Sidebar (Right side) */}
-        <div className="absolute top-0 right-0 bottom-0 w-[30%] flex flex-col bg-white">
+        <div className={`absolute top-0 right-0 bottom-0 ${isLandscape ? 'w-[27%]' : 'w-[30%]'} flex flex-col bg-white`}>
           
           {/* Logos Section */}
           <div className="p-3 border-b-[2px] border-black flex flex-col gap-3 justify-center">

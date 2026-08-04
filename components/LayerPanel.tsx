@@ -44,6 +44,8 @@ interface LayerPanelProps {
   setOpacity: (val: number) => void;
   showLabels: boolean;
   setShowLabels: (val: boolean) => void;
+  showDistrictLabels?: boolean;
+  setShowDistrictLabels?: (val: boolean) => void;
   children?: React.ReactNode;
   level: 'kab_kota' | 'provinsi';
   onLevelChange: (lvl: 'kab_kota' | 'provinsi') => void;
@@ -51,7 +53,7 @@ interface LayerPanelProps {
 
 export default function LayerPanel({
   activeLayer, setActiveLayer, opacity, setOpacity, 
-  showLabels, setShowLabels, children, level, onLevelChange
+  showLabels, setShowLabels, showDistrictLabels = true, setShowDistrictLabels, children, level, onLevelChange
 }: LayerPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -171,17 +173,28 @@ export default function LayerPanel({
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 border-l pl-2 border-emerald-500/20">
-              <label className="text-[8px] font-bold text-emerald-200/80 uppercase text-right leading-tight">
-                {level === 'provinsi' ? 'Nama\nKec' : 'Nama\nDesa'}
-              </label>
-              <button 
-                onClick={() => setShowLabels(!showLabels)}
-                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
-              >
-                <span className={`absolute left-0.5 text-[6px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
-                <span className={`absolute z-10 inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
-              </button>
+            <div className="flex flex-col gap-1 border-l pl-2 border-emerald-500/20 shrink-0">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[7.5px] font-bold text-emerald-200/90 uppercase leading-none whitespace-nowrap">Nama Desa</span>
+                <button 
+                  onClick={() => setShowLabels(!showLabels)}
+                  className={`relative inline-flex h-3.5 w-7 items-center rounded-full transition-colors ${showLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
+                >
+                  <span className={`absolute left-0.5 text-[5px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute z-10 inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[7.5px] font-bold text-emerald-200/90 uppercase leading-none whitespace-nowrap">Nama Kecamatan</span>
+                <button 
+                  onClick={() => setShowDistrictLabels && setShowDistrictLabels(!showDistrictLabels)}
+                  className={`relative inline-flex h-3.5 w-7 items-center rounded-full transition-colors ${showDistrictLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
+                >
+                  <span className={`absolute left-0.5 text-[5px] font-black text-white ${showDistrictLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute z-10 inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow transition-transform ${showDistrictLabels ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -302,17 +315,28 @@ export default function LayerPanel({
               </div>
             </div>
             
-            <div className="flex items-center gap-2 border-l pl-3 border-emerald-500/20">
-              <label className="text-[8px] font-bold text-emerald-200/80 uppercase text-right leading-tight">
-                {level === 'provinsi' ? 'Nama\nKec' : 'Nama\nDesa'}
-              </label>
-              <button 
-                onClick={() => setShowLabels(!showLabels)}
-                className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
-              >
-                <span className={`absolute left-1 text-[7px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
-                <span className={`absolute z-10 inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-5' : 'translate-x-1'}`} />
-              </button>
+            <div className="flex flex-col gap-1.5 border-l pl-3 border-emerald-500/20 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] font-bold text-emerald-200/90 uppercase leading-none whitespace-nowrap">Nama Desa</span>
+                <button 
+                  onClick={() => setShowLabels(!showLabels)}
+                  className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
+                >
+                  <span className={`absolute left-0.5 text-[6px] font-black text-white ${showLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute z-10 inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showLabels ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] font-bold text-emerald-200/90 uppercase leading-none whitespace-nowrap">Nama Kecamatan</span>
+                <button 
+                  onClick={() => setShowDistrictLabels && setShowDistrictLabels(!showDistrictLabels)}
+                  className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${showDistrictLabels ? 'bg-[#10b981]' : 'bg-emerald-950 border border-emerald-500/30'}`}
+                >
+                  <span className={`absolute left-0.5 text-[6px] font-black text-white ${showDistrictLabels ? 'opacity-100' : 'opacity-0'}`}>ON</span>
+                  <span className={`absolute z-10 inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showDistrictLabels ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

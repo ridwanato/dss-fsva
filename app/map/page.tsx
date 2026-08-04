@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MapView from '@/components/MapView';
 import LegendPanel from '@/components/LegendPanel';
 import InfoPanel from '@/components/InfoPanel';
@@ -123,6 +123,8 @@ function FontToolbar({
     return `PETA FSVA KAB/KOTA ${upper}`;
   };
 
+
+
   function MapPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -134,6 +136,7 @@ function FontToolbar({
     const [activeLayer, setActiveLayer] = useState('prioritas');
     const [opacity, setOpacity] = useState(0);
     const [showLabels, setShowLabels] = useState(true);
+    const [showDistrictLabels, setShowDistrictLabels] = useState(true);
     const [loading, setLoading] = useState(true);
     const [maps, setMaps] = useState<string[]>([]);
     const [mapDetails, setMapDetails] = useState<any[]>([]);
@@ -145,6 +148,11 @@ function FontToolbar({
 
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [showPrintGuide, setShowPrintGuide] = useState(true);
+    const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
+
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const guidanceBoxRef = useRef<HTMLDivElement>(null);
+
     const [printConfig, setPrintConfig] = useState({
       logoPemda: '/logo-cilegon.png',
       logoBapanas: '/bapanas logo.png',
@@ -406,15 +414,50 @@ function FontToolbar({
       hasRendered = true;
       try {
         const mapCanvas = mapInstance.getCanvas();
-        if (mapCanvas.width === 0 || mapCanvas.height === 0) {
+        if (!mapCanvas || mapCanvas.width === 0 || mapCanvas.height === 0) {
           throw new Error('Map canvas not ready');
         }
 
-        // Standard: max 1600px JPEG; High Resolution Ultra 8K (4-5 MB): max 6000px PNG for ultra-crisp labels & sharp vector borders
-        const MAX_W = isHighRes ? 6000 : 1600;
-        const scale = isHighRes ? Math.max(3.5, MAX_W / mapCanvas.width) : Math.min(1, MAX_W / mapCanvas.width);
-        const printW = Math.round(mapCanvas.width * scale);
-        const printH = Math.round(mapCanvas.height * scale);
+        let sourceX = 0;
+        let sourceY = 0;
+        let sourceW = mapCanvas.width;
+        let sourceH = mapCanvas.height;
+
+        if (guidanceBoxRef.current && mapContainerRef.current) {
+          const boxRect = guidanceBoxRef.current.getBoundingClientRect();
+          const mapRect = mapContainerRef.current.getBoundingClientRect();
+
+          if (boxRect.width > 0 && boxRect.height > 0 && mapRect.width > 0 && mapRect.height > 0) {
+            const scaleX = mapCanvas.width / mapRect.width;
+            const scaleY = mapCanvas.height / mapRect.height;
+
+            const rawX = (boxRect.left - mapRect.left) * scaleX;
+            const rawY = (boxRect.top - mapRect.top) * scaleY;
+            const rawW = boxRect.width * scaleX;
+            const rawH = boxRect.height * scaleY;
+
+            sourceX = Math.max(0, Math.min(mapCanvas.width - 10, rawX));
+            sourceY = Math.max(0, Math.min(mapCanvas.height - 10, rawY));
+            sourceW = Math.min(mapCanvas.width - sourceX, Math.max(10, rawW));
+            sourceH = Math.min(mapCanvas.height - sourceY, Math.max(10, rawH));
+          }
+        }
+
+        const isLandscape = printOrientation === 'landscape';
+        const targetRatio = isLandscape ? (297 / 210) : (210 / 297);
+        const MAX_DIM = isHighRes ? 6000 : 1800;
+
+        let printW: number;
+        let printH: number;
+
+        if (isLandscape) {
+          printW = MAX_DIM;
+          printH = Math.round(MAX_DIM / targetRatio);
+        } else {
+          printH = MAX_DIM;
+          printW = Math.round(MAX_DIM * targetRatio);
+        }
+
         const resized = document.createElement('canvas');
         resized.width = printW;
         resized.height = printH;
@@ -422,7 +465,7 @@ function FontToolbar({
         if (rCtx) {
           rCtx.imageSmoothingEnabled = true;
           rCtx.imageSmoothingQuality = 'high';
-          rCtx.drawImage(mapCanvas, 0, 0, printW, printH);
+          rCtx.drawImage(mapCanvas, sourceX, sourceY, sourceW, sourceH, 0, 0, printW, printH);
         }
         const mapDataUrl = isHighRes ? resized.toDataURL('image/png') : resized.toDataURL('image/jpeg', 0.95);
 
@@ -472,7 +515,7 @@ function FontToolbar({
 <title>${formattedFileName}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  @page{size:A4 portrait;margin:0;}
+  @page{size:A4 ${isLandscape ? 'landscape' : 'portrait'};margin:0;}
 
   /* ============================================================
      SCREEN STYLES (mobile preview)
@@ -515,7 +558,8 @@ function FontToolbar({
     overflow-x:hidden;
   }
   .page{
-    width:190mm;height:277mm;
+    width:${isLandscape ? '277mm' : '190mm'};
+    height:${isLandscape ? '190mm' : '277mm'};
     border:2px solid black;
     display:flex;position:relative;
     overflow:hidden;background:white;
@@ -533,9 +577,9 @@ function FontToolbar({
       print-color-adjust:exact;
     }
     html,body{
-      width:210mm!important;
-      height:297mm!important;
-      max-height:297mm!important;
+      width:${isLandscape ? '297mm' : '210mm'}!important;
+      height:${isLandscape ? '210mm' : '297mm'}!important;
+      max-height:${isLandscape ? '210mm' : '297mm'}!important;
       background:white!important;
       padding:0!important;
       margin:0!important;
@@ -547,9 +591,9 @@ function FontToolbar({
     .no-print{display:none!important;}
     .page-wrapper{
       display:block!important;
-      width:210mm!important;
-      height:297mm!important;
-      max-height:297mm!important;
+      width:${isLandscape ? '297mm' : '210mm'}!important;
+      height:${isLandscape ? '210mm' : '297mm'}!important;
+      max-height:${isLandscape ? '210mm' : '297mm'}!important;
       overflow:hidden!important;
       padding:10mm!important;
       margin:0!important;
@@ -560,8 +604,8 @@ function FontToolbar({
     }
     .page{
       display:flex!important;
-      width:190mm!important;
-      height:277mm!important;
+      width:${isLandscape ? '277mm' : '190mm'}!important;
+      height:${isLandscape ? '190mm' : '277mm'}!important;
       transform:none!important;
       margin:0 auto!important;
       box-shadow:none!important;
@@ -574,7 +618,8 @@ function FontToolbar({
     }
   }
   .map-area{
-    width:70%;height:100%;
+    width:${isLandscape ? '73%' : '70%'};
+    height:100%;
     border-right:2px solid black;
     background:white;
     position:relative;overflow:hidden;
@@ -586,13 +631,16 @@ function FontToolbar({
     object-position:center;
     display:block;
   }
-  .sidebar{width:30%;height:100%;display:flex;flex-direction:column;background:white;}
+  .sidebar{
+    width:${isLandscape ? '27%' : '30%'};
+    height:100%;display:flex;flex-direction:column;background:white;
+  }
   .sidebar-section{padding:8px;border-bottom:1.5px solid black;}
   .gov-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
   .gov-logo{width:40px;height:40px;object-fit:contain;flex-shrink:0;}
   .gov-name{font-size:9px;font-weight:bold;line-height:1.3;text-transform:uppercase;}
   .map-title{font-size:11px;font-weight:bold;line-height:1.4;text-align:center;text-transform:uppercase;}
-  .indicator-title{font-size:10px;font-weight:bold;text-align:center;text-transform:uppercase;padding:12px 6px;}
+  .indicator-title{font-size:10px;font-weight:bold;text-align:center;text-transform:uppercase;padding:10px 6px;}
   .legend-title{font-size:9px;font-weight:900;text-align:center;margin-bottom:6px;}
   .scale-bar-wrap{padding:6px 12px;}
   .scale-bar-label{display:flex;justify-content:space-between;font-size:8px;font-weight:bold;margin-bottom:3px;}
@@ -607,8 +655,14 @@ function FontToolbar({
     border-top:2px solid black;background:white;
     display:flex;font-size:7.5px;padding:6px 8px;
   }
-  .footer-left{width:70%;padding-right:8px;border-right:2px solid black;line-height:1.4;}
-  .footer-right{width:30%;padding-left:8px;}
+  .footer-left{
+    width:${isLandscape ? '73%' : '70%'};
+    padding-right:8px;border-right:2px solid black;line-height:1.4;
+  }
+  .footer-right{
+    width:${isLandscape ? '27%' : '30%'};
+    padding-left:8px;
+  }
 </style>
 </head>
 <body>
@@ -767,6 +821,8 @@ function FontToolbar({
         setOpacity={setOpacity}
         showLabels={showLabels}
         setShowLabels={setShowLabels}
+        showDistrictLabels={showDistrictLabels}
+        setShowDistrictLabels={setShowDistrictLabels}
         level={level as any}
         onLevelChange={(lvl) => {
           router.replace(`/map?level=${lvl}`);
@@ -845,12 +901,13 @@ function FontToolbar({
       )}
 
       {/* Map Container */}
-      <div className="flex-1 relative bg-slate-100">
+      <div ref={mapContainerRef} className="flex-1 relative bg-slate-100">
         <MapView 
           geoJsonData={geoData} 
           activeLayer={activeLayer}
           opacity={opacity}
           showLabels={showLabels}
+          showDistrictLabels={showDistrictLabels}
           onPolygonClick={(props) => setSelectedPolygon(props)} 
           onMapReady={(m) => setMapInstance(m)}
         />
@@ -867,9 +924,52 @@ function FontToolbar({
         {/* Print Preview Guide Overlay */}
         {showPrintGuide && (
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent aspect-[133/258] h-[80%] max-w-[90%] flex flex-col items-center justify-start pointer-events-none">
-              {/* Text info in 2 lines inside the top margin of the box */}
-              <div className="absolute top-3 left-0 right-0 flex justify-center items-center pointer-events-auto">
+            <div 
+              ref={guidanceBoxRef}
+              className={`relative border-4 border-solid border-[#ec4899] rounded shadow-[0_0_20px_rgba(236,72,153,0.3)] bg-transparent ${
+                printOrientation === 'landscape'
+                  ? 'aspect-[297/210] w-[80%] max-h-[85%]'
+                  : 'aspect-[210/297] h-[80%] max-w-[90%]'
+              } flex flex-col items-center justify-start pointer-events-none transition-all duration-300`}
+            >
+              {/* Header Bar with Info & Orientation Swap Controls */}
+              <div className="absolute top-3 left-0 right-0 flex justify-between items-center px-4 pointer-events-auto z-20">
+                <div className="flex items-center gap-1 bg-slate-900/85 backdrop-blur-md p-1 rounded-xl border border-white/20 shadow-lg select-none">
+                  <button
+                    type="button"
+                    onClick={() => setPrintOrientation('portrait')}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase transition-all cursor-pointer flex items-center gap-1 ${
+                      printOrientation === 'portrait'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white bg-transparent'
+                    }`}
+                  >
+                    <span>↕ Portrait</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintOrientation('landscape')}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase transition-all cursor-pointer flex items-center gap-1 ${
+                      printOrientation === 'landscape'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white bg-transparent'
+                    }`}
+                  >
+                    <span>↔ Landscape</span>
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => setShowPrintGuide(false)}
+                  className="text-black font-black text-xs hover:text-red-600 transition-colors bg-white hover:bg-slate-100 w-6 h-6 flex items-center justify-center rounded-lg shadow-md border border-slate-200 cursor-pointer"
+                  title="Tutup Panduan"
+                >
+                  X
+                </button>
+              </div>
+
+              {/* Text info inside the box */}
+              <div className="absolute top-12 left-0 right-0 flex justify-center items-center pointer-events-none">
                 <span 
                   className="text-[10px] font-black text-center leading-snug px-6 tracking-wide select-none"
                   style={{ 
@@ -877,17 +977,10 @@ function FontToolbar({
                     textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.5)'
                   }}
                 >
-                  Geser dan zoom out untuk menyesuaikan peta<br />yang akan dicetak ke dalam kotak panduan ini.
+                  Geser dan zoom out untuk menyesuaikan peta<br />
+                  yang akan dicetak ke dalam kotak panduan ({printOrientation.toUpperCase()}) ini.
                 </span>
               </div>
-              {/* Close Button */}
-              <button 
-                onClick={() => setShowPrintGuide(false)}
-                className="absolute -right-3 -top-3 text-black font-black text-xs md:text-sm hover:text-red-600 transition-colors bg-white hover:bg-slate-100 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-lg shadow-md border border-slate-200 pointer-events-auto"
-                title="Tutup Panduan"
-              >
-                X
-              </button>
             </div>
           </div>
         )}
@@ -922,6 +1015,34 @@ function FontToolbar({
             </div>
             
             <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">Orientasi Kertas & Area Crop Peta PDF</label>
+                <div className="grid grid-cols-2 gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setPrintOrientation('portrait')}
+                    className={`py-2 px-3 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      printOrientation === 'portrait'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <span>↕ PORTRAIT A4</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintOrientation('landscape')}
+                    className={`py-2 px-3 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      printOrientation === 'landscape'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <span>↔ LANDSCAPE A4</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Logo Pemda (Kiri)</label>
@@ -945,8 +1066,13 @@ function FontToolbar({
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 8.5;
                       setPrintConfig(prev => ({ ...prev, mapLabelFontSize: val }));
-                      if (mapInstance && mapInstance.getLayer('fsva-labels')) {
-                        mapInstance.setLayoutProperty('fsva-labels', 'text-size', val);
+                      if (mapInstance) {
+                        if (mapInstance.getLayer('fsva-labels')) {
+                          mapInstance.setLayoutProperty('fsva-labels', 'text-size', val);
+                        }
+                        if (mapInstance.getLayer('fsva-kecamatan-labels')) {
+                          mapInstance.setLayoutProperty('fsva-kecamatan-labels', 'text-size', val + 0.5);
+                        }
                       }
                     }}
                     className="w-20 text-sm border border-gray-300 rounded-md p-1.5 font-bold text-gray-800 text-center focus:ring-2 focus:ring-blue-500 focus:outline-none"

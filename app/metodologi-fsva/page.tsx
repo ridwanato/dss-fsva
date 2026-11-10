@@ -41,7 +41,7 @@ export default function MetodologiFsvaPage() {
 
             {/* Blok 3 — Metodologi */}
             <p>
-              Metodologi, indikator, formula, pembobotan, klasifikasi, dan ketentuan analisis yang digunakan dalam aplikasi mengacu pada <strong>Petunjuk Teknis Penyusunan Peta Ketahanan dan Kerentanan Pangan (FSVA)</strong> yang diterbitkan oleh Badan Pangan Nasional, termasuk pemutakhiran metodologi yang berlaku pada tahun terkait (Juknis Bapanas 2025/2026).
+              Metodologi, indikator, formula, pembobotan, klasifikasi, dan ketentuan analisis yang digunakan dalam aplikasi mengacu pada <strong>Petunjuk Teknis Penyusunan Peta Ketahanan dan Kerentanan Pangan (FSVA) Daerah Kabupaten/Kota Tahun 2026</strong> yang diterbitkan oleh Badan Pangan Nasional (<strong>Keputusan Sekretaris Utama Badan Pangan Nasional Nomor 21 Tahun 2026 tanggal 9 Juni 2026</strong>).
             </p>
 
             <p>

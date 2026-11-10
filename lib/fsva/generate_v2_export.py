@@ -40,6 +40,14 @@ def generate_export(level, json_data_path, output_dir, form_requested):
 
     forms_to_process = list(file_map.keys()) if form_requested == 'zip' or form_requested == 'all' else [form_requested]
 
+    # Pre-compute descending rank by indeks_komposit (same as Excel RANK(R7,$R$7:$R$866))
+    sorted_ikp = sorted([r.get('indeks_komposit', 0) for r in rows_data], reverse=True)
+    def get_rank(val):
+        try:
+            return sorted_ikp.index(val) + 1
+        except ValueError:
+            return 1
+
     for f_key in forms_to_process:
         if f_key not in file_map:
             continue
@@ -59,6 +67,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             # Sheet 0.1 Produksi Pangan & Penduduk
             if '0.1 Produksi Pangan & Penduduk' in wb.sheetnames:
                 ws = wb['0.1 Produksi Pangan & Penduduk']
+                ws.cell(3, 3, kabupaten)
                 for idx, r in enumerate(rows_data, start=6):
                     ws.cell(idx, 1, idx - 5)
                     ws.cell(idx, 2, r.get('nama_kecamatan', r.get('nama_kabupaten', '')))
@@ -68,12 +77,15 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 6, r.get('nama_desa', r.get('nama_kabupaten', '')))
                     
                     ws.cell(idx, 10, r.get('produksi_padi', 0))
+                    ws.cell(idx, 13, r.get('gkg_conversion', 0.64))
                     ws.cell(idx, 19, r.get('produksi_jagung', 0))
                     ws.cell(idx, 25, r.get('produksi_ubi_kayu', 0))
                     ws.cell(idx, 31, r.get('produksi_ubi_jalar', 0))
                     ws.cell(idx, 37, r.get('produksi_sagu', 0))
                     ws.cell(idx, 43, r.get('produksi_pisang', 0))
-                    ws.cell(idx, 49, r.get('jumlah_penduduk', 0))
+                    ws.cell(idx, 47, r.get('jumlah_penduduk', 0))
+                    if level == 'provinsi':
+                        ws.cell(idx, 51, r.get('jumlah_penduduk_kab', 0))
 
             # Sheet 0.2 Konsumsi Energi
             if '0.2 Konsumsi Energi' in wb.sheetnames:
@@ -86,6 +98,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 5, r.get('kode_bps', ''))
                     ws.cell(idx, 6, r.get('nama_desa', ''))
                     ws.cell(idx, 10, r.get('konsumsi_energi', 0))
+                    ws.cell(idx, 13, 2100)
 
             # Sheet 0.3 Konsumsi Protein Hewani
             if '0.3 Konsumsi Protein Hewani' in wb.sheetnames:
@@ -98,6 +111,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 5, r.get('kode_bps', ''))
                     ws.cell(idx, 6, r.get('nama_desa', ''))
                     ws.cell(idx, 10, r.get('konsumsi_protein', 0))
+                    ws.cell(idx, 13, 25)
 
             # Sheet 0.4 Stok_Cadangan
             if '0.4 Stok_Cadangan' in wb.sheetnames:
@@ -109,10 +123,15 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 4, r.get('kode_kemendagri', ''))
                     ws.cell(idx, 5, r.get('kode_bps', ''))
                     ws.cell(idx, 6, r.get('nama_desa', ''))
-                    ws.cell(idx, 10, r.get('cbpk', 0))
-                    ws.cell(idx, 19, r.get('jumlah_penduduk_kab', r.get('jumlah_penduduk', 0)))
-                    ws.cell(idx, 25, r.get('cadangan_cbpd', 0))
-                    ws.cell(idx, 30, r.get('cadangan_lpm', 0))
+                    if level == 'provinsi':
+                        ws.cell(idx, 10, r.get('cbpp', 0))
+                        ws.cell(idx, 20, r.get('cbpk', 0))
+                        ws.cell(idx, 32, r.get('cbp_kec', 0))
+                    else:
+                        # Col 10 (J) = CBPK (kg), Col 22 (V) = CBPD (kg)
+                        ws.cell(idx, 10, r.get('cbpk', 0))
+                        cbpd_kg = (r.get('cadangan_cbpd', 0) + r.get('cadangan_lpm', 0)) * 1000
+                        ws.cell(idx, 22, cbpd_kg)
 
             # Sheet 0.5 Indikator Keterjangkauan
             if '0.5 Indikator Keterjangkauan' in wb.sheetnames:
@@ -126,10 +145,10 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 6, r.get('nama_desa', ''))
                     ws.cell(idx, 10, r.get('pct_miskin', 0))
                     ws.cell(idx, 16, r.get('cv_harga_beras', 0))
-                    ws.cell(idx, 19, r.get('cv_harga_ayam', 0))
-                    ws.cell(idx, 22, r.get('cv_harga_telur', 0))
-                    ws.cell(idx, 25, r.get('cv_harga_minyak', 0))
-                    ws.cell(idx, 36, r.get('pou', 0))
+                    ws.cell(idx, 20, r.get('cv_harga_ayam', 0))
+                    ws.cell(idx, 24, r.get('cv_harga_telur', 0))
+                    ws.cell(idx, 28, r.get('cv_harga_minyak', 0))
+                    ws.cell(idx, 35, r.get('pou', 0))
 
             # Sheet 0.6 Indikator Pemanfaatan
             if '0.6 Indikator Pemanfaatan' in wb.sheetnames:
@@ -143,8 +162,14 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 6, r.get('nama_desa', ''))
                     ws.cell(idx, 10, r.get('lama_sekolah_perempuan', 0))
                     ws.cell(idx, 16, r.get('pct_no_water', 0))
-                    ws.cell(idx, 19, r.get('skor_pph', 0))
-                    ws.cell(idx, 25, r.get('pct_stunting', 0))
+                    if level == 'provinsi':
+                        ws.cell(idx, 22, r.get('segar', 0))
+                        ws.cell(idx, 26, r.get('siap_saji', 0))
+                        ws.cell(idx, 33, r.get('skor_pph', 0))
+                        ws.cell(idx, 39, r.get('pct_stunting', 0))
+                    else:
+                        ws.cell(idx, 22, r.get('skor_pph', 0))
+                        ws.cell(idx, 28, r.get('pct_stunting', 0))
 
         # ----------------------------------------------------
         # FORM 1 POPULATION
@@ -153,6 +178,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             padi_sheets = [s for s in wb.sheetnames if 'Padi' in s]
             if padi_sheets:
                 ws = wb[padi_sheets[0]]
+                ws.cell(1, 11, kabupaten)
                 for idx, r in enumerate(rows_data, start=5):
                     ws.cell(idx, 1, idx - 4)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
@@ -160,10 +186,12 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 4, r.get('kode_kemendagri', ''))
                     ws.cell(idx, 5, r.get('kode_bps', ''))
                     ws.cell(idx, 6, r.get('produksi_padi', 0))
+                    ws.cell(idx, 12, r.get('gkg_conversion', 0.64))
 
             jagung_sheets = [s for s in wb.sheetnames if 'Jagung' in s]
             if jagung_sheets:
                 ws = wb[jagung_sheets[0]]
+                ws.cell(1, 10, kabupaten)
                 for idx, r in enumerate(rows_data, start=5):
                     ws.cell(idx, 1, idx - 4)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
@@ -175,6 +203,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             ubi_k_sheets = [s for s in wb.sheetnames if 'Ubi Kayu' in s]
             if ubi_k_sheets:
                 ws = wb[ubi_k_sheets[0]]
+                ws.cell(1, 10, kabupaten)
                 for idx, r in enumerate(rows_data, start=5):
                     ws.cell(idx, 1, idx - 4)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
@@ -186,6 +215,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             ubi_j_sheets = [s for s in wb.sheetnames if 'Ubi Jalar' in s]
             if ubi_j_sheets:
                 ws = wb[ubi_j_sheets[0]]
+                ws.cell(1, 10, kabupaten)
                 for idx, r in enumerate(rows_data, start=5):
                     ws.cell(idx, 1, idx - 4)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
@@ -197,6 +227,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             sagu_sheets = [s for s in wb.sheetnames if 'Sagu' in s]
             if sagu_sheets:
                 ws = wb[sagu_sheets[0]]
+                ws.cell(1, 10, kabupaten)
                 for idx, r in enumerate(rows_data, start=5):
                     ws.cell(idx, 1, idx - 4)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
@@ -208,6 +239,7 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             pisang_sheets = [s for s in wb.sheetnames if 'Pisang' in s]
             if pisang_sheets:
                 ws = wb[pisang_sheets[0]]
+                ws.cell(1, 10, kabupaten)
                 for idx, r in enumerate(rows_data, start=5):
                     ws.cell(idx, 1, idx - 4)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
@@ -219,12 +251,14 @@ def generate_export(level, json_data_path, output_dir, form_requested):
             ncpr_sheets = [s for s in wb.sheetnames if 'NCPR' in s]
             if ncpr_sheets:
                 ws = wb[ncpr_sheets[0]]
+                ws.cell(1, 10, kabupaten)
                 for idx, r in enumerate(rows_data, start=3):
                     ws.cell(idx, 1, idx - 2)
                     ws.cell(idx, 2, r.get('nama_kecamatan', ''))
                     ws.cell(idx, 3, r.get('nama_desa', ''))
                     ws.cell(idx, 4, r.get('kode_kemendagri', ''))
                     ws.cell(idx, 5, r.get('kode_bps', ''))
+                    ws.cell(idx, 13, r.get('jumlah_penduduk', 0))
 
         # ----------------------------------------------------
         # FORM 2 POPULATION
@@ -248,8 +282,13 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                     ws.cell(idx, 19, r.get('pou', 0))
                     ws.cell(idx, 21, r.get('lama_sekolah', 0))
                     ws.cell(idx, 23, r.get('pct_no_water', 0))
-                    ws.cell(idx, 25, r.get('skor_pph', 0))
-                    ws.cell(idx, 27, r.get('pct_stunting', 0))
+                    if level == 'provinsi':
+                        ws.cell(idx, 25, r.get('food_safety', 0))
+                        ws.cell(idx, 27, r.get('skor_pph', 0))
+                        ws.cell(idx, 29, r.get('pct_stunting', 0))
+                    else:
+                        ws.cell(idx, 25, r.get('skor_pph', 0))
+                        ws.cell(idx, 27, r.get('pct_stunting', 0))
 
         # ----------------------------------------------------
         # FORM 3 POPULATION
@@ -257,33 +296,95 @@ def generate_export(level, json_data_path, output_dir, form_requested):
         elif f_key == '3':
             sheet3_name = '3.2 Data & Hasil FSVA 2026' if '3.2 Data & Hasil FSVA 2026' in wb.sheetnames else wb.sheetnames[1]
             ws = wb[sheet3_name]
-            for idx, r in enumerate(rows_data, start=7):
-                ws.cell(idx, 1, idx - 6)
+            ws.cell(2, 3, kabupaten)
+            for idx, r in enumerate(rows_data, start=6):
+                ws.cell(idx, 1, idx - 5)
                 ws.cell(idx, 2, r.get('nama_kecamatan', ''))
                 ws.cell(idx, 3, r.get('kode_kecamatan', ''))
                 ws.cell(idx, 4, r.get('kode_kemendagri', ''))
                 ws.cell(idx, 5, r.get('kode_bps', ''))
                 ws.cell(idx, 6, r.get('nama_desa', ''))
-                ws.cell(idx, 7, r.get('produksi_padi', 0))
-                ws.cell(idx, 8, r.get('produksi_jagung', 0))
-                ws.cell(idx, 9, r.get('produksi_ubi_kayu', 0))
-                ws.cell(idx, 10, r.get('produksi_ubi_jalar', 0))
-                ws.cell(idx, 11, r.get('produksi_sagu', 0))
-                ws.cell(idx, 12, r.get('produksi_pisang', 0))
-                ws.cell(idx, 13, r.get('jumlah_penduduk', 0))
-                ws.cell(idx, 14, r.get('konsumsi_energi', 0))
-                ws.cell(idx, 15, r.get('konsumsi_protein', 0))
-                ws.cell(idx, 16, r.get('cadangan_cbpd', 0) + r.get('cadangan_lpm', 0))
-                ws.cell(idx, 17, r.get('pct_miskin', 0))
-                ws.cell(idx, 18, r.get('cv_harga_beras', 0))
-                ws.cell(idx, 19, r.get('cv_harga_ayam', 0))
-                ws.cell(idx, 20, r.get('cv_harga_telur', 0))
-                ws.cell(idx, 21, r.get('cv_harga_minyak', 0))
-                ws.cell(idx, 22, r.get('pou', 0))
-                ws.cell(idx, 23, r.get('lama_sekolah_perempuan', 0))
-                ws.cell(idx, 24, r.get('pct_no_water', 0))
-                ws.cell(idx, 25, r.get('skor_pph', 0))
-                ws.cell(idx, 26, r.get('pct_stunting', 0))
+                if level == 'kab_kota':
+                    ws.cell(idx, 7, r.get('produksi_padi', 0))
+                    ws.cell(idx, 8, r.get('produksi_jagung', 0))
+                    ws.cell(idx, 9, r.get('produksi_ubi_kayu', 0))
+                    ws.cell(idx, 10, r.get('produksi_ubi_jalar', 0))
+                    ws.cell(idx, 11, r.get('produksi_sagu', 0))
+                    ws.cell(idx, 12, r.get('produksi_pisang', 0))
+                    ws.cell(idx, 13, r.get('konsumsi_energi', 0))
+                    ws.cell(idx, 14, 2100)
+                    ws.cell(idx, 15, r.get('konsumsi_protein', 0))
+                    ws.cell(idx, 16, 25)
+                    cbpk_val = r.get('cbpk', 0)
+                    pop_kab = r.get('jumlah_penduduk_kab', 0)
+                    cbpk_cap = (cbpk_val / pop_kab) if pop_kab > 0 else 0
+                    cbpd_kg = (r.get('cadangan_cbpd', 0) + r.get('cadangan_lpm', 0)) * 1000
+                    pop_desa = r.get('jumlah_penduduk', 0)
+                    cbpd_cap = (cbpd_kg / pop_desa) if pop_desa > 0 else 0
+                    ws.cell(idx, 17, cbpk_val)
+                    ws.cell(idx, 18, pop_kab)
+                    ws.cell(idx, 19, cbpk_cap)
+                    ws.cell(idx, 20, cbpd_kg)
+                    ws.cell(idx, 21, pop_desa)
+                    ws.cell(idx, 22, cbpd_cap)
+                    ws.cell(idx, 23, r.get('cv_harga_beras', 0))
+                    ws.cell(idx, 24, r.get('cv_harga_ayam', 0))
+                    ws.cell(idx, 25, r.get('cv_harga_telur', 0))
+                    ws.cell(idx, 26, r.get('cv_harga_minyak', 0))
+                    # Cols 27..37 (AA..AK): 11 Rasio/Indikator
+                    ws.cell(idx, 27, r.get('ncpr', 0))
+                    ws.cell(idx, 28, r.get('pct_ake', 0))
+                    ws.cell(idx, 29, r.get('pct_prohe', 0))
+                    ws.cell(idx, 30, r.get('rasio_cadangan', 0))
+                    ws.cell(idx, 31, r.get('pct_miskin', 0))
+                    ws.cell(idx, 32, r.get('cv_harga', 0))
+                    ws.cell(idx, 33, r.get('pou', 0))
+                    ws.cell(idx, 34, r.get('lama_sekolah', 0))
+                    ws.cell(idx, 35, r.get('pct_no_water', 0))
+                    ws.cell(idx, 36, r.get('skor_pph', 0))
+                    ws.cell(idx, 37, r.get('pct_stunting', 0))
+                    # Cols 38..48 (AL..AV): 11 Prioritas Individu
+                    ws.cell(idx, 38, r.get('p_ncpr', 6))
+                    ws.cell(idx, 39, r.get('p_energy', 6))
+                    ws.cell(idx, 40, r.get('p_protein', 6))
+                    ws.cell(idx, 41, r.get('p_cadangan', 6))
+                    ws.cell(idx, 42, r.get('p_poverty', 6))
+                    ws.cell(idx, 43, r.get('p_cv_harga', 6))
+                    ws.cell(idx, 44, r.get('p_pou', 6))
+                    ws.cell(idx, 45, r.get('p_sekolah', 6))
+                    ws.cell(idx, 46, r.get('p_air', 6))
+                    ws.cell(idx, 47, r.get('p_pph', 6))
+                    ws.cell(idx, 48, r.get('p_stunting', 4))
+                    # Cols 49..51 (AW..AY): Indeks Komposit, Peringkat, Prioritas Komposit
+                    ikp_val = r.get('indeks_komposit', 0)
+                    ws.cell(idx, 49, ikp_val)
+                    ws.cell(idx, 50, get_rank(ikp_val))
+                    ws.cell(idx, 51, r.get('prioritas', 6))
+                    # Cols 52..62 (AZ..BJ): 11 Skor Normalisasi
+                    ws.cell(idx, 52, r.get('x_ncpr', 0))
+                    ws.cell(idx, 53, r.get('x_energy', 0))
+                    ws.cell(idx, 54, r.get('x_protein', 0))
+                    ws.cell(idx, 55, r.get('x_cadangan', 0))
+                    ws.cell(idx, 56, r.get('x_poverty', 0))
+                    ws.cell(idx, 57, r.get('x_cv_harga', 0))
+                    ws.cell(idx, 58, r.get('x_pou', 0))
+                    ws.cell(idx, 59, r.get('x_sekolah', 0))
+                    ws.cell(idx, 60, r.get('x_air', 0))
+                    ws.cell(idx, 61, r.get('x_pph', 0))
+                    ws.cell(idx, 62, r.get('x_stunting', 0))
+                    # Cols 63..66 (BK..BN): Indeks Ketersediaan, Keterjangkauan, Pemanfaatan, Komposit
+                    ws.cell(idx, 63, r.get('indeks_ketersediaan', 0))
+                    ws.cell(idx, 64, r.get('indeks_keterjangkauan', 0))
+                    ws.cell(idx, 65, r.get('indeks_pemanfaatan', 0))
+                    ws.cell(idx, 66, ikp_val)
+                else:
+                    ws.cell(idx, 7, r.get('produksi_padi', 0))
+                    ws.cell(idx, 8, r.get('gkg_conversion', 0.64))
+                    ws.cell(idx, 9, r.get('produksi_jagung', 0))
+                    ws.cell(idx, 10, r.get('produksi_ubi_kayu', 0))
+                    ws.cell(idx, 11, r.get('produksi_ubi_jalar', 0))
+                    ws.cell(idx, 12, r.get('produksi_sagu', 0))
+                    ws.cell(idx, 13, r.get('produksi_pisang', 0))
 
         # ----------------------------------------------------
         # TEMPLATE PETA POPULATION
@@ -306,10 +407,20 @@ def generate_export(level, json_data_path, output_dir, form_requested):
                 ws.cell(idx, 13, r.get('p_pou', 6))
                 ws.cell(idx, 14, r.get('p_sekolah', 6))
                 ws.cell(idx, 15, r.get('p_air', 6))
-                ws.cell(idx, 16, r.get('p_pph', 6))
-                ws.cell(idx, 17, r.get('p_stunting', 4))
-                ws.cell(idx, 18, r.get('indeks_komposit', 0))
-                ws.cell(idx, 20, r.get('prioritas', 6))
+                ikp_val = r.get('indeks_komposit', 0)
+                if level == 'provinsi':
+                    ws.cell(idx, 16, r.get('p_food_safety', 6))
+                    ws.cell(idx, 17, r.get('p_pph', 6))
+                    ws.cell(idx, 18, r.get('p_stunting', 4))
+                    ws.cell(idx, 19, ikp_val)
+                    ws.cell(idx, 20, get_rank(ikp_val))
+                    ws.cell(idx, 21, r.get('prioritas', 6))
+                else:
+                    ws.cell(idx, 16, r.get('p_pph', 6))
+                    ws.cell(idx, 17, r.get('p_stunting', 4))
+                    ws.cell(idx, 18, ikp_val)
+                    ws.cell(idx, 19, get_rank(ikp_val))
+                    ws.cell(idx, 20, r.get('prioritas', 6))
 
         wb.save(out_path)
         generated_files[f_key] = out_path

@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       { key: 'pct_ake', label: 'Persentase Ketersediaan Energi', rawKey: 'pct_ake', prioKey: 'p_energy', unit: '%' },
       { key: 'pct_prohe', label: 'Persentase Ketersediaan Protein Hewani', rawKey: 'pct_prohe', prioKey: 'p_protein', unit: '%' },
       { key: 'rasio_cadangan', label: 'Rasio Cadangan Pangan', rawKey: 'rasio_cadangan', prioKey: 'p_cadangan', unit: 'kg/kap' },
-      { key: 'pct_miskin', label: 'Persentase Penduduk Miskin', rawKey: 'pct_miskin', prioKey: 'p_poverty', unit: '%' },
+      { key: 'pct_miskin', label: 'Persentase Penduduk dengan Tingkat Kesejahteraan Rendah (Desil 1)', rawKey: 'pct_miskin', prioKey: 'p_poverty', unit: '%' },
       { key: 'cv_harga', label: 'CV Harga Bapok', rawKey: 'cv_harga', prioKey: 'p_cv_harga', unit: '' },
       { key: 'pou', label: 'Prevalence of Undernourishment (PoU)', rawKey: 'pou', prioKey: 'p_pou', unit: '%' },
       { key: 'lama_sekolah', label: 'Lama Sekolah Perempuan', rawKey: 'lama_sekolah', prioKey: 'p_sekolah', unit: 'tahun' },

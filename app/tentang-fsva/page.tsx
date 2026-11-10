@@ -23,7 +23,7 @@ export default function TentangFsvaPage() {
               <strong>Food Security and Vulnerability Atlas (FSVA)</strong> atau Peta Ketahanan dan Kerentanan Pangan merupakan instrumen penting untuk memetakan kondisi ketahanan dan kerentanan pangan suatu wilayah secara spasial hingga tingkat desa/kelurahan (Kabupaten/Kota) dan tingkat kecamatan (Provinsi).
             </p>
             <p>
-              Platform ini dibangun sebagai sistem otomasi untuk memproses kalkulasi dan menyajikan visualisasi peta choropleth secara akurat. Metode perhitungan dan klasifikasi prioritas didasarkan secara penuh pada <strong>Petunjuk Teknis Penyusunan Peta Ketahanan dan Kerentanan Pangan (FSVA) Badan Pangan Nasional Tahun 2025 (Juknis No. 301.2/2025 & Pemutakhiran 2026)</strong>.
+              Platform ini dibangun sebagai sistem otomasi untuk memproses kalkulasi dan menyajikan visualisasi peta choropleth secara akurat. Metode perhitungan dan klasifikasi prioritas didasarkan secara penuh pada <strong>Petunjuk Teknis Penyusunan Peta Ketahanan dan Kerentanan Pangan (FSVA) Daerah Kabupaten/Kota Tahun 2026 (Keputusan Sekretaris Utama Badan Pangan Nasional Nomor 21 Tahun 2026 tanggal 9 Juni 2026)</strong>.
             </p>
             <p>
               FSVA membagi wilayah ke dalam 6 tingkat Prioritas Ketahanan Pangan:

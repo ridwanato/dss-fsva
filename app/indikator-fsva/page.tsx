@@ -9,13 +9,13 @@ export default function IndikatorFsvaPage() {
         'Rasio ketersediaan pangan pokok (NCPR)',
         'Persentase ketersediaan energi terhadap kebutuhan minimal (AKE)',
         'Persentase ketersediaan protein hewani terhadap kebutuhan minimal',
-        'Rasio cadangan pangan pemerintah daerah / lumbung pangan masyarakat'
+        'Rasio cadangan pangan per kapita (CBPK dan CBPD)'
       ]
     },
     {
       title: '2. Aspek Keterjangkauan Pangan (Accessibility)',
       items: [
-        'Persentase penduduk miskin (Desil 1 + Desil 2)',
+        'Persentase penduduk dengan tingkat kesejahteraan rendah (Desil 1)',
         'Prevalence of Undernourishment (PoU / Proporsi Penduduk Kurang Energi)',
         'Koefisien Variasi (CV) harga bahan pangan pokok gabungan'
       ]
@@ -44,7 +44,7 @@ export default function IndikatorFsvaPage() {
     {
       title: '2. Aspek Keterjangkauan Pangan (Accessibility)',
       items: [
-        'Persentase penduduk di bawah garis kemiskinan',
+        'Persentase penduduk dengan tingkat kesejahteraan rendah (Desil 1)',
         'Prevalence of Undernourishment (PoU / Proporsi Penduduk Kurang Gizi)',
         'Koefisien Variasi (CV) harga bahan pangan pokok utama'
       ]

@@ -79,15 +79,15 @@ export function calculateFSVAResult(
   // Step 3: Indeks komposit (0-100)
   const indeks = skor // sudah dalam skala 0-100 karena bobot total = 100
 
-  // Step 4: Tentukan prioritas
+  // Step 4: Tentukan prioritas (sesuai Form 2 sheet 2.4 & Form 3 sheet 3.1: operator <=)
   let prioritas: number
   const cutoff = level === 'provinsi' ? COMPOSITE_CUTOFF_PROV : COMPOSITE_CUTOFF
-  if (indeks < cutoff.p1_max)      prioritas = 1
-  else if (indeks < cutoff.p2_max) prioritas = 2
-  else if (indeks < cutoff.p3_max) prioritas = 3
-  else if (indeks < cutoff.p4_max) prioritas = 4
-  else if (indeks < cutoff.p5_max) prioritas = 5
-  else                             prioritas = 6
+  if (indeks <= cutoff.p1_max)      prioritas = 1
+  else if (indeks <= cutoff.p2_max) prioritas = 2
+  else if (indeks <= cutoff.p3_max) prioritas = 3
+  else if (indeks <= cutoff.p4_max) prioritas = 4
+  else if (indeks <= cutoff.p5_max) prioritas = 5
+  else                              prioritas = 6
 
   // Step 5: Indeks per aspek (proporsi dari bobot aspek)
   let indeks_ketersediaan = 0

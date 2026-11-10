@@ -145,7 +145,11 @@ function calculateRasioCadangan(
 
   if (penduduk <= 0) return 0; // Hindari division by zero
   const totalCadangan = (cbpd + lpm) * 1000 // ton → kg
-  return totalCadangan / penduduk // kg/kapita
+  const cbpdCapita = totalCadangan / penduduk // CBPD per kapita (kg/kapita)
+  // Rumus 18 Juknis 21/2026 / Form 0.4: Cadangan per kapita = CBPK per kapita + CBPD per kapita
+  // CBPK (kg) dibagi jumlah penduduk Kab/Kota; ditambahkan hanya bila datanya tersedia.
+  const cbpkCapita = cbpk && jml_pend_kab && jml_pend_kab > 0 ? cbpk / jml_pend_kab : 0
+  return cbpdCapita + cbpkCapita
 }
 
 // ================================================================

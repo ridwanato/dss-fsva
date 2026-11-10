@@ -313,97 +313,40 @@ export async function POST(req: NextRequest) {
       });
 
     } else {
-      // KAB_KOTA FLOW: Single-sheet parsing
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      
-      let headerRowIndex = 0;
-      findHeaderLoop: for (let r = 0; r < 10; r++) {
-        for (let c = 0; c < 15; c++) {
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          const val = worksheet[cellRef]?.v;
-          if (val && (
-            String(val).toLowerCase().includes('kode desa') ||
-            String(val).toLowerCase().includes('desa/kelurahan') ||
-            String(val).toLowerCase().includes('nama desa')
-          )) {
-            headerRowIndex = r;
-            break findHeaderLoop;
-          }
-        }
-      }
+      // KAB_KOTA FLOW: Mendukung Multi-sheet Form 0 (0.1 s.d. 0.6) maupun Single-sheet Template
+      const isMultiSheetForm0 = Boolean(
+        workbook.Sheets['0.1 Produksi Pangan & Penduduk'] || workbook.Sheets['0.2 Konsumsi Energi']
+      );
 
-      let foundTahun = false;
-      for (let r = 0; r < headerRowIndex; r++) {
-        for (let c = 0; c < 10; c++) {
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          const val = worksheet[cellRef]?.v;
-          if (val && String(val).toLowerCase().includes('tahun')) {
-            const nextCellRef = XLSX.utils.encode_cell({ r, c: c + 1 });
-            const nextVal = worksheet[nextCellRef]?.v;
-            if (nextVal && !isNaN(Number(nextVal))) {
-              tahun = Number(nextVal);
-              foundTahun = true;
-              break;
-            }
-          }
-        }
-        if (foundTahun) break;
-      }
-
-      const rawData = XLSX.utils.sheet_to_json<any>(worksheet, { range: headerRowIndex });
-      
-      inserts = rawData.map(row => {
-        const norm: any = {};
-        for (const key in row) {
-          const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-          norm[normalizedKey] = row[key];
-        }
-
-        let rawKodeBps = String(norm['kodedesabps'] || norm['kodebps'] || '').trim();
-        let rawKodeKemendagri = String(norm['kodekemendagri'] || norm['kodekmd'] || '').trim();
-        let namaDesaExcel = String(norm['namadesakelurahan'] || norm['namadesa'] || '').trim();
-        
-        if (!rawKodeBps && !rawKodeKemendagri && !namaDesaExcel) return null;
-
+      const matchDesaGeom = (rawKodeKemendagri: string, rawKodeBps: string, namaDesaExcel: string) => {
         let matchedGeom = null;
-
-        // 1. Coba match Kemendagri code (e.g. 35.07.01.2008 or 3507012008)
         if (rawKodeKemendagri) {
           const cleanKmd = rawKodeKemendagri.replace(/\./g, '');
-          matchedGeom = geomList.find(g => 
+          matchedGeom = geomList.find(g =>
             (g.kode_bps && g.kode_bps.replace(/\./g, '') === cleanKmd) ||
             (g.kode_kemendagri && g.kode_kemendagri.replace(/\./g, '') === cleanKmd)
           );
         }
-
-        // 2. Coba match BPS code (e.g. 3507010001 or 35.07.01.2008)
         if (!matchedGeom && rawKodeBps) {
           const cleanBps = rawKodeBps.replace(/\./g, '');
-          matchedGeom = geomList.find(g => 
+          matchedGeom = geomList.find(g =>
             (g.kode_bps && g.kode_bps.replace(/\./g, '') === cleanBps) ||
             (g.kode_kemendagri && g.kode_kemendagri.replace(/\./g, '') === cleanBps)
           );
         }
-
-        // 3. Coba match nama desa persis
         if (!matchedGeom && namaDesaExcel) {
           const cleanedExcelName = cleanName(namaDesaExcel);
           matchedGeom = geomList.find(g => cleanName(g.nama_desa) === cleanedExcelName);
         }
-
-        // 4. Coba fuzzy Levenshtein name match
         if (!matchedGeom && namaDesaExcel) {
           const cleanedExcelName = cleanName(namaDesaExcel);
           let bestMatch = null;
           let bestScore = 0;
-          
           for (const g of geomList) {
             const cleanedGeomName = cleanName(g.nama_desa);
             const dist = getLevenshtein(cleanedExcelName, cleanedGeomName);
             const maxLen = Math.max(cleanedExcelName.length, cleanedGeomName.length);
             const score = 1 - dist / maxLen;
-            
             if (score > bestScore && dist <= 2 && score >= 0.75) {
               bestScore = score;
               bestMatch = g;
@@ -411,40 +354,253 @@ export async function POST(req: NextRequest) {
           }
           if (bestMatch) matchedGeom = bestMatch;
         }
+        return matchedGeom;
+      };
 
-        // PERLINDUNGAN FOREIGN KEY: Wajib menggunakan matchedGeom.kode_bps dari tabel geometries
-        const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : null;
-        if (!finalKodeBps) return null;
-        
-        return {
-          kode_bps: finalKodeBps,
-          nama_kabupaten: kabupaten,
-          user_id: userId,
-          tahun,
-          level,
-          produksi_padi: Number(norm['produksipaditon'] || norm['produksipadi']) || 0,
-          produksi_jagung: Number(norm['produksijagungton'] || norm['produksijagung']) || 0,
-          produksi_ubi_kayu: Number(norm['produksiubikayuton'] || norm['produksiubikayu']) || 0,
-          produksi_ubi_jalar: Number(norm['produksiubijalarton'] || norm['produksiubijalar']) || 0,
-          produksi_sagu: Number(norm['produksisaguton'] || norm['produksisagu']) || 0,
-          produksi_pisang: Number(norm['produksipisangton'] || norm['produksipisang']) || 0,
-          jumlah_penduduk: Number(norm['jumlahpenduduk']) || 0,
-          konsumsi_energi: Number(norm['konsumsienergikkalkaphr'] || norm['konsumsienergi']) || 0,
-          konsumsi_protein: Number(norm['konsumsiproteinhewanigrkaphr'] || norm['konsumsiprotein']) || 0,
-          cadangan_cbpd: Number(norm['cadangancbpdton'] || norm['cadangancbpd']) || 0,
-          cadangan_lpm: Number(norm['cadanganlpmton'] || norm['cadanganlpm']) || 0,
-          pct_miskin: Number(norm['pendudukmiskindesil12'] || norm['pctmiskin'] || norm['pendudukmiskin']) || 0,
-          cv_harga_beras: Number(norm['cvhargaberas']) || 0,
-          cv_harga_ayam: Number(norm['cvhargaayam']) || 0,
-          cv_harga_telur: Number(norm['cvhargatelur']) || 0,
-          cv_harga_minyak: Number(norm['cvhargaminyak']) || 0,
-          pou: Number(norm['pou']) || 0,
-          lama_sekolah_perempuan: Number(norm['rataratalamasekolahperempuantahun'] || norm['lamasekolah']) || 0,
-          pct_no_water: Number(norm['rttanpaairbersih'] || norm['pctnowater']) || 0,
-          skor_pph: Number(norm['skorpphkonsumsi'] || norm['skorpph']) || 0,
-          pct_stunting: Number(norm['balitastunting'] || norm['pctstunting']) || 0,
+      if (isMultiSheetForm0) {
+        const cleanCode = (code: any) => String(code || '').trim().replace(/\./g, '');
+        const getFloat = (val: any) => {
+          if (val === undefined || val === null || val === '') return 0;
+          const num = Number(val);
+          return isNaN(num) ? 0 : num;
         };
-      }).filter(Boolean);
+
+        const sheet01 = workbook.Sheets['0.1 Produksi Pangan & Penduduk'] || workbook.Sheets[workbook.SheetNames[0]];
+        const sheet02 = workbook.Sheets['0.2 Konsumsi Energi'] || workbook.Sheets[workbook.SheetNames[1]];
+        const sheet03 = workbook.Sheets['0.3 Konsumsi Protein Hewani'] || workbook.Sheets[workbook.SheetNames[2]];
+        const sheet04 = workbook.Sheets['0.4 Stok_Cadangan'] || workbook.Sheets[workbook.SheetNames[3]];
+        const sheet05 = workbook.Sheets['0.5 Indikator Keterjangkauan'] || workbook.Sheets[workbook.SheetNames[4]];
+        const sheet06 = workbook.Sheets['0.6 Indikator Pemanfaatan'] || workbook.Sheets[workbook.SheetNames[5]];
+
+        const d01 = XLSX.utils.sheet_to_json<any[]>(sheet01, { header: 1 });
+        const d02 = sheet02 ? XLSX.utils.sheet_to_json<any[]>(sheet02, { header: 1 }) : [];
+        const d03 = sheet03 ? XLSX.utils.sheet_to_json<any[]>(sheet03, { header: 1 }) : [];
+        const d04 = sheet04 ? XLSX.utils.sheet_to_json<any[]>(sheet04, { header: 1 }) : [];
+        const d05 = sheet05 ? XLSX.utils.sheet_to_json<any[]>(sheet05, { header: 1 }) : [];
+        const d06 = sheet06 ? XLSX.utils.sheet_to_json<any[]>(sheet06, { header: 1 }) : [];
+
+        const findStartRow = (data: any[][]) => {
+          for (let r = 4; r < data.length; r++) {
+            const c3 = String(data[r]?.[3] || '').trim();
+            const c4 = String(data[r]?.[4] || '').trim();
+            if ((c3 && /^\d+$/.test(c3.replace(/\./g, ''))) || (c4 && /^\d+$/.test(c4.replace(/\./g, '')))) {
+              return r;
+            }
+          }
+          return 5;
+        };
+
+        const mapData: Record<string, any> = {};
+        const getRowKey = (row: any[]) => cleanCode(row?.[4]) || cleanCode(row?.[3]) || cleanName(String(row?.[5] || ''));
+
+        let totalPopKab = 0;
+        const start01 = findStartRow(d01);
+        for (let r = start01; r < d01.length; r++) {
+          const row = d01[r];
+          if (!row || row.length < 4) continue;
+          const key = getRowKey(row);
+          if (!key) continue;
+          const pop = getFloat(row[46]);
+          totalPopKab += pop;
+          mapData[key] = {
+            kode_kemendagri: String(row[3] || '').trim(),
+            kode_bps: String(row[4] || '').trim(),
+            nama_desa: String(row[5] || '').trim(),
+            produksi_padi: getFloat(row[9]),
+            produksi_jagung: getFloat(row[18]),
+            produksi_ubi_kayu: getFloat(row[24]),
+            produksi_ubi_jalar: getFloat(row[30]),
+            produksi_sagu: getFloat(row[36]),
+            produksi_pisang: getFloat(row[42]),
+            jumlah_penduduk: pop,
+          };
+        }
+
+        const start02 = findStartRow(d02);
+        for (let r = start02; r < d02.length; r++) {
+          const row = d02[r];
+          if (!row) continue;
+          const key = getRowKey(row);
+          if (mapData[key]) mapData[key].konsumsi_energi = getFloat(row[9]);
+        }
+
+        const start03 = findStartRow(d03);
+        for (let r = start03; r < d03.length; r++) {
+          const row = d03[r];
+          if (!row) continue;
+          const key = getRowKey(row);
+          if (mapData[key]) mapData[key].konsumsi_protein = getFloat(row[9]);
+        }
+
+        const start04 = findStartRow(d04);
+        for (let r = start04; r < d04.length; r++) {
+          const row = d04[r];
+          if (!row) continue;
+          const key = getRowKey(row);
+          if (mapData[key]) {
+            mapData[key].cbpk = getFloat(row[9]); // kg
+            mapData[key].jumlah_penduduk_kab = getFloat(row[12]) || totalPopKab;
+            // Di Form 0.4 Kab/Kota, Col V (index 21) adalah CBPD dalam satuan kg -> konversi ke ton
+            mapData[key].cadangan_cbpd = getFloat(row[21]) / 1000;
+            mapData[key].cadangan_lpm = 0;
+          }
+        }
+
+        const start05 = findStartRow(d05);
+        for (let r = start05; r < d05.length; r++) {
+          const row = d05[r];
+          if (!row) continue;
+          const key = getRowKey(row);
+          if (mapData[key]) {
+            mapData[key].pct_miskin = getFloat(row[9]);
+            mapData[key].cv_harga_beras = getFloat(row[15]);
+            mapData[key].cv_harga_ayam = getFloat(row[19]);
+            mapData[key].cv_harga_telur = getFloat(row[23]);
+            mapData[key].cv_harga_minyak = getFloat(row[27]);
+            mapData[key].pou = getFloat(row[34]);
+          }
+        }
+
+        const start06 = findStartRow(d06);
+        for (let r = start06; r < d06.length; r++) {
+          const row = d06[r];
+          if (!row) continue;
+          const key = getRowKey(row);
+          if (mapData[key]) {
+            mapData[key].lama_sekolah_perempuan = getFloat(row[9]);
+            mapData[key].pct_no_water = getFloat(row[15]);
+            mapData[key].skor_pph = getFloat(row[21]);
+            mapData[key].pct_stunting = getFloat(row[27]);
+          }
+        }
+
+        inserts = Object.values(mapData).map(row => {
+          const matchedGeom = matchDesaGeom(row.kode_kemendagri, row.kode_bps, row.nama_desa);
+          const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : null;
+          if (!finalKodeBps) return null;
+
+          return {
+            kode_bps: finalKodeBps,
+            nama_kabupaten: kabupaten,
+            user_id: userId,
+            tahun,
+            level,
+            produksi_padi: row.produksi_padi || 0,
+            produksi_jagung: row.produksi_jagung || 0,
+            produksi_ubi_kayu: row.produksi_ubi_kayu || 0,
+            produksi_ubi_jalar: row.produksi_ubi_jalar || 0,
+            produksi_sagu: row.produksi_sagu || 0,
+            produksi_pisang: row.produksi_pisang || 0,
+            jumlah_penduduk: row.jumlah_penduduk || 0,
+            konsumsi_energi: row.konsumsi_energi || 0,
+            konsumsi_protein: row.konsumsi_protein || 0,
+            cbpk: row.cbpk || 0,
+            jumlah_penduduk_kab: row.jumlah_penduduk_kab || totalPopKab || 1,
+            cadangan_cbpd: row.cadangan_cbpd || 0,
+            cadangan_lpm: row.cadangan_lpm || 0,
+            pct_miskin: row.pct_miskin || 0,
+            cv_harga_beras: row.cv_harga_beras || 0,
+            cv_harga_ayam: row.cv_harga_ayam || 0,
+            cv_harga_telur: row.cv_harga_telur || 0,
+            cv_harga_minyak: row.cv_harga_minyak || 0,
+            pou: row.pou || 0,
+            lama_sekolah_perempuan: row.lama_sekolah_perempuan || 0,
+            pct_no_water: row.pct_no_water || 0,
+            skor_pph: row.skor_pph || 0,
+            pct_stunting: row.pct_stunting || 0,
+          };
+        }).filter(Boolean);
+      } else {
+        // KAB_KOTA FLOW: Single-sheet parsing
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        let headerRowIndex = 0;
+        findHeaderLoop: for (let r = 0; r < 10; r++) {
+          for (let c = 0; c < 15; c++) {
+            const cellRef = XLSX.utils.encode_cell({ r, c });
+            const val = worksheet[cellRef]?.v;
+            if (val && (
+              String(val).toLowerCase().includes('kode desa') ||
+              String(val).toLowerCase().includes('desa/kelurahan') ||
+              String(val).toLowerCase().includes('nama desa')
+            )) {
+              headerRowIndex = r;
+              break findHeaderLoop;
+            }
+          }
+        }
+
+        let foundTahun = false;
+        for (let r = 0; r < headerRowIndex; r++) {
+          for (let c = 0; c < 10; c++) {
+            const cellRef = XLSX.utils.encode_cell({ r, c });
+            const val = worksheet[cellRef]?.v;
+            if (val && String(val).toLowerCase().includes('tahun')) {
+              const nextCellRef = XLSX.utils.encode_cell({ r, c: c + 1 });
+              const nextVal = worksheet[nextCellRef]?.v;
+              if (nextVal && !isNaN(Number(nextVal))) {
+                tahun = Number(nextVal);
+                foundTahun = true;
+                break;
+              }
+            }
+          }
+          if (foundTahun) break;
+        }
+
+        const rawData = XLSX.utils.sheet_to_json<any>(worksheet, { range: headerRowIndex });
+        
+        inserts = rawData.map(row => {
+          const norm: any = {};
+          for (const key in row) {
+            const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+            norm[normalizedKey] = row[key];
+          }
+
+          const rawKodeBps = String(norm['kodedesabps'] || norm['kodebps'] || '').trim();
+          const rawKodeKemendagri = String(norm['kodekemendagri'] || norm['kodekmd'] || '').trim();
+          const namaDesaExcel = String(norm['namadesakelurahan'] || norm['namadesa'] || '').trim();
+          
+          if (!rawKodeBps && !rawKodeKemendagri && !namaDesaExcel) return null;
+
+          const matchedGeom = matchDesaGeom(rawKodeKemendagri, rawKodeBps, namaDesaExcel);
+
+          // PERLINDUNGAN FOREIGN KEY: Wajib menggunakan matchedGeom.kode_bps dari tabel geometries
+          const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : null;
+          if (!finalKodeBps) return null;
+          
+          return {
+            kode_bps: finalKodeBps,
+            nama_kabupaten: kabupaten,
+            user_id: userId,
+            tahun,
+            level,
+            produksi_padi: Number(norm['produksipaditon'] || norm['produksipadi']) || 0,
+            produksi_jagung: Number(norm['produksijagungton'] || norm['produksijagung']) || 0,
+            produksi_ubi_kayu: Number(norm['produksiubikayuton'] || norm['produksiubikayu']) || 0,
+            produksi_ubi_jalar: Number(norm['produksiubijalarton'] || norm['produksiubijalar']) || 0,
+            produksi_sagu: Number(norm['produksisaguton'] || norm['produksisagu']) || 0,
+            produksi_pisang: Number(norm['produksipisangton'] || norm['produksipisang']) || 0,
+            jumlah_penduduk: Number(norm['jumlahpenduduk']) || 0,
+            konsumsi_energi: Number(norm['konsumsienergikkalkaphr'] || norm['konsumsienergi']) || 0,
+            konsumsi_protein: Number(norm['konsumsiproteinhewanigrkaphr'] || norm['konsumsiprotein']) || 0,
+            cbpk: Number(norm['cbpkkg'] || norm['cbpk']) || 0,
+            cadangan_cbpd: Number(norm['cadangancbpdton'] || norm['cadangancbpd']) || 0,
+            cadangan_lpm: Number(norm['cadanganlpmton'] || norm['cadanganlpm']) || 0,
+            pct_miskin: Number(norm['pendudukmiskindesil1'] || norm['pendudukmiskindesil12'] || norm['pctmiskin'] || norm['pendudukmiskin']) || 0,
+            cv_harga_beras: Number(norm['cvhargaberas']) || 0,
+            cv_harga_ayam: Number(norm['cvhargaayam']) || 0,
+            cv_harga_telur: Number(norm['cvhargatelur']) || 0,
+            cv_harga_minyak: Number(norm['cvhargaminyak']) || 0,
+            pou: Number(norm['pou']) || 0,
+            lama_sekolah_perempuan: Number(norm['rataratalamasekolahperempuantahun'] || norm['lamasekolah']) || 0,
+            pct_no_water: Number(norm['rttanpaairbersih'] || norm['pctnowater']) || 0,
+            skor_pph: Number(norm['skorpphkonsumsi'] || norm['skorpph']) || 0,
+            pct_stunting: Number(norm['balitastunting'] || norm['pctstunting']) || 0,
+          };
+        }).filter(Boolean);
+      }
     }
 
     for (const insertData of inserts) {

@@ -133,7 +133,7 @@ export const GKG_CONVERSION: Record<string, number> = {
 // Angka konversi setara beras berdasarkan nilai energi dan %BDD
 // Sumber: Rumus 11 Juknis (Buku Panduan NBM 2025)
 export const COMMODITY_CONVERSION = {
-  jagung:   0.92,   // dari Rumus 8 Juknis
+  jagung:   1.017,  // Form 1 (sheet 1.2) Kab/Kota 2026 ver.2: Mr = Mnet x 1,017 (Juknis 21/2026 Rumus 9 menulis 1,02 sbg pembulatan)
   ubi_kayu: 0.363,  // Rumus 11: Cnet x 0.363
   ubi_jalar: 0.259, // Rumus 11: Jnet x 0.259
   sagu:     0.640,  // Rumus 11: Snet x 0.640
@@ -158,7 +158,7 @@ export const BERAS_SUSUT = {
 // Faktor susut komoditas lain
 // Faktor susut komoditas lain — Sumber: Rumus 9 Juknis (Tabel konversi Buku Panduan NBM 2025)
 export const KOMODITAS_SUSUT = {
-  jagung:    { benih: 0.0035, pakan: 0.0000, tercecer: 0.0462 }, // benih&pakan dihitung dari series 5 thn (benih dipakai, pakan ditangani terpisah); tercecer 4.62%
+  jagung:    { benih: 0.00345, pakan: 0.78806, tercecer: 0.0462 }, // Rumus 7 Juknis 21/2026 & Form 1 sheet 1.2: benih 0,345%, pakan 78,806%, tercecer 4,62% (dari M)
   ubi_kayu:  { benih: 0.0000, pakan: 0.0043, tercecer: 0.0423 }, // pakan 0.43%, tercecer 4.23% — Rumus 9 Juknis
   ubi_jalar: { benih: 0.0000, pakan: 0.0077, tercecer: 0.0490 }, // pakan 0.77%, tercecer 4.90% — Rumus 9 Juknis
   sagu:      { benih: 0.0000, pakan: 0.0000, tercecer: 0.0072 }, // tercecer 0.72% — Rumus 9 Juknis
@@ -167,7 +167,7 @@ export const KOMODITAS_SUSUT = {
 
 
 // Konversi jagung JPK ke konsumsi (kadar air 28% → 14%)
-export const JAGUNG_KONSUMSI_FACTOR = 0.7385
+export const JAGUNG_KONSUMSI_FACTOR = 0.739252 // Form 1: 73,9252% (Juknis Rumus 6 membulatkan 73,925%)
 
 // Standar kebutuhan gizi (Permenkes No.28/2019 + Kesepakatan Tim FSVA)
 export const NUTRITION_STANDARDS = {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
+import { GKG_CONVERSION } from '@/lib/fsva/constants';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
@@ -56,10 +57,14 @@ export async function GET(req: NextRequest) {
       resultMap.set(key, r);
     });
 
+    const totalPopAll = (rawData || []).reduce((sum: number, r: any) => sum + (Number(r.jumlah_penduduk) || 0), 0);
+
     const formattedRows = (rawData || []).map((row: any) => {
       const key = `${row.kode_bps}_${row.nama_kabupaten}`;
       const calc = resultMap.get(key) || {};
       const geom = row.geometries || {};
+      const provName = row.provinsi_kode || geom.nama_provinsi || 'Indonesia';
+      const gkgConv = GKG_CONVERSION[provName] ?? GKG_CONVERSION['Indonesia'];
 
       return {
         nama_kabupaten: row.nama_kabupaten || geom.nama_kabupaten || '',
@@ -68,6 +73,7 @@ export async function GET(req: NextRequest) {
         kode_bps: row.kode_bps || geom.kode_bps || '',
         kode_kemendagri: geom.kode_kemendagri || row.kode_bps || '',
         kode_kecamatan: geom.kode_kecamatan || (row.kode_bps && String(row.kode_bps).length >= 7 ? String(row.kode_bps).substring(0, 7) : ''),
+        gkg_conversion: gkgConv,
 
         // Raw inputs
         produksi_padi: row.produksi_padi || 0,
@@ -81,8 +87,11 @@ export async function GET(req: NextRequest) {
         konsumsi_protein: row.konsumsi_protein || 0,
         cadangan_cbpd: row.cadangan_cbpd || 0,
         cadangan_lpm: row.cadangan_lpm || 0,
+        cbpp: row.cbpp || 0,
+        jumlah_penduduk_prov: row.jumlah_penduduk_prov || totalPopAll || 0,
         cbpk: row.cbpk || 0,
-        jumlah_penduduk_kab: row.jumlah_penduduk_kab || row.jumlah_penduduk || 0,
+        jumlah_penduduk_kab: (row.jumlah_penduduk_kab && row.jumlah_penduduk_kab > 1) ? row.jumlah_penduduk_kab : (totalPopAll || row.jumlah_penduduk || 0),
+        cbp_kec: row.cbp_kec || 0,
         pct_miskin: row.pct_miskin || 0,
         cv_harga_beras: row.cv_harga_beras || 0,
         cv_harga_ayam: row.cv_harga_ayam || 0,
@@ -91,6 +100,8 @@ export async function GET(req: NextRequest) {
         pou: row.pou || 0,
         lama_sekolah_perempuan: row.lama_sekolah_perempuan || 0,
         pct_no_water: row.pct_no_water || 0,
+        segar: row.segar || 0,
+        siap_saji: row.siap_saji || 0,
         skor_pph: row.skor_pph || 0,
         pct_stunting: row.pct_stunting || 0,
 
@@ -101,6 +112,7 @@ export async function GET(req: NextRequest) {
         rasio_cadangan: calc.rasio_cadangan || 0,
         cv_harga: calc.cv_harga || 0,
         lama_sekolah: calc.lama_sekolah || row.lama_sekolah_perempuan || 0,
+        food_safety: calc.food_safety || 0,
         p_ncpr: calc.p_ncpr || 6,
         p_energy: calc.p_energy || 6,
         p_protein: calc.p_protein || 6,
@@ -110,8 +122,24 @@ export async function GET(req: NextRequest) {
         p_pou: calc.p_pou || 6,
         p_sekolah: calc.p_sekolah || 6,
         p_air: calc.p_air || 6,
+        p_food_safety: calc.p_food_safety || 6,
         p_pph: calc.p_pph || 6,
         p_stunting: calc.p_stunting || 4,
+        x_ncpr: calc.x_ncpr || 0,
+        x_energy: calc.x_energy || 0,
+        x_protein: calc.x_protein || 0,
+        x_cadangan: calc.x_cadangan || 0,
+        x_poverty: calc.x_poverty || 0,
+        x_cv_harga: calc.x_cv_harga || 0,
+        x_pou: calc.x_pou || 0,
+        x_sekolah: calc.x_sekolah || 0,
+        x_air: calc.x_air || 0,
+        x_food_safety: calc.x_food_safety || 0,
+        x_pph: calc.x_pph || 0,
+        x_stunting: calc.x_stunting || 0,
+        indeks_ketersediaan: calc.indeks_ketersediaan || 0,
+        indeks_keterjangkauan: calc.indeks_keterjangkauan || 0,
+        indeks_pemanfaatan: calc.indeks_pemanfaatan || 0,
         indeks_komposit: calc.indeks_komposit || 0,
         prioritas: calc.prioritas || 6,
       };

@@ -141,7 +141,7 @@ function PetunjukPenggunaanContent() {
                           <Info className="w-3.5 h-3.5 shrink-0 text-emerald-700" /> Ketentuan Form FSVA Kab/Kota (11 Indikator):
                         </p>
                         <ul className="list-disc pl-5 space-y-1 font-medium">
-                          <li>File Excel single-sheet / Form V2 berisi data indikator per desa/kelurahan.</li>
+                          <li>File Excel multi-sheet resmi (sheet <strong>0.1 s.d. 0.6</strong>) maupun template single-sheet per desa/kelurahan.</li>
                           <li>Analisis tingkat <strong>Desa/Kelurahan</strong> se-Kabupaten/Kota.</li>
                           <li>Mencakup 11 Indikator Utama Ketahanan Pangan.</li>
                         </ul>

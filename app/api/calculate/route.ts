@@ -32,11 +32,20 @@ export async function POST(req: NextRequest) {
     let processed = 0;
     const errors: string[] = [];
     const summary: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+
+    // Hitung total penduduk per kabupaten (sesuai Form 0.1 cell AY3 = SUM penduduk desa) sebagai fallback jumlah_penduduk_kab
+    const kabPopMap: Record<string, number> = {};
+    for (const r of rawData || []) {
+      const kName = r.nama_kabupaten || r.geometries?.nama_kabupaten || 'DAERAH';
+      kabPopMap[kName] = (kabPopMap[kName] || 0) + (Number(r.jumlah_penduduk) || 0);
+    }
     
     for (const row of rawData || []) {
       if (kab_kota && row.geometries?.nama_kabupaten !== kab_kota) continue;
 
       const provinsi = row.provinsi_kode || row.geometries?.nama_provinsi || 'Indonesia';
+      const kName = row.nama_kabupaten || row.geometries?.nama_kabupaten || 'DAERAH';
+      const fallbackPopKab = kabPopMap[kName] || row.jumlah_penduduk || 1;
       
       const input = {
         produksi_padi: row.produksi_padi,
@@ -65,7 +74,7 @@ export async function POST(req: NextRequest) {
         cbpp: row.cbpp,
         jumlah_penduduk_prov: row.jumlah_penduduk_prov,
         cbpk: row.cbpk,
-        jumlah_penduduk_kab: row.jumlah_penduduk_kab,
+        jumlah_penduduk_kab: (row.jumlah_penduduk_kab && row.jumlah_penduduk_kab > 1) ? row.jumlah_penduduk_kab : fallbackPopKab,
         cbp_kec: row.cbp_kec,
         segar: row.segar,
         siap_saji: row.siap_saji,

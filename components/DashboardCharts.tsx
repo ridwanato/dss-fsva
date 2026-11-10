@@ -41,13 +41,28 @@ export default function DashboardCharts({ data, kabupaten, tahun }: DashboardCha
     'Stunting': { sum: 0, weight: WEIGHTS.stunting, id: 'p_stunting' },
   };
 
+  // Helper pengali bobot prioritas sesuai Juknis 21/2026 & Form 3 (Sheet 3.4 Bobot Prioritas):
+  // P1 = 3 * bobot, P2 = 2 * bobot, P3 = 1 * bobot (khusus Stunting 4 kelas: hanya P1=3x dan P2=2x)
+  const getPriorityMultiplier = (indicatorId: string, p_val: number) => {
+    if (indicatorId === 'p_stunting') {
+      if (p_val === 1) return 3;
+      if (p_val === 2) return 2;
+      return 0;
+    }
+    if (p_val === 1) return 3;
+    if (p_val === 2) return 2;
+    if (p_val === 3) return 1;
+    return 0;
+  };
+
   data.forEach(row => {
     if (row.prioritas <= 3) { // Hanya daerah rentan
       Object.keys(faktorMap).forEach(key => {
         const k = key as keyof typeof faktorMap;
         const p_val = row[faktorMap[k].id];
-        if (p_val <= 3) { // Jika indikator individu juga rentan
-          faktorMap[k].sum += faktorMap[k].weight;
+        const mult = getPriorityMultiplier(faktorMap[k].id, p_val);
+        if (mult > 0) {
+          faktorMap[k].sum += mult * faktorMap[k].weight;
         }
       });
     }
@@ -81,8 +96,9 @@ export default function DashboardCharts({ data, kabupaten, tahun }: DashboardCha
       Object.keys(faktorMapP4P6).forEach(key => {
         const k = key as keyof typeof faktorMapP4P6;
         const p_val = row[faktorMapP4P6[k].id];
-        if (p_val <= 3) { // Jika indikator individu rentan
-          faktorMapP4P6[k].sum += faktorMapP4P6[k].weight;
+        const mult = getPriorityMultiplier(faktorMapP4P6[k].id, p_val);
+        if (mult > 0) {
+          faktorMapP4P6[k].sum += mult * faktorMapP4P6[k].weight;
         }
       });
     }

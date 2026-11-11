@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const level = searchParams.get('level') || 'kab_kota';
+    const tahun = parseInt(searchParams.get('tahun') || '2026') || 2026;
 
     if (level === 'provinsi') {
       const headersProv = [
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
       ];
 
       const wsData = [
-        ['TAHUN KALKULASI (Silakan Ubah):', 2025],
+        ['TAHUN KALKULASI (Silakan Ubah):', tahun],
         [], // Baris kosong pemisah
         headersProv,
         // Contoh format baris (kosongkan nilainya kecuali No)
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest) {
     // Buat data array dengan baris pertama berisi Tahun Kalkulasi,
     // baris kedua kosong sebagai pemisah, dan baris ketiga sebagai header.
     const wsData = [
-      ['TAHUN KALKULASI (Silakan Ubah):', 2025],
+      ['TAHUN KALKULASI (Silakan Ubah):', tahun],
       [], // Baris kosong pemisah
       headers,
       // Contoh format baris (kosongkan nilainya kecuali No)

@@ -27,14 +27,21 @@ export default function DashboardMapSelector({ maps, currentKabupaten, variant =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const formatLabel = (raw: string) => {
+    const [kab, yr] = raw.split('::');
+    if (!yr) return kab;
+    return kab.includes(yr) ? kab : `${kab} ${yr}`;
+  };
+
   const filteredMaps = maps.filter(map =>
-    map.toLowerCase().includes(search.toLowerCase())
+    formatLabel(map).toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSelect = (mapName: string) => {
+  const handleSelect = (mapEntry: string) => {
     setIsOpen(false);
     setSearch('');
-    router.push(`/dashboard?kabupaten=${encodeURIComponent(mapName)}`);
+    const [kab, yr] = mapEntry.split('::');
+    router.push(`/dashboard?kabupaten=${encodeURIComponent(kab)}${yr ? `&tahun=${yr}` : ''}`);
   };
 
   if (variant === 'inline') {
@@ -68,17 +75,20 @@ export default function DashboardMapSelector({ maps, currentKabupaten, variant =
             {/* List */}
             <div className="max-h-64 overflow-y-auto custom-scrollbar pt-1">
               {filteredMaps.length > 0 ? (
-                filteredMaps.map((mapName, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSelect(mapName)}
-                    className={`w-full text-left px-4 py-2 text-xs transition-colors hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer ${
-                      mapName === currentKabupaten ? 'bg-emerald-50/50 text-emerald-700 font-bold' : 'text-slate-700 font-medium'
-                    }`}
-                  >
-                    {mapName}
-                  </button>
-                ))
+                filteredMaps.map((mapName, i) => {
+                  const label = formatLabel(mapName);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleSelect(mapName)}
+                      className={`w-full text-left px-4 py-2 text-xs transition-colors hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer ${
+                        label === currentKabupaten ? 'bg-emerald-50/50 text-emerald-700 font-bold' : 'text-slate-700 font-medium'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })
               ) : (
                 <div className="px-4 py-3 text-xs text-slate-400 italic text-center">Peta tidak ditemukan</div>
               )}
@@ -140,7 +150,7 @@ export default function DashboardMapSelector({ maps, currentKabupaten, variant =
                       onClick={() => handleSelect(mapName)}
                       className="w-full text-left px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors cursor-pointer"
                     >
-                      {mapName}
+                      {formatLabel(mapName)}
                     </button>
                   ))
                 ) : (

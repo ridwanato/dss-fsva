@@ -14,12 +14,18 @@ export default function UploadPanel() {
   const [geomResult, setGeomResult] = useState<any>(null);
   const [dataResult, setDataResult] = useState<any>(null);
   const [calcResult, setCalcResult] = useState<any>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [uploadedYear, setUploadedYear] = useState<number | null>(null);
+  const [yearMismatchModal, setYearMismatchModal] = useState<{
+    inputTahun: number;
+    excelTahun: number;
+    file: File;
+  } | null>(null);
 
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [checkResult, setCheckResult] = useState<{ exists: boolean; isOwner?: boolean; hasOwner?: boolean } | null>(null);
+  const [checkResult, setCheckResult] = useState<{ exists: boolean; geomExists?: boolean; yearExists?: boolean; isOwner?: boolean; hasOwner?: boolean } | null>(null);
   const [overwriteMode, setOverwriteMode] = useState<'overwrite' | 'version_v2' | null>(null);
 
   // Administrative Area selection states
@@ -91,14 +97,13 @@ export default function UploadPanel() {
       return;
     }
 
-    fetch(`/api/maps/check?kabupaten=${encodeURIComponent(activeKabupaten)}&level=${level}`)
+    fetch(`/api/maps/check?kabupaten=${encodeURIComponent(activeKabupaten)}&level=${level}&tahun=${selectedYear}`)
       .then(res => res.json())
       .then(data => {
+        setCheckResult(data);
         if (data.exists) {
-          setCheckResult(data);
           setOverwriteMode(data.isOwner ? 'overwrite' : 'version_v2');
         } else {
-          setCheckResult(null);
           setOverwriteMode(null);
         }
       })
@@ -107,7 +112,7 @@ export default function UploadPanel() {
         setCheckResult(null);
         setOverwriteMode(null);
       });
-  }, [activeKabupaten, level]);
+  }, [activeKabupaten, level, selectedYear]);
 
   const allKabupaten = wilayahData.reduce((acc: string[], p: any) => {
     return [...acc, ...(p.kabupaten || [])];
@@ -121,8 +126,9 @@ export default function UploadPanel() {
     ? allKabupaten
     : allKabupaten.filter((k: string) => k.toLowerCase().includes(kabQuery.toLowerCase()));
 
+  const activeYear = uploadedYear || selectedYear;
   const targetMapName = checkResult?.exists && overwriteMode === 'version_v2'
-    ? `${activeKabupaten} ${uploadedYear || 2025} v.2`
+    ? `${activeKabupaten} ${activeYear} v.2`
     : activeKabupaten;
 
   const parseApiResponse = async (res: Response) => {
@@ -203,25 +209,37 @@ export default function UploadPanel() {
     }
   };
 
-  const handleUploadData = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
+  const submitDataFile = async (file: File, forceYear?: number) => {
     if (!targetMapName) {
       alert('Silakan pilih Kabupaten/Kota atau Provinsi terlebih dahulu.');
       return;
     }
     setLoading(true);
+    setDataResult(null);
     const formData = new FormData();
-    formData.append('file', e.target.files[0]);
-    formData.append('tahun', '2025'); // default fallback
+    formData.append('file', file);
+    formData.append('tahun', String(forceYear || selectedYear));
+    if (forceYear) {
+      formData.append('forceYear', String(forceYear));
+    }
     formData.append('kabupaten', targetMapName);
     formData.append('level', level);
 
     try {
       const res = await fetch('/api/upload-data', { method: 'POST', body: formData });
       const data = await parseApiResponse(res);
+      if (data.yearMismatch) {
+        setYearMismatchModal({
+          inputTahun: data.inputTahun,
+          excelTahun: data.excelTahun,
+          file,
+        });
+        return;
+      }
       setDataResult(data);
       if (data.success && data.tahun) {
-        setUploadedYear(data.tahun);
+        setUploadedYear(Number(data.tahun));
+        setSelectedYear(Number(data.tahun));
       }
     } catch(err: any) {
       console.error(err);
@@ -229,6 +247,13 @@ export default function UploadPanel() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUploadData = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    await submitDataFile(file);
   };
 
   const handleCalculate = async () => {
@@ -243,13 +268,16 @@ export default function UploadPanel() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          tahun: uploadedYear || 2025,
+          tahun: uploadedYear || selectedYear,
           kab_kota: targetMapName,
           level
         }) 
       });
       const data = await parseApiResponse(res);
       setCalcResult(data);
+      if (data.success) {
+        window.dispatchEvent(new CustomEvent('maps-updated'));
+      }
     } catch(err: any) {
       console.error(err);
       setCalcResult({ success: false, error: err.message || 'Terjadi kesalahan koneksi saat melakukan kalkulasi.' });
@@ -453,7 +481,52 @@ export default function UploadPanel() {
               )}
             </div>
           )}
+
+          {/* Dropdown 3: Tahun Analisis (Double Filter dengan Tahun di Template XLSX) */}
+          <div className="relative">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Tahun Analisis FSVA</label>
+            <div className="relative">
+              <select
+                disabled={!session}
+                value={selectedYear}
+                onChange={(e) => {
+                  const yr = parseInt(e.target.value);
+                  setSelectedYear(yr);
+                  setUploadedYear(null);
+                }}
+                className={`w-full pl-4 pr-10 py-3 border font-extrabold text-sm transition-all rounded-xl appearance-none ${
+                  session
+                    ? 'border-[rgba(109,94,245,0.2)] bg-white/60 focus:ring-[#6D5EF5] focus:border-[#6D5EF5] text-[#1E1B4B] cursor-pointer'
+                    : 'border-slate-200 bg-slate-100/80 text-slate-400 cursor-not-allowed opacity-60'
+                }`}
+              >
+                {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((yr) => (
+                  <option key={yr} value={yr}>
+                    Tahun {yr}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+            <p className="text-[10px] text-slate-500 font-semibold mt-1">
+              Sistem menerapkan <em>double filter</em>: tahun yang dipilih di atas akan dicocokkan dengan tahun di dalam file template XLSX yang diunggah.
+            </p>
+          </div>
         </div>
+
+        {checkResult && checkResult.geomExists && !checkResult.exists && activeKabupaten && (
+          <div className="mt-6 p-4 rounded-2xl border bg-emerald-50/60 border-emerald-200/80 shadow-xs animate-in fade-in slide-in-from-top-2">
+            <div className="flex gap-3 items-start">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="flex-1 text-xs font-medium text-emerald-800 leading-relaxed">
+                <strong className="font-black uppercase tracking-wider block text-emerald-900 mb-0.5">
+                  Siap Menambahkan Peta "{activeKabupaten} {selectedYear}"
+                </strong>
+                Batas wilayah <strong>"{activeKabupaten}"</strong> sudah tersedia di sistem (data tahun sebelumnya tetap aman dan tidak akan tertimpa). Anda dapat langsung mengunggah <strong>Data Indikator (Langkah 02)</strong> untuk tahun <strong>{selectedYear}</strong>, atau mengunggah ulang file batas wilayah di <strong>Langkah 01</strong> jika ada pembaruan batas desa/kelurahan.
+              </div>
+            </div>
+          </div>
+        )}
 
         {checkResult && checkResult.exists && activeKabupaten && (
           <div className="mt-6 p-5 rounded-2xl border bg-amber-50/50 border-amber-200/60 shadow-xs animate-in fade-in slide-in-from-top-2">
@@ -461,10 +534,10 @@ export default function UploadPanel() {
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">
-                  Peringatan Peta Sudah Ada
+                  Peringatan Peta Tahun {activeYear} Sudah Ada
                 </p>
                 <p className="text-xs font-bold text-amber-700 leading-relaxed">
-                  Peta {level === 'provinsi' ? 'Provinsi' : 'Kabupaten/Kota'} <strong className="text-amber-900 font-extrabold">"{activeKabupaten}"</strong> sudah ada dan tersimpan sebelumnya {checkResult.isOwner ? 'oleh Anda' : 'oleh akun lain'}.
+                  Peta {level === 'provinsi' ? 'Provinsi' : 'Kabupaten/Kota'} <strong className="text-amber-900 font-extrabold">"{activeKabupaten} {activeYear}"</strong> sudah ada dan tersimpan sebelumnya {checkResult.isOwner ? 'oleh Anda' : 'oleh akun lain'}.
                 </p>
                 
                 <div className="mt-4 space-y-2">
@@ -484,8 +557,8 @@ export default function UploadPanel() {
                       className="text-amber-600 focus:ring-amber-500"
                     />
                     <div className="flex-1">
-                      <span className="block font-extrabold">Timpa Peta & Data Lama</span>
-                      <span className="block text-[10px] text-amber-600 font-medium">Gantikan geometri dan hasil analisis yang ada dengan unggahan baru ini.</span>
+                      <span className="block font-extrabold">Timpa Peta & Data Tahun {activeYear}</span>
+                      <span className="block text-[10px] text-amber-600 font-medium">Perbarui data dan hasil analisis untuk "{activeKabupaten} {activeYear}".</span>
                     </div>
                   </label>
 
@@ -506,7 +579,7 @@ export default function UploadPanel() {
                     />
                     <div className="flex-1">
                       <span className="block font-extrabold">Buat Peta Baru Versi 2</span>
-                      <span className="block text-[10px] text-amber-600 font-medium">Simpan sebagai peta baru dengan nama <strong className="font-extrabold text-amber-800">"{activeKabupaten} {uploadedYear || 2025} v.2"</strong>.</span>
+                      <span className="block text-[10px] text-amber-600 font-medium">Simpan sebagai peta baru dengan nama <strong className="font-extrabold text-amber-800">"{activeKabupaten} {activeYear} v.2"</strong>.</span>
                     </div>
                   </label>
                 </div>
@@ -677,10 +750,10 @@ export default function UploadPanel() {
             </button>
           </div>
           <a 
-            href={`/api/template?level=${level}`} 
+            href={`/api/template?level=${level}&tahun=${selectedYear}`} 
             className="text-teal-700 text-[11px] font-extrabold hover:underline flex items-center gap-1 transition-colors hover:text-teal-900"
           >
-            <Download className="w-3.5 h-3.5" /> Download Template XLSX
+            <Download className="w-3.5 h-3.5" /> Download Template XLSX ({selectedYear})
           </a>
 
           {/* Feedback */}
@@ -690,7 +763,7 @@ export default function UploadPanel() {
                 {dataResult.success ? <CheckCircle2 className="w-4 h-4 text-[#14B8A6] shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />}
                 <div>
                   <p className={`text-xs font-bold ${dataResult.success ? 'text-[#14B8A6]' : 'text-red-600'}`}>
-                    {dataResult.success ? `Berhasil menyimpan data ${dataResult.inserted} wilayah (Tahun: ${dataResult.tahun || uploadedYear}).` : `Gagal Upload: ${dataResult.error || 'Terjadi kesalahan'}`}
+                    {dataResult.success ? `Berhasil menyimpan data ${dataResult.inserted} wilayah (Tahun: ${dataResult.tahun || activeYear}).` : `Gagal Upload: ${dataResult.error || 'Terjadi kesalahan'}`}
                   </p>
                   {dataResult.errors?.length > 0 && (
                     <ul className="text-[10px] text-red-600 list-disc pl-3 mt-0.5 max-h-20 overflow-y-auto custom-scrollbar">
@@ -732,7 +805,7 @@ export default function UploadPanel() {
 
           <h3 className="font-extrabold text-slate-800 text-base mb-2 leading-tight">Kalkulasi / Analisis <br/><span className="text-xs font-bold text-slate-500">FSVA</span></h3>
           <p className="text-slate-600 text-[11px] mb-5 px-1 flex-grow leading-relaxed font-medium">
-            Jalankan pipeline algoritma FSVA berdasarkan juknis Bapanas tingkat {level === 'provinsi' ? 'Provinsi' : 'Kabupaten/Kota'} untuk data tahun {uploadedYear || 'kalkulasi'}.
+            Jalankan pipeline algoritma FSVA berdasarkan juknis Bapanas tingkat {level === 'provinsi' ? 'Provinsi' : 'Kabupaten/Kota'} untuk data tahun {activeYear}.
           </p>
 
           <button 
@@ -760,7 +833,7 @@ export default function UploadPanel() {
                     </div>
                     
                     <Link 
-                      href={`/map?kabupaten=${encodeURIComponent(activeKabupaten)}&level=${level}`}
+                      href={`/map?kabupaten=${encodeURIComponent(targetMapName)}&level=${level}&tahun=${activeYear}`}
                       className="text-[#6D5EF5] text-[10px] font-black uppercase hover:underline flex items-center gap-0.5 transition-colors cursor-pointer"
                     >
                       Lihat Peta <ArrowRight className="w-3 h-3" />
@@ -788,6 +861,65 @@ export default function UploadPanel() {
           )}
         </div>
       </div>
+
+      {/* Modal Konfirmasi Perbedaan Tahun (Double Filter) */}
+      {yearMismatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white border border-amber-200 p-6 rounded-3xl shadow-2xl max-w-md w-full text-slate-800 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-amber-100 text-amber-700 rounded-2xl shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">Konfirmasi Tahun Analisis</h3>
+                <p className="text-xs font-medium text-slate-600 mt-1 leading-relaxed">
+                  Terdapat perbedaan antara tahun yang dipilih pada <strong>Data Entry ({yearMismatchModal.inputTahun})</strong> dengan tahun yang tertulis di dalam <strong>File Template XLSX ({yearMismatchModal.excelTahun})</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3.5 text-xs text-amber-900 font-semibold">
+              Pilih tahun mana yang ingin Anda gunakan untuk menyimpan peta <strong>"{targetMapName}"</strong>:
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  const { file, excelTahun } = yearMismatchModal;
+                  setYearMismatchModal(null);
+                  setSelectedYear(excelTahun);
+                  await submitDataFile(file, excelTahun);
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-[#046a38] hover:bg-[#034423] text-white font-extrabold text-xs transition-all cursor-pointer shadow-sm"
+              >
+                Gunakan Tahun dari Template XLSX ({yearMismatchModal.excelTahun}) — Simpan sbg "{targetMapName} {yearMismatchModal.excelTahun}"
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  const { file, inputTahun } = yearMismatchModal;
+                  setYearMismatchModal(null);
+                  setSelectedYear(inputTahun);
+                  await submitDataFile(file, inputTahun);
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all cursor-pointer shadow-sm"
+              >
+                Gunakan Tahun Pilihan Data Entry ({yearMismatchModal.inputTahun}) — Simpan sbg "{targetMapName} {yearMismatchModal.inputTahun}"
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setYearMismatchModal(null)}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+              >
+                Batal Unggah
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Absolute Loading Backdrop */}
       {loading && (

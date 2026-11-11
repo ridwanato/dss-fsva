@@ -209,14 +209,23 @@ function DownloadFormV2Content() {
               <MapPin className="w-3.5 h-3.5 text-emerald-600" />
               <span className="text-xs text-slate-500 font-bold uppercase">Peta:</span>
               <select
-                value={kabupaten}
-                onChange={(e) => setKabupaten(e.target.value)}
-                className="bg-transparent text-xs text-slate-800 font-bold focus:outline-none cursor-pointer max-w-[180px] truncate"
+                value={kabupaten ? `${kabupaten}::${tahun}` : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setKabupaten('');
+                  } else {
+                    const [kab, yr] = val.split('::');
+                    setKabupaten(kab);
+                    if (yr) setTahun(yr);
+                  }
+                }}
+                className="bg-transparent text-xs text-slate-800 font-bold focus:outline-none cursor-pointer max-w-[200px] truncate"
               >
                 <option value="">Semua Data Peta</option>
                 {filteredMaps.map((m: any, idx: number) => (
-                  <option key={idx} value={m.nama_kabupaten}>
-                    {m.nama_kabupaten} ({m.tahun})
+                  <option key={idx} value={`${m.nama_kabupaten}::${m.tahun}`}>
+                    {m.display_name || `${m.nama_kabupaten} ${m.tahun}`}
                   </option>
                 ))}
               </select>

@@ -31,14 +31,33 @@ export default function Navbar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentKabupaten = searchParams.get('kabupaten') || '';
+  const currentTahun = searchParams.get('tahun') || '';
   const activeLevel = searchParams.get('level') || 'kab_kota';
 
   const isActive = (path: string) => pathname === path;
 
   const latestMap = maps[0];
   const interactiveMapUrl = latestMap 
-    ? `/map?kabupaten=${encodeURIComponent(latestMap.nama_kabupaten)}&level=${latestMap.level}`
+    ? `/map?kabupaten=${encodeURIComponent(latestMap.nama_kabupaten)}&level=${latestMap.level}&tahun=${latestMap.tahun || 2025}`
     : '/map';
+
+  const fetchSavedMaps = () => {
+    fetch('/api/maps')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.mapDetails) {
+          const sorted = [...data.mapDetails].sort((a, b) => {
+            const ta = a.updated_at || a.created_at || '';
+            const tb = b.updated_at || b.created_at || '';
+            const cmp = tb.localeCompare(ta);
+            if (cmp !== 0) return cmp;
+            return (b.tahun || 0) - (a.tahun || 0);
+          });
+          setMaps(sorted);
+        }
+      })
+      .catch(console.error);
+  };
 
   useEffect(() => {
     // Check auth
@@ -52,20 +71,7 @@ export default function Navbar() {
       setSession(session);
     });
 
-    fetch('/api/maps')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.mapDetails) {
-          // Sort by newest timestamp first so maps[0] is always the most recently saved map
-          const sorted = [...data.mapDetails].sort((a, b) => {
-            const ta = a.updated_at || a.created_at || '';
-            const tb = b.updated_at || b.created_at || '';
-            return tb.localeCompare(ta);
-          });
-          setMaps(sorted);
-        }
-      })
-      .catch(console.error);
+    fetchSavedMaps();
       
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -77,29 +83,34 @@ export default function Navbar() {
       setExpanded(false);
     };
     window.addEventListener('layerpanel-expand', handleLayerExpand);
+    window.addEventListener('maps-updated', fetchSavedMaps);
     
     return () => {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('layerpanel-expand', handleLayerExpand);
+      window.removeEventListener('maps-updated', fetchSavedMaps);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [pathname]);
 
-  const handleDeleteMap = async (e: React.MouseEvent, kabupaten: string) => {
+  const handleDeleteMap = async (e: React.MouseEvent, kabupaten: string, tahun?: number, lvl?: string) => {
     e.stopPropagation();
-    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus peta "${kabupaten}" (${activeLevel}) beserta semua data indikator dan kalkulasinya? Tindakan ini tidak dapat dibatalkan.`);
+    const targetLevel = lvl || activeLevel;
+    const displayLabel = kabupaten.includes(String(tahun)) ? kabupaten : `${kabupaten} ${tahun || ''}`.trim();
+    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus peta "${displayLabel}" (${targetLevel}) beserta data indikator dan kalkulasinya? Tindakan ini tidak dapat dibatalkan.`);
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`/api/maps?kabupaten=${encodeURIComponent(kabupaten)}&level=${activeLevel}`, {
+      const url = `/api/maps?kabupaten=${encodeURIComponent(kabupaten)}&level=${targetLevel}${tahun ? `&tahun=${tahun}` : ''}`;
+      const res = await fetch(url, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Peta "${kabupaten}" berhasil dihapus.`);
-        setMaps(prev => prev.filter(m => !(m.nama_kabupaten === kabupaten && m.level === activeLevel)));
+        alert(`Peta "${displayLabel}" berhasil dihapus.`);
+        setMaps(prev => prev.filter(m => !(m.nama_kabupaten === kabupaten && m.level === targetLevel && (!tahun || Number(m.tahun) === Number(tahun)))));
         const params = new URLSearchParams(window.location.search);
-        if (params.get('kabupaten') === kabupaten) {
+        if (params.get('kabupaten') === kabupaten && (!tahun || params.get('tahun') === String(tahun))) {
           router.push('/map');
         }
       } else {
@@ -347,27 +358,28 @@ export default function Navbar() {
           <TreeContainer>
             {kabKotaMaps.length > 0 ? (
               kabKotaMaps.map((kab, i) => {
-                const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'kab_kota';
+                const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'kab_kota' && (!currentTahun || String(currentTahun) === String(kab.tahun));
+                const displayLabel = kab.display_name || (kab.nama_kabupaten.includes(String(kab.tahun)) ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`);
                 return (
-                  <TreeItem key={i}>
+                  <TreeItem key={`${kab.nama_kabupaten}-${kab.tahun}-${i}`}>
                     <div className="flex items-center justify-between w-full rounded-lg group hover:bg-emerald-800/30 pr-1">
                       <button
                         onClick={() => {
                           onItemClick && onItemClick();
-                          router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota`);
+                          router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=kab_kota&tahun=${kab.tahun}`);
                         }}
                         className={`flex-1 text-left py-1.5 px-2.5 text-xs transition-colors cursor-pointer truncate rounded-lg ${
                           isMapActive ? 'text-emerald-300 font-bold bg-emerald-800/50' : 'text-emerald-100/90 hover:text-white'
                         }`}
-                        title={kab.nama_kabupaten}
+                        title={displayLabel}
                       >
-                        {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
+                        {displayLabel}
                       </button>
                       {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
                         <button
-                          onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                          onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten, kab.tahun, 'kab_kota')}
                           className="p-1 text-emerald-400/60 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
-                          title="Hapus Peta"
+                          title={`Hapus Peta ${displayLabel}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -405,27 +417,28 @@ export default function Navbar() {
           <TreeContainer>
             {provinsiMaps.length > 0 ? (
               provinsiMaps.map((kab, i) => {
-                const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'provinsi';
+                const isMapActive = pathname === '/map' && currentKabupaten === kab.nama_kabupaten && activeLevel === 'provinsi' && (!currentTahun || String(currentTahun) === String(kab.tahun));
+                const displayLabel = kab.display_name || (kab.nama_kabupaten.includes(String(kab.tahun)) ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`);
                 return (
-                  <TreeItem key={i}>
+                  <TreeItem key={`${kab.nama_kabupaten}-${kab.tahun}-${i}`}>
                     <div className="flex items-center justify-between w-full rounded-lg group hover:bg-emerald-800/30 pr-1">
                       <button
                         onClick={() => {
                           onItemClick && onItemClick();
-                          router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi`);
+                          router.push(`/map?kabupaten=${encodeURIComponent(kab.nama_kabupaten)}&level=provinsi&tahun=${kab.tahun}`);
                         }}
                         className={`flex-1 text-left py-1.5 px-2.5 text-xs transition-colors cursor-pointer truncate rounded-lg ${
                           isMapActive ? 'text-emerald-300 font-bold bg-emerald-800/50' : 'text-emerald-100/90 hover:text-white'
                         }`}
-                        title={kab.nama_kabupaten}
+                        title={displayLabel}
                       >
-                        {kab.nama_kabupaten.includes(' v.2') ? kab.nama_kabupaten : `${kab.nama_kabupaten} ${kab.tahun}`}
+                        {displayLabel}
                       </button>
                       {session && session.user && (kab.user_id === session.user.id || isAdmin) && (
                         <button
-                          onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten)}
+                          onClick={(e) => handleDeleteMap(e, kab.nama_kabupaten, kab.tahun, 'provinsi')}
                           className="p-1 text-emerald-400/60 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
-                          title="Hapus Peta"
+                          title={`Hapus Peta ${displayLabel}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

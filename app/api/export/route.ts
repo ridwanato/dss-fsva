@@ -32,10 +32,13 @@ export async function GET(req: NextRequest) {
     const codes = geomData.map(g => g.kode_bps);
 
     // 2. Fetch calculations and raw indicators in parallel
-    const [resPromise, rawPromise] = await Promise.all([
-      supabase.from('fsva_results').select('*').eq('tahun', tahun).in('kode_bps', codes),
-      supabase.from('raw_indicators').select('*').eq('tahun', tahun).in('kode_bps', codes)
-    ]);
+    let resQuery = supabase.from('fsva_results').select('*').eq('tahun', tahun).in('kode_bps', codes);
+    let rawQuery = supabase.from('raw_indicators').select('*').eq('tahun', tahun).in('kode_bps', codes);
+    if (kabupaten) {
+      resQuery = resQuery.eq('nama_kabupaten', kabupaten);
+      rawQuery = rawQuery.eq('nama_kabupaten', kabupaten);
+    }
+    const [resPromise, rawPromise] = await Promise.all([resQuery, rawQuery]);
 
     if (resPromise.error) throw resPromise.error;
     if (rawPromise.error) throw rawPromise.error;

@@ -13,12 +13,12 @@ if (typeof (globalThis as any).self === 'undefined') {
 // Helper to strip Z/M dimensions from GeoJSON coordinates recursively
 function convertTo2D(coordinates: any): any {
   if (!Array.isArray(coordinates)) return coordinates;
-  
+
   // Check if it is a single coordinate pair/triplet (array of numbers)
   if (coordinates.length >= 2 && typeof coordinates[0] === 'number' && typeof coordinates[1] === 'number') {
     return [coordinates[0], coordinates[1]]; // Keep only X and Y (longitude and latitude)
   }
-  
+
   // Recursively process nested arrays
   return coordinates.map(convertTo2D);
 }
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       const file = formData.get('file') as File;
       kabupaten = formData.get('kabupaten') as string;
       level = (formData.get('level') as string) || 'kab_kota';
-      
+
       if (!file || !kabupaten) {
         return NextResponse.json({ success: false, error: 'No file uploaded or missing map name' }, { status: 400 });
       }
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     const { createClient } = await import('@/lib/supabase-server');
     const authClient = await createClient();
     const { data: { session } } = await authClient.auth.getSession();
-    
+
     if (!session || !session.user) {
       return NextResponse.json({ success: false, error: 'Unauthorized. Please login.' }, { status: 401 });
     }
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       const zip = new AdmZip(buffer);
       const zipEntries = zip.getEntries();
       const kmlEntry = zipEntries.find(entry => entry.entryName.toLowerCase().endsWith('.kml'));
-      
+
       if (!kmlEntry) {
         return NextResponse.json({ success: false, error: 'No KML file found inside KMZ' }, { status: 400 });
       }
@@ -119,35 +119,35 @@ export async function POST(req: NextRequest) {
       const shp = shpModule.default;
       const wkxModule = require('wellknown');
       const wkx = wkxModule.default || wkxModule;
-      
+
       let geojson: any;
       try {
         geojson = await shp(buffer);
       } catch (e: any) {
         return NextResponse.json({ success: false, error: 'Gagal membaca Shapefile di dalam ZIP: ' + e.message }, { status: 400 });
       }
-      
+
       const collections = Array.isArray(geojson) ? geojson : [geojson];
       const featuresToInsert = [];
-      
+
       let skippedKecFeatures = 0;
       let skippedDesaFeatures = 0;
-      
+
       for (const coll of collections) {
         if (!coll || !coll.features) continue;
-        
+
         const fileNameLower = (coll.fileName || '').toLowerCase();
-        
+
         // Check if layer name indicates level
         let isKecLayer = fileNameLower.includes('kec') || fileNameLower.includes('kecamatan') || fileNameLower.includes('dist');
         let isDesaLayer = fileNameLower.includes('desa') || fileNameLower.includes('kelurahan') || fileNameLower.includes('kel_') || fileNameLower.includes('des_');
-        
+
         // Fallback checks properties of first feature if layer name is empty
         if (!coll.fileName && coll.features.length > 0) {
           const keys = Object.keys(coll.features[0].properties || {}).map(k => k.toLowerCase());
           const hasDesaKey = keys.some(k => k.includes('desa') || k.includes('kelurahan') || k.includes('des'));
           const hasKecKey = keys.some(k => k.includes('kec') || k.includes('subdist'));
-          
+
           if (hasKecKey && !hasDesaKey) isKecLayer = true;
           if (hasDesaKey && !hasKecKey) isDesaLayer = true;
         }
@@ -169,15 +169,15 @@ export async function POST(req: NextRequest) {
 
         for (const feature of coll.features) {
           if (!feature.geometry || !feature.properties) continue;
-          
+
           let name = '';
           let kode_bps = '';
           let kecamatan = '';
           let kode_kemendagri = '';
           let kode_kecamatan = '';
-          
+
           const bpsKeys = Object.keys(feature.properties);
-          
+
           // Helper to get first non-empty property value matching predicate
           const getValue = (predicate: (nk: string, rawKey: string) => boolean) => {
             for (const key of bpsKeys) {
@@ -215,30 +215,46 @@ export async function POST(req: NextRequest) {
           // 3. Cari nama kecamatan
           kecamatan = getValue(nk => nk === 'wadmkc' || nk === 'namakec' || nk === 'kecamatan' || nk === 'dnamakec');
 
-          // 4. Cari kode Kemendagri
-          kode_kemendagri = getValue(nk => nk === 'kdpkab' || nk === 'kdcpum' || nk === 'kdekmd' || nk === 'kemendagri' || nk === 'kodekemendagri' || nk === 'kdkemendagri' || nk === 'iddesakmd');
-
-          // 5. Cari kode kecamatan BPS (7 digit)
-          kode_kecamatan = getValue(nk => nk === 'kodekec' || nk === 'kdkec' || nk === 'kdpkec' || nk === 'keccode' || nk === 'kodekecamatan' || nk === 'iddist' || nk === 'dkodekec');
-          if (!kode_kecamatan && kode_bps && kode_bps.length >= 7) {
-            kode_kecamatan = kode_bps.substring(0, 7);
+          // 4. Cari kode Kemendagri desa/kelurahan (10 digit untuk kab_kota; JANGAN gunakan kdpkab/kdcpum karena itu kode kab/kecamatan!)
+          const rawKmd = getValue(nk => nk === 'kdekmd' || nk === 'kemendagri' || nk === 'kodekemendagri' || nk === 'kdkemendagri' || nk === 'iddesakmd' || nk === 'kdepum' || nk === 'kdppum');
+          if (level === 'kab_kota') {
+            const cleanKmd = rawKmd.replace(/\./g, '');
+            const cleanBps = kode_bps.replace(/\./g, '');
+            if (cleanKmd.length >= 10) {
+              kode_kemendagri = rawKmd;
+            } else if (cleanBps.length >= 10) {
+              kode_kemendagri = kode_bps;
+            }
+          } else {
+            kode_kemendagri = rawKmd || getValue(nk => nk === 'kdcpum');
           }
-          
+
+          // 5. Cari kode kecamatan BPS / Kemendagri (6-7 digit)
+          kode_kecamatan = getValue(nk => nk === 'kdcpum' || nk === 'kodekec' || nk === 'kdkec' || nk === 'kdpkec' || nk === 'keccode' || nk === 'kodekecamatan' || nk === 'iddist' || nk === 'dkodekec');
+          if (!kode_kecamatan && kode_bps) {
+            if (kode_bps.includes('.')) {
+              const parts = kode_bps.split('.');
+              if (parts.length >= 3) kode_kecamatan = parts.slice(0, 3).join('.');
+            } else if (kode_bps.length >= 7) {
+              kode_kecamatan = kode_bps.substring(0, 7);
+            }
+          }
+
           // Fallback jika tidak ada kode BPS tapi ada nama desa
           if (!kode_bps && name) {
             kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, '');
           }
-          
+
           if (!kode_bps || (level === 'kab_kota' && (!name || kode_bps.length <= 2))) continue;
-          
+
           // CRITICAL FIX: Force geometry coordinates to be 2D (remove Z dimension if exists)
           if (feature.geometry && feature.geometry.coordinates) {
             feature.geometry.coordinates = convertTo2D(feature.geometry.coordinates);
           }
-          
+
           // Konversi GeoJSON geometry ke WKT menggunakan wellknown (sekarang dijamin 2D WKT)
           const wkt = wkx.stringify(feature.geometry);
-          
+
           // 6. Deteksi tipe wilayah ('Desa' | 'Kelurahan' | 'Kecamatan')
           const tipe_wilayah = detectTipeWilayah(kode_kemendagri, kode_bps, name, level, feature.properties.TIPADM);
 
@@ -255,7 +271,7 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-      
+
       // Deduplicate features by kode_bps / nama_desa to prevent duplicate processing if ZIP contains multiple layers
       const uniqueMap = new Map<string, any>();
       for (const feat of featuresToInsert) {
@@ -312,7 +328,31 @@ export async function POST(req: NextRequest) {
           })
         );
       }
-      
+
+      // Sinkronisasi & pembersihan geometri lama (misal kode_bps lama berbasis slug nama desa vs kode BPS numerik baru)
+      if (inserted > 0) {
+        const uploadedCodes = new Set(uniqueFeatures.map(f => f.kode_bps));
+        const { data: existingGeoms } = await authClient
+          .from('geometries')
+          .select('kode_bps, nama_desa')
+          .eq('nama_kabupaten', kabupaten)
+          .eq('level', level);
+
+        const staleGeoms = (existingGeoms || []).filter(g => !uploadedCodes.has(g.kode_bps));
+        if (staleGeoms.length > 0) {
+          const cleanStr = (s: string) => String(s || '').toLowerCase().replace(/^(kelurahan|kel\.|desa|kecamatan|kec\.)\s+/i, '').replace(/[^a-z0-9]/g, '');
+          const srv = getServiceSupabase();
+          for (const stale of staleGeoms) {
+            const matchedNew = uniqueFeatures.find(f => cleanStr(f.nama_desa) === cleanStr(stale.nama_desa));
+            if (matchedNew) {
+              await srv.from('raw_indicators').update({ kode_bps: matchedNew.kode_bps }).eq('nama_kabupaten', kabupaten).eq('level', level).eq('kode_bps', stale.kode_bps);
+              await srv.from('fsva_results').update({ kode_bps: matchedNew.kode_bps }).eq('nama_kabupaten', kabupaten).eq('level', level).eq('kode_bps', stale.kode_bps);
+            }
+            await srv.from('geometries').delete().eq('nama_kabupaten', kabupaten).eq('level', level).eq('kode_bps', stale.kode_bps);
+          }
+        }
+      }
+
       let realDesaCount = 0;
       let realKelurahanCount = 0;
       for (const feat of uniqueFeatures) {
@@ -320,22 +360,22 @@ export async function POST(req: NextRequest) {
         else realDesaCount++;
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        features: inserted, 
+      return NextResponse.json({
+        success: true,
+        features: inserted,
         desaCount: realDesaCount,
         kelurahanCount: realKelurahanCount,
         kecCount: level === 'provinsi' ? inserted : 0,
         skippedDesaCount: skippedDesaFeatures,
         skippedKecCount: skippedKecFeatures,
-        errors 
+        errors
       });
     } else {
       // Flow KML/KMZ
       const parser = new DOMParser();
       const doc = parser.parseFromString(kmlString, 'text/xml');
       const placemarks = doc.getElementsByTagName('Placemark');
-      
+
       const featuresToInsert = [];
 
       for (let i = 0; i < placemarks.length; i++) {
@@ -344,11 +384,11 @@ export async function POST(req: NextRequest) {
         let kode_bps = '';
         let kecamatan = '';
         let kode_kecamatan = '';
-        
+
         // Extract name
         const nameNode = placemark.getElementsByTagName('name')[0];
         if (nameNode && nameNode.textContent) name = nameNode.textContent.trim();
-        
+
         // Extract ExtendedData/SimpleData
         const extendedData = placemark.getElementsByTagName('ExtendedData')[0];
         if (extendedData) {
@@ -378,7 +418,7 @@ export async function POST(req: NextRequest) {
               }
             }
           }
-          
+
           // Format 2: <SimpleData name="KODE_BPS">123</SimpleData>
           const simpleDataNodes = extendedData.getElementsByTagName('SimpleData');
           for (let j = 0; j < simpleDataNodes.length; j++) {
@@ -406,23 +446,23 @@ export async function POST(req: NextRequest) {
             }
           }
         }
-        
+
         // Fallback jika tidak ada kode BPS tapi ada nama desa
         if (!kode_bps && name) {
-          kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+          kode_bps = name.toLowerCase().replace(/[^a-z0-9]/g, '');
         }
-        
+
         // Fallback kode_kecamatan dari kode_bps jika tidak ditemukan di KML
         if (!kode_kecamatan && kode_bps && kode_bps.length >= 7) {
           kode_kecamatan = kode_bps.substring(0, 7);
         }
-        
+
         if (!kode_bps || (level === 'kab_kota' && (!name || kode_bps.length <= 2))) continue;
 
         // Extract Coordinates (simplistic approach for Polygon)
         const polygonNodes = placemark.getElementsByTagName('Polygon');
         let wkt = '';
-        
+
         if (polygonNodes.length > 0) {
           const polys: string[] = [];
           for (let k = 0; k < polygonNodes.length; k++) {
@@ -442,7 +482,7 @@ export async function POST(req: NextRequest) {
             wkt = `MULTIPOLYGON(${polys.join(', ')})`;
           }
         }
-        
+
         if (wkt && kode_bps) {
           featuresToInsert.push({
             kode_bps,
@@ -504,14 +544,14 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        features: inserted, 
+      return NextResponse.json({
+        success: true,
+        features: inserted,
         desaCount: level === 'kab_kota' ? inserted : 0,
         kecCount: level === 'provinsi' ? inserted : 0,
         skippedDesaCount: 0,
         skippedKecCount: 0,
-        errors 
+        errors
       });
     }
   } catch (error: any) {

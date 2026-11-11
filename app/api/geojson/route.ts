@@ -16,24 +16,38 @@ export async function GET(req: NextRequest) {
 
     if (kabupaten) {
       const cleanKab = kabupaten.replace(/^(kabupaten|kota|kab\.?)\s+/i, '').trim();
-      // 1. Ambil seluruh geometri untuk kabupaten/provinsi ini dari tabel geometries.
-      const { data: geomData, error: geomError } = await supabase
+      // 1. Ambil geometri berdasarkan nama_kabupaten persis terlebih dahulu
+      let { data: geomData, error: geomError } = await supabase
         .from('geometries')
         .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
-        .ilike('nama_kabupaten', `%${cleanKab}%`)
+        .eq('nama_kabupaten', kabupaten)
         .eq('level', level)
         .not('nama_desa', 'is', null)
         .neq('nama_desa', '');
 
       if (geomError) throw geomError;
 
+      // Fallback ilike jika tidak ditemukan match persis
+      if (!geomData || geomData.length === 0) {
+        const fallback = await supabase
+          .from('geometries')
+          .select('kode_bps, kode_kemendagri, kode_kecamatan, nama_desa, nama_kecamatan, nama_kabupaten, user_id, level, geom')
+          .ilike('nama_kabupaten', `%${cleanKab}%`)
+          .eq('level', level)
+          .not('nama_desa', 'is', null)
+          .neq('nama_desa', '');
+        if (fallback.error) throw fallback.error;
+        geomData = fallback.data;
+      }
+
       if (geomData && geomData.length > 0) {
         // 2. Ambil data hasil kalkulasi FSVA dan data indikator mentah secara paralel
         const codes = geomData.map(g => g.kode_bps);
+        const targetKab = geomData[0].nama_kabupaten;
         
         const [resPromise, rawPromise] = await Promise.all([
-          supabase.from('fsva_results').select('*').eq('tahun', tahun).eq('level', level).in('kode_bps', codes),
-          supabase.from('raw_indicators').select('*').eq('tahun', tahun).eq('level', level).in('kode_bps', codes)
+          supabase.from('fsva_results').select('*').eq('tahun', tahun).eq('level', level).eq('nama_kabupaten', targetKab).in('kode_bps', codes),
+          supabase.from('raw_indicators').select('*').eq('tahun', tahun).eq('level', level).eq('nama_kabupaten', targetKab).in('kode_bps', codes)
         ]);
 
         if (resPromise.error) throw resPromise.error;

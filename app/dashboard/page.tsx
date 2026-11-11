@@ -4,21 +4,38 @@ import { getServiceSupabase } from '@/lib/supabase';
 
 export const revalidate = 0;
 
-export default async function DashboardPage({ searchParams }: { searchParams: { kabupaten?: string } }) {
+export default async function DashboardPage({ searchParams }: { searchParams: { kabupaten?: string; tahun?: string } }) {
   const sp = await searchParams;
   const kabupaten = sp.kabupaten;
+  const tahunParam = sp.tahun ? parseInt(sp.tahun) : null;
   
   const supabase = getServiceSupabase();
 
-  // Fetch all available saved maps for the dropdown selector
-  const { data: geomData } = await supabase
-    .from('geometries')
-    .select('nama_kabupaten')
-    .not('nama_kabupaten', 'is', null);
-  
-  const maps = Array.from(
+  // Fetch all available saved maps & years for the dropdown selector
+  const [{ data: geomData }, { data: yearData }] = await Promise.all([
+    supabase.from('geometries').select('nama_kabupaten').not('nama_kabupaten', 'is', null),
+    supabase.from('fsva_results').select('nama_kabupaten, tahun')
+  ]);
+
+  const mapYearsSet: Record<string, Set<number>> = {};
+  for (const r of yearData || []) {
+    if (r.nama_kabupaten && r.tahun) {
+      if (!mapYearsSet[r.nama_kabupaten]) mapYearsSet[r.nama_kabupaten] = new Set();
+      mapYearsSet[r.nama_kabupaten].add(Number(r.tahun));
+    }
+  }
+
+  const uniqueKabs = Array.from(
     new Set((geomData || []).map((d) => d.nama_kabupaten))
   ).filter(Boolean).sort() as string[];
+
+  const maps: string[] = [];
+  for (const k of uniqueKabs) {
+    const yrs = mapYearsSet[k] ? Array.from(mapYearsSet[k]).sort((a, b) => b - a) : [2025];
+    for (const y of yrs) {
+      maps.push(`${k}::${y}`);
+    }
+  }
 
   let fsvaData: any[] = [];
   let latestYear: number | null = null;
@@ -35,8 +52,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       queryError = error;
       console.error("Dashboard query error:", error);
     } else if (rawData && rawData.length > 0) {
-      // Dynamically find the latest year uploaded for this specific kabupaten
-      latestYear = Math.max(...rawData.map(d => d.tahun || 0));
+      latestYear = tahunParam || Math.max(...rawData.map(d => d.tahun || 0));
       fsvaData = rawData.filter(d => d.tahun === latestYear);
     }
   }
@@ -58,7 +74,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
         {/* Inline selector at the top when a map is already selected */}
         {kabupaten && (
           <div className="flex-shrink-0">
-            <DashboardMapSelector maps={maps} currentKabupaten={kabupaten} variant="inline" />
+            <DashboardMapSelector maps={maps} currentKabupaten={latestYear ? `${kabupaten} ${latestYear}` : kabupaten} variant="inline" />
           </div>
         )}
       </div>

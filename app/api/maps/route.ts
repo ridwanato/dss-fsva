@@ -38,41 +38,60 @@ export async function GET() {
     }
   }
 
-  // Fetch distinct maps and their latest year from fsva_results
-  const { data: yearData } = await supabase
-    .from('fsva_results')
-    .select('nama_kabupaten, level, tahun');
+  // Fetch distinct maps and all their years from fsva_results & raw_indicators
+  const [{ data: yearData }, { data: rawYearData }] = await Promise.all([
+    supabase.from('fsva_results').select('nama_kabupaten, level, tahun'),
+    supabase.from('raw_indicators').select('nama_kabupaten, level, tahun')
+  ]);
 
-  const mapYears: Record<string, number> = {};
+  const mapYearsSet: Record<string, Set<number>> = {};
   if (yearData) {
     for (const item of yearData) {
       if (item.nama_kabupaten && item.tahun) {
         const lvl = item.level || 'kab_kota';
         const key = `${lvl}:${item.nama_kabupaten}`;
-        mapYears[key] = Math.max(mapYears[key] || 0, item.tahun);
+        if (!mapYearsSet[key]) mapYearsSet[key] = new Set();
+        mapYearsSet[key].add(Number(item.tahun));
+      }
+    }
+  }
+  if (rawYearData) {
+    for (const item of rawYearData) {
+      if (item.nama_kabupaten && item.tahun) {
+        const lvl = item.level || 'kab_kota';
+        const key = `${lvl}:${item.nama_kabupaten}`;
+        if (!mapYearsSet[key]) mapYearsSet[key] = new Set();
+        mapYearsSet[key].add(Number(item.tahun));
       }
     }
   }
 
-  const mapDetails = Object.values(uniqueMaps).map((m: any) => {
+  const mapDetails: any[] = [];
+  for (const m of Object.values(uniqueMaps) as any[]) {
     const key = `${m.level}:${m.nama_kabupaten}`;
-    return {
-      nama_kabupaten: m.nama_kabupaten,
-      level: m.level,
-      tahun: mapYears[key] || 2025, // Default fallback to 2025
-      user_id: m.user_id,
-      created_at: m.created_at
-    };
-  });
+    const years = mapYearsSet[key] ? Array.from(mapYearsSet[key]).sort((a, b) => b - a) : [2025];
+    for (const yr of years) {
+      const hasYearInName = m.nama_kabupaten.includes(String(yr));
+      mapDetails.push({
+        nama_kabupaten: m.nama_kabupaten,
+        display_name: hasYearInName ? m.nama_kabupaten : `${m.nama_kabupaten} ${yr}`,
+        level: m.level,
+        tahun: yr,
+        user_id: m.user_id,
+        created_at: m.created_at
+      });
+    }
+  }
 
-  // Sort mapDetails so that the latest created map is first
+  // Sort mapDetails so that the latest created map (and latest year) is first
   mapDetails.sort((a: any, b: any) => {
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
     const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return timeB - timeA;
+    if (timeB !== timeA) return timeB - timeA;
+    return (b.tahun || 0) - (a.tahun || 0);
   });
 
-  const mapNames = mapDetails.map(m => m.nama_kabupaten);
+  const mapNames = Array.from(new Set(mapDetails.map(m => m.nama_kabupaten)));
 
   return NextResponse.json({ success: true, maps: mapNames, mapDetails });
 }
@@ -82,6 +101,7 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const kabupaten = searchParams.get('kabupaten');
     const level = searchParams.get('level') || 'kab_kota';
+    const tahunParam = searchParams.get('tahun');
 
     if (!kabupaten) {
       return NextResponse.json({ success: false, error: 'Nama kabupaten/provinsi peta wajib diisi.' }, { status: 400 });
@@ -135,6 +155,24 @@ export async function DELETE(req: NextRequest) {
         success: false,
         error: 'Peta sistem/publik tidak dapat dihapus.'
       }, { status: 403 });
+    }
+
+    if (tahunParam) {
+      const targetYear = parseInt(tahunParam);
+      await supabase.from('fsva_results').delete().eq('nama_kabupaten', kabupaten).eq('level', level).eq('tahun', targetYear);
+      await supabase.from('raw_indicators').delete().eq('nama_kabupaten', kabupaten).eq('level', level).eq('tahun', targetYear);
+
+      const [{ data: remRes }, { data: remRaw }] = await Promise.all([
+        supabase.from('fsva_results').select('tahun').eq('nama_kabupaten', kabupaten).eq('level', level).limit(1),
+        supabase.from('raw_indicators').select('tahun').eq('nama_kabupaten', kabupaten).eq('level', level).limit(1)
+      ]);
+
+      const stillHasOtherYears = (remRes && remRes.length > 0) || (remRaw && remRaw.length > 0);
+      if (!stillHasOtherYears) {
+        const { error } = await supabase.from('geometries').delete().eq('nama_kabupaten', kabupaten).eq('level', level);
+        if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, message: `Peta "${kabupaten} ${targetYear}" (${level}) berhasil dihapus.` });
     }
     
     // Hapus dari geometries (cascade akan otomatis menghapus di raw_indicators dan fsva_results)

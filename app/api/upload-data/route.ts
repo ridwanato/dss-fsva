@@ -7,7 +7,11 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const tahunStr = formData.get('tahun') as string;
-    let tahun = tahunStr ? parseInt(tahunStr) : 2025; // Default to 2025
+    const forceYearStr = formData.get('forceYear') as string;
+    const inputTahun = tahunStr ? parseInt(tahunStr) : 2026;
+    const forceYear = forceYearStr ? parseInt(forceYearStr) : null;
+    let tahun = forceYear || inputTahun;
+    let excelTahun: number | null = null;
     const kabupaten = formData.get('kabupaten') as string;
     const level = (formData.get('level') as string) || 'kab_kota';
     
@@ -34,10 +38,15 @@ export async function POST(req: NextRequest) {
     // Ambil daftar geometri untuk kabupaten/provinsi tertentu saja untuk auto-matching
     const { data: geomData } = await authClient
       .from('geometries')
-      .select('kode_bps, nama_desa, kode_kemendagri')
+      .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri')
       .eq('nama_kabupaten', kabupaten)
       .eq('level', level);
-    const geomList = geomData || [];
+    // Urutkan agar kode BPS numerik standar (misal 36.72.01.1001) diprioritaskan dibanding slug
+    const geomList = (geomData || []).sort((a, b) => {
+      const aNum = /\d/.test(a.kode_bps || '') ? 0 : 1;
+      const bNum = /\d/.test(b.kode_bps || '') ? 0 : 1;
+      return aNum - bNum;
+    });
     
     // Helper untuk membersihkan nama desa/kecamatan (hapus kelurahan/desa, spasi, huruf kecil)
     const cleanName = (name: string) => {
@@ -85,12 +94,22 @@ export async function POST(req: NextRequest) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
         
-        if (rows[0] && String(rows[0][0]).includes('TAHUN KALKULASI')) {
+        if (rows[0] && String(rows[0][0]).toUpperCase().includes('TAHUN')) {
           const parsedYear = parseInt(rows[0][1]);
           if (!isNaN(parsedYear)) {
-            tahun = parsedYear;
+            excelTahun = parsedYear;
           }
         }
+        if (!forceYear && excelTahun && excelTahun !== inputTahun) {
+          return NextResponse.json({
+            success: false,
+            yearMismatch: true,
+            inputTahun,
+            excelTahun,
+            error: `Tahun di Data Entry (${inputTahun}) berbeda dengan tahun di file Excel (${excelTahun}).`
+          });
+        }
+        tahun = forceYear || excelTahun || inputTahun;
 
         for (let i = 3; i < rows.length; i++) {
           const row = rows[i];
@@ -145,6 +164,28 @@ export async function POST(req: NextRequest) {
         const d04 = XLSX.utils.sheet_to_json<any[]>(sheet04, { header: 1 });
         const d05 = XLSX.utils.sheet_to_json<any[]>(sheet05, { header: 1 });
         const d06 = XLSX.utils.sheet_to_json<any[]>(sheet06, { header: 1 });
+
+        for (let r = 0; r < Math.min(3, d01.length); r++) {
+          for (let c = 0; c < Math.min(10, (d01[r] || []).length); c++) {
+            const cellStr = String(d01[r]?.[c] || '');
+            const m = cellStr.match(/tahun\s*(20\d{2})/i);
+            if (m && m[1]) {
+              excelTahun = parseInt(m[1]);
+              break;
+            }
+          }
+          if (excelTahun) break;
+        }
+        if (!forceYear && excelTahun && excelTahun !== inputTahun) {
+          return NextResponse.json({
+            success: false,
+            yearMismatch: true,
+            inputTahun,
+            excelTahun,
+            error: `Tahun di Data Entry (${inputTahun}) berbeda dengan tahun di file Excel (${excelTahun}).`
+          });
+        }
+        tahun = forceYear || excelTahun || inputTahun;
 
         const findStartRow = (data: any[][]) => {
           for (let r = 4; r < data.length; r++) {
@@ -318,26 +359,46 @@ export async function POST(req: NextRequest) {
         workbook.Sheets['0.1 Produksi Pangan & Penduduk'] || workbook.Sheets['0.2 Konsumsi Energi']
       );
 
-      const matchDesaGeom = (rawKodeKemendagri: string, rawKodeBps: string, namaDesaExcel: string) => {
+      const matchDesaGeom = (rawKodeKemendagri: string, rawKodeBps: string, namaDesaExcel: string, namaKecExcel?: string) => {
         let matchedGeom = null;
-        if (rawKodeKemendagri) {
-          const cleanKmd = rawKodeKemendagri.replace(/\./g, '');
-          matchedGeom = geomList.find(g =>
-            (g.kode_bps && g.kode_bps.replace(/\./g, '') === cleanKmd) ||
-            (g.kode_kemendagri && g.kode_kemendagri.replace(/\./g, '') === cleanKmd)
-          );
+        // 1. Cocokkan berdasarkan Kode Desa BPS (wajib >= 10 digit agar tidak tertukar dengan kode kecamatan 6 digit)
+        if (rawKodeBps) {
+          const cleanBps = rawKodeBps.replace(/\./g, '').trim();
+          if (cleanBps.length >= 10) {
+            matchedGeom = geomList.find(g => {
+              const gBps = (g.kode_bps || '').replace(/\./g, '').trim();
+              const gKmd = (g.kode_kemendagri || '').replace(/\./g, '').trim();
+              return (gBps.length >= 10 && gBps === cleanBps) || (gKmd.length >= 10 && gKmd === cleanBps);
+            });
+          }
         }
-        if (!matchedGeom && rawKodeBps) {
-          const cleanBps = rawKodeBps.replace(/\./g, '');
-          matchedGeom = geomList.find(g =>
-            (g.kode_bps && g.kode_bps.replace(/\./g, '') === cleanBps) ||
-            (g.kode_kemendagri && g.kode_kemendagri.replace(/\./g, '') === cleanBps)
-          );
+        // 2. Cocokkan berdasarkan Kode Desa Kemendagri (wajib >= 10 digit)
+        if (!matchedGeom && rawKodeKemendagri) {
+          const cleanKmd = rawKodeKemendagri.replace(/\./g, '').trim();
+          if (cleanKmd.length >= 10) {
+            matchedGeom = geomList.find(g => {
+              const gBps = (g.kode_bps || '').replace(/\./g, '').trim();
+              const gKmd = (g.kode_kemendagri || '').replace(/\./g, '').trim();
+              return (gBps.length >= 10 && gBps === cleanKmd) || (gKmd.length >= 10 && gKmd === cleanKmd);
+            });
+          }
         }
+        // 3. Cocokkan berdasarkan Nama Desa/Kelurahan (prioritaskan yang kecamatannya juga cocok)
         if (!matchedGeom && namaDesaExcel) {
           const cleanedExcelName = cleanName(namaDesaExcel);
-          matchedGeom = geomList.find(g => cleanName(g.nama_desa) === cleanedExcelName);
+          const cleanedKecName = namaKecExcel ? cleanName(namaKecExcel) : '';
+          if (cleanedKecName) {
+            matchedGeom = geomList.find(g =>
+              cleanName(g.nama_desa) === cleanedExcelName &&
+              g.nama_kecamatan &&
+              cleanName(g.nama_kecamatan) === cleanedKecName
+            );
+          }
+          if (!matchedGeom) {
+            matchedGeom = geomList.find(g => cleanName(g.nama_desa) === cleanedExcelName);
+          }
         }
+        // 4. Fuzzy matching nama desa
         if (!matchedGeom && namaDesaExcel) {
           const cleanedExcelName = cleanName(namaDesaExcel);
           let bestMatch = null;
@@ -379,6 +440,29 @@ export async function POST(req: NextRequest) {
         const d05 = sheet05 ? XLSX.utils.sheet_to_json<any[]>(sheet05, { header: 1 }) : [];
         const d06 = sheet06 ? XLSX.utils.sheet_to_json<any[]>(sheet06, { header: 1 }) : [];
 
+        // Cek tahun dari baris judul (baris 0..2) pada sheet 0.1
+        for (let r = 0; r < Math.min(3, d01.length); r++) {
+          for (let c = 0; c < Math.min(10, (d01[r] || []).length); c++) {
+            const cellStr = String(d01[r]?.[c] || '');
+            const m = cellStr.match(/tahun\s*(20\d{2})/i);
+            if (m && m[1]) {
+              excelTahun = parseInt(m[1]);
+              break;
+            }
+          }
+          if (excelTahun) break;
+        }
+        if (!forceYear && excelTahun && excelTahun !== inputTahun) {
+          return NextResponse.json({
+            success: false,
+            yearMismatch: true,
+            inputTahun,
+            excelTahun,
+            error: `Tahun di Data Entry (${inputTahun}) berbeda dengan tahun di file Excel (${excelTahun}).`
+          });
+        }
+        tahun = forceYear || excelTahun || inputTahun;
+
         const findStartRow = (data: any[][]) => {
           for (let r = 4; r < data.length; r++) {
             const c3 = String(data[r]?.[3] || '').trim();
@@ -391,7 +475,16 @@ export async function POST(req: NextRequest) {
         };
 
         const mapData: Record<string, any> = {};
-        const getRowKey = (row: any[]) => cleanCode(row?.[4]) || cleanCode(row?.[3]) || cleanName(String(row?.[5] || ''));
+        const getRowKey = (row: any[]) => {
+          const c4 = cleanCode(row?.[4]);
+          const c3 = cleanCode(row?.[3]);
+          const nameKey = cleanName(String(row?.[5] || ''));
+          const kecKey = cleanName(String(row?.[1] || ''));
+          if (c4.length >= 10) return c4;
+          if (c3.length >= 10) return c3;
+          if (nameKey) return `${kecKey || c3 || c4}_${nameKey}`;
+          return '';
+        };
 
         let totalPopKab = 0;
         const start01 = findStartRow(d01);
@@ -403,6 +496,7 @@ export async function POST(req: NextRequest) {
           const pop = getFloat(row[46]);
           totalPopKab += pop;
           mapData[key] = {
+            nama_kecamatan: String(row[1] || '').trim(),
             kode_kemendagri: String(row[3] || '').trim(),
             kode_bps: String(row[4] || '').trim(),
             nama_desa: String(row[5] || '').trim(),
@@ -475,7 +569,7 @@ export async function POST(req: NextRequest) {
         }
 
         inserts = Object.values(mapData).map(row => {
-          const matchedGeom = matchDesaGeom(row.kode_kemendagri, row.kode_bps, row.nama_desa);
+          const matchedGeom = matchDesaGeom(row.kode_kemendagri, row.kode_bps, row.nama_desa, row.nama_kecamatan);
           const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : null;
           if (!finalKodeBps) return null;
 
@@ -540,7 +634,13 @@ export async function POST(req: NextRequest) {
               const nextCellRef = XLSX.utils.encode_cell({ r, c: c + 1 });
               const nextVal = worksheet[nextCellRef]?.v;
               if (nextVal && !isNaN(Number(nextVal))) {
-                tahun = Number(nextVal);
+                excelTahun = Number(nextVal);
+                foundTahun = true;
+                break;
+              }
+              const m = String(val).match(/(20\d{2})/);
+              if (m && m[1]) {
+                excelTahun = parseInt(m[1]);
                 foundTahun = true;
                 break;
               }
@@ -548,6 +648,17 @@ export async function POST(req: NextRequest) {
           }
           if (foundTahun) break;
         }
+
+        if (!forceYear && excelTahun && excelTahun !== inputTahun) {
+          return NextResponse.json({
+            success: false,
+            yearMismatch: true,
+            inputTahun,
+            excelTahun,
+            error: `Tahun di Data Entry (${inputTahun}) berbeda dengan tahun di file Excel (${excelTahun}).`
+          });
+        }
+        tahun = forceYear || excelTahun || inputTahun;
 
         const rawData = XLSX.utils.sheet_to_json<any>(worksheet, { range: headerRowIndex });
         
@@ -561,10 +672,11 @@ export async function POST(req: NextRequest) {
           const rawKodeBps = String(norm['kodedesabps'] || norm['kodebps'] || '').trim();
           const rawKodeKemendagri = String(norm['kodekemendagri'] || norm['kodekmd'] || '').trim();
           const namaDesaExcel = String(norm['namadesakelurahan'] || norm['namadesa'] || '').trim();
+          const namaKecExcel = String(norm['namakecamatan'] || norm['kecamatan'] || '').trim();
           
           if (!rawKodeBps && !rawKodeKemendagri && !namaDesaExcel) return null;
 
-          const matchedGeom = matchDesaGeom(rawKodeKemendagri, rawKodeBps, namaDesaExcel);
+          const matchedGeom = matchDesaGeom(rawKodeKemendagri, rawKodeBps, namaDesaExcel, namaKecExcel);
 
           // PERLINDUNGAN FOREIGN KEY: Wajib menggunakan matchedGeom.kode_bps dari tabel geometries
           const finalKodeBps = matchedGeom ? matchedGeom.kode_bps : null;
@@ -603,8 +715,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    for (const insertData of inserts) {
-      if (!insertData) continue;
+    // Deduplikasi inserts berdasarkan kode_bps agar jumlah wilayah yang dilaporkan akurat
+    const uniqueInsertsMap = new Map<string, any>();
+    for (const item of inserts) {
+      if (item && item.kode_bps) {
+        uniqueInsertsMap.set(item.kode_bps, item);
+      }
+    }
+    const uniqueInserts = Array.from(uniqueInsertsMap.values());
+
+    for (const insertData of uniqueInserts) {
       const { error } = await authClient.from('raw_indicators').upsert(insertData, {
         onConflict: 'level,nama_kabupaten,kode_bps,tahun'
       });
@@ -615,7 +735,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, inserted, errors, tahun });
+    return NextResponse.json({ success: true, inserted, errors, tahun, excelTahun });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

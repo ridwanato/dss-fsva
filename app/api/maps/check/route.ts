@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const kabupaten = searchParams.get('kabupaten');
     const level = searchParams.get('level') || 'kab_kota';
+    const tahunParam = searchParams.get('tahun');
 
     if (!kabupaten) {
       return NextResponse.json({ exists: false });
@@ -32,15 +33,30 @@ export async function GET(req: NextRequest) {
     }
 
     if (!geoData || geoData.length === 0) {
-      return NextResponse.json({ exists: false });
+      return NextResponse.json({ exists: false, geomExists: false, yearExists: false });
     }
 
     const mapOwnerId = geoData[0].user_id;
     const currentUserId = session?.user?.id || null;
-    const isOwner = currentUserId && mapOwnerId === currentUserId;
+    const isOwner = Boolean(currentUserId && mapOwnerId === currentUserId);
+
+    let yearExists = true;
+    if (tahunParam) {
+      const targetYear = parseInt(tahunParam);
+      const [{ data: resData }, { data: rawData }] = await Promise.all([
+        supabase.from('fsva_results').select('tahun').eq('nama_kabupaten', kabupaten).eq('level', level).eq('tahun', targetYear).limit(1),
+        supabase.from('raw_indicators').select('tahun').eq('nama_kabupaten', kabupaten).eq('level', level).eq('tahun', targetYear).limit(1)
+      ]);
+      yearExists = Boolean((resData && resData.length > 0) || (rawData && rawData.length > 0));
+    }
+
+    // Jika milik user sendiri dan tahun yang dipilih belum pernah ada datanya, maka tidak menimpa data tahun lain (misal 2025 tetap aman saat tambah 2026)
+    const existsConflict = yearExists || (!isOwner && !!mapOwnerId);
 
     return NextResponse.json({
-      exists: true,
+      exists: existsConflict,
+      geomExists: true,
+      yearExists,
       isOwner,
       ownerId: mapOwnerId,
       hasOwner: !!mapOwnerId

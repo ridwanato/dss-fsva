@@ -129,6 +129,7 @@ function FontToolbar({
     const searchParams = useSearchParams();
     const router = useRouter();
     const kabupaten = searchParams.get('kabupaten') || '';
+    const tahunParam = searchParams.get('tahun');
     const level = searchParams.get('level') || 'kab_kota';
     
     const [geoData, setGeoData] = useState<any>(null);
@@ -266,9 +267,11 @@ function FontToolbar({
 
       const abortController = new AbortController();
       
-      // Resolve year from mapDetails synchronously (no extra state needed)
-      const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
-      const year = detail?.tahun || 2025;
+      // Resolve year from URL param first, then mapDetails
+      const detail = tahunParam
+        ? mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level && String(d.tahun) === String(tahunParam))
+        : mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
+      const year = tahunParam ? parseInt(tahunParam) : (detail?.tahun || 2025);
       setSelectedYear(year);
 
       const url = `/api/geojson?tahun=${year}&level=${level}&kabupaten=${encodeURIComponent(kabupaten)}`;
@@ -297,7 +300,7 @@ function FontToolbar({
         });
 
       return () => abortController.abort();
-    }, [kabupaten, level, mapDetails]);
+    }, [kabupaten, tahunParam, level, mapDetails]);
 
     // Re-synchronize printConfig dynamically when map or year changes
     useEffect(() => {
@@ -318,8 +321,10 @@ function FontToolbar({
       
       const handleDownload = () => {
         if (kabupaten) {
-          const detail = mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
-          const year = detail ? detail.tahun : selectedYear;
+          const detail = tahunParam
+            ? mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level && String(d.tahun) === String(tahunParam))
+            : mapDetails.find(d => d.nama_kabupaten === kabupaten && d.level === level);
+          const year = tahunParam ? parseInt(tahunParam) : (detail ? detail.tahun : selectedYear);
           window.location.href = `/api/export?tahun=${year}&kabupaten=${encodeURIComponent(kabupaten)}&level=${level}`;
         }
       };

@@ -13,18 +13,21 @@ export default function InfoPanel({ data, onClose }: InfoPanelProps) {
   const label = PRIORITY_LABELS[prio]?.label || 'N/A';
   const color = PRIORITY_LABELS[prio]?.fill || '#999';
 
+  const fmt = (v: any, dec: number, suffix = '') =>
+    v !== null && v !== undefined && !isNaN(Number(v)) ? `${Number(v).toFixed(dec)}${suffix}` : '-';
+
   const indicators = [
-    { key: 'ncpr', name: 'NCPR (Rasio Konsumsi)', val: data.ncpr?.toFixed(2), p: data.p_ncpr },
-    { key: 'ake', name: '% Ketersediaan Energi', val: data.pct_ake?.toFixed(1) + '%', p: data.p_energy },
-    { key: 'prohe', name: '% Protein Hewani', val: data.pct_prohe?.toFixed(1) + '%', p: data.p_protein },
-    { key: 'cadangan', name: 'Rasio Cadangan (kg/kap)', val: data.rasio_cadangan?.toFixed(2), p: data.p_cadangan },
-    { key: 'miskin', name: '% Penduduk Miskin', val: data.pct_miskin_ref?.toFixed(1) + '%', p: data.p_poverty },
-    { key: 'cv_harga', name: 'CV Harga Pangan', val: data.cv_harga?.toFixed(2) + '%', p: data.p_cv_harga },
-    { key: 'pou', name: 'Prevalence of Undernourishment', val: data.pou?.toFixed(1) + '%', p: data.p_pou },
-    { key: 'sekolah', name: 'Lama Sekolah Perempuan', val: data.lama_sekolah?.toFixed(1) + ' thn', p: data.p_sekolah },
-    { key: 'air', name: '% RT Tanpa Air Bersih', val: data.pct_no_water?.toFixed(1) + '%', p: data.p_air },
-    { key: 'pph', name: 'Skor PPH', val: data.skor_pph?.toFixed(1), p: data.p_pph },
-    { key: 'stunting', name: 'Prevalensi Stunting', val: data.pct_stunting?.toFixed(1) + '%', p: data.p_stunting },
+    { key: 'ncpr', name: 'NCPR (Rasio Konsumsi)', val: fmt(data.ncpr, 2), p: data.p_ncpr },
+    { key: 'ake', name: '% Ketersediaan Energi', val: fmt(data.pct_ake, 1, '%'), p: data.p_energy },
+    { key: 'prohe', name: '% Protein Hewani', val: fmt(data.pct_prohe, 1, '%'), p: data.p_protein },
+    { key: 'cadangan', name: 'Rasio Cadangan (kg/kap)', val: fmt(data.rasio_cadangan, 2), p: data.p_cadangan },
+    { key: 'miskin', name: '% Penduduk Miskin (Desil 1)', val: fmt(data.pct_miskin_ref, 1, '%'), p: data.p_poverty },
+    { key: 'cv_harga', name: 'CV Harga Pangan', val: fmt(data.cv_harga, 2, '%'), p: data.p_cv_harga },
+    { key: 'pou', name: 'Prevalence of Undernourishment', val: fmt(data.pou, 1, '%'), p: data.p_pou },
+    { key: 'sekolah', name: 'Lama Sekolah Perempuan', val: fmt(data.lama_sekolah, 1, ' thn'), p: data.p_sekolah },
+    { key: 'air', name: '% RT Tanpa Air Bersih', val: fmt(data.pct_no_water, 1, '%'), p: data.p_air },
+    { key: 'pph', name: 'Skor PPH', val: fmt(data.skor_pph, 1), p: data.p_pph },
+    { key: 'stunting', name: 'Prevalensi Stunting', val: fmt(data.pct_stunting, 1, '%'), p: data.p_stunting },
   ];
 
   return (

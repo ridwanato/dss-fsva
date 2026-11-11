@@ -67,3 +67,4 @@ ON CONFLICT (kode_provinsi) DO UPDATE SET
 -- Index pencarian
 CREATE INDEX IF NOT EXISTS idx_konversi_gkg_nama ON public.konversi_gkg (nama_provinsi);
 CREATE INDEX IF NOT EXISTS idx_konversi_gkg_kode ON public.konversi_gkg (kode_provinsi);
+

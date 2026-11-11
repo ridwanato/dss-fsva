@@ -41,7 +41,13 @@ export async function POST(req: NextRequest) {
     }
     
     for (const row of rawData || []) {
-      if (kab_kota && row.geometries?.nama_kabupaten !== kab_kota) continue;
+      if (kab_kota) {
+        const cleanTarget = kab_kota.replace(/^(kabupaten|kota|kab\.?)\s+/i, '').replace(/\s*(20\d{2}|v\d+).*$/i, '').trim().toLowerCase();
+        const rowKab = (row.nama_kabupaten || row.geometries?.nama_kabupaten || '').replace(/^(kabupaten|kota|kab\.?)\s+/i, '').replace(/\s*(20\d{2}|v\d+).*$/i, '').trim().toLowerCase();
+        if (cleanTarget && rowKab && !rowKab.includes(cleanTarget) && !cleanTarget.includes(rowKab)) {
+          continue;
+        }
+      }
 
       const provinsi = row.provinsi_kode || row.geometries?.nama_provinsi || 'Indonesia';
       const kName = row.nama_kabupaten || row.geometries?.nama_kabupaten || 'DAERAH';

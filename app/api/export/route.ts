@@ -22,21 +22,32 @@ export async function GET(req: NextRequest) {
       geomQuery = geomQuery.eq('nama_kabupaten', kabupaten);
     }
 
-    const { data: geomData, error: geomError } = await geomQuery;
+    let { data: geomData, error: geomError } = await geomQuery;
     if (geomError) throw geomError;
+
+    if ((!geomData || geomData.length === 0) && kabupaten) {
+      const cleanKab = kabupaten.replace(/^(kabupaten|kota|kab\.?)\s+/i, '').replace(/\s*(20\d{2}|v\d+).*$/i, '').trim();
+      const fallback = await supabase
+        .from('geometries')
+        .select('kode_bps, nama_desa, nama_kecamatan, nama_kabupaten, user_id')
+        .ilike('nama_kabupaten', `%${cleanKab}%`);
+      if (fallback.error) throw fallback.error;
+      geomData = fallback.data;
+    }
 
     if (!geomData || geomData.length === 0) {
       return NextResponse.json({ success: false, error: 'Data wilayah tidak ditemukan.' }, { status: 404 });
     }
 
     const codes = geomData.map(g => g.kode_bps);
+    const targetKab = geomData[0].nama_kabupaten;
 
     // 2. Fetch calculations and raw indicators in parallel
     let resQuery = supabase.from('fsva_results').select('*').eq('tahun', tahun).in('kode_bps', codes);
     let rawQuery = supabase.from('raw_indicators').select('*').eq('tahun', tahun).in('kode_bps', codes);
     if (kabupaten) {
-      resQuery = resQuery.eq('nama_kabupaten', kabupaten);
-      rawQuery = rawQuery.eq('nama_kabupaten', kabupaten);
+      resQuery = resQuery.or(`nama_kabupaten.eq."${kabupaten}",nama_kabupaten.eq."${targetKab}"`);
+      rawQuery = rawQuery.or(`nama_kabupaten.eq."${kabupaten}",nama_kabupaten.eq."${targetKab}"`);
     }
     const [resPromise, rawPromise] = await Promise.all([resQuery, rawQuery]);
 

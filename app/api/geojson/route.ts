@@ -45,9 +45,13 @@ export async function GET(req: NextRequest) {
         const codes = geomData.map(g => g.kode_bps);
         const targetKab = geomData[0].nama_kabupaten;
         
+        const kabCondition = (!kabupaten || targetKab === kabupaten)
+          ? `nama_kabupaten.eq."${targetKab}"` 
+          : `nama_kabupaten.eq."${targetKab}",nama_kabupaten.eq."${kabupaten}"`;
+
         const [resPromise, rawPromise] = await Promise.all([
-          supabase.from('fsva_results').select('*').eq('tahun', tahun).eq('level', level).eq('nama_kabupaten', targetKab).in('kode_bps', codes),
-          supabase.from('raw_indicators').select('*').eq('tahun', tahun).eq('level', level).eq('nama_kabupaten', targetKab).in('kode_bps', codes)
+          supabase.from('fsva_results').select('*').eq('tahun', tahun).eq('level', level).or(kabCondition).in('kode_bps', codes),
+          supabase.from('raw_indicators').select('*').eq('tahun', tahun).eq('level', level).or(kabCondition).in('kode_bps', codes)
         ]);
 
         if (resPromise.error) throw resPromise.error;

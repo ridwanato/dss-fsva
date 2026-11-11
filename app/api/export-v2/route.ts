@@ -37,7 +37,8 @@ export async function GET(req: NextRequest) {
       .eq('level', level);
 
     if (kabupaten) {
-      query = query.eq('nama_kabupaten', kabupaten);
+      const cleanKab = kabupaten.replace(/^(kabupaten|kota|kab\.?)\s+/i, '').replace(/\s*(20\d{2}|v\d+).*$/i, '').trim();
+      query = query.or(`nama_kabupaten.eq."${kabupaten}",nama_kabupaten.ilike."%${cleanKab}%"`);
     }
 
     const { data: rawData, error: fetchError } = await query;

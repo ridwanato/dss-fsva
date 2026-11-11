@@ -36,11 +36,22 @@ export async function POST(req: NextRequest) {
     const userId = session.user.id;
 
     // Ambil daftar geometri untuk kabupaten/provinsi tertentu saja untuk auto-matching
-    const { data: geomData } = await authClient
+    let { data: geomData } = await authClient
       .from('geometries')
-      .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri')
+      .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri, kode_kecamatan')
       .eq('nama_kabupaten', kabupaten)
       .eq('level', level);
+
+    if (!geomData || geomData.length === 0) {
+      const cleanKab = kabupaten.replace(/^(kabupaten|kota|kab\.?)\s+/i, '').replace(/\s*(20\d{2}|v\d+).*$/i, '').trim();
+      const fallback = await authClient
+        .from('geometries')
+        .select('kode_bps, nama_desa, nama_kecamatan, kode_kemendagri, kode_kecamatan')
+        .ilike('nama_kabupaten', `%${cleanKab}%`)
+        .eq('level', level);
+      geomData = fallback.data;
+    }
+
     // Urutkan agar kode BPS numerik standar (misal 36.72.01.1001) diprioritaskan dibanding slug
     const geomList = (geomData || []).sort((a, b) => {
       const aNum = /\d/.test(a.kode_bps || '') ? 0 : 1;
@@ -48,12 +59,14 @@ export async function POST(req: NextRequest) {
       return aNum - bNum;
     });
     
-    // Helper untuk membersihkan nama desa/kecamatan (hapus kelurahan/desa, spasi, huruf kecil)
+    // Helper untuk membersihkan nama desa/kecamatan (hapus kelurahan/desa/kecamatan, spasi, tanda baca, huruf kecil, dan sinonim)
     const cleanName = (name: string) => {
       if (!name) return '';
       return String(name).toLowerCase()
         .replace(/^(kelurahan|kel\.|desa|kecamatan|kec\.)\s+/i, '')
-        .replace(/[^a-z0-9]/g, '');
+        .replace(/[^a-z0-9]/g, '')
+        // Normalisasi variasi ejaan lokal (deringo <-> dringo)
+        .replace(/deringo/g, 'dringo');
     };
 
     // Helper Levenshtein distance untuk pencocokan nama secara fuzzy
@@ -359,63 +372,164 @@ export async function POST(req: NextRequest) {
         workbook.Sheets['0.1 Produksi Pangan & Penduduk'] || workbook.Sheets['0.2 Konsumsi Energi']
       );
 
+      // Built-in dictionary BPS 10-digit code to Kemendagri code (untuk Kota Cilegon dan pemetaan langsung)
+      const bspToKmdMap: Record<string, string> = {
+        // Ciwandan
+        '3672010001': '36.72.04.1004', // Gunung Sugih
+        '3672010002': '36.72.04.1005', // Kepuh
+        '3672010003': '36.72.04.1006', // Randakari
+        '3672010004': '36.72.04.1002', // Tegal Ratu
+        '3672010005': '36.72.04.1001', // Banjar Negara
+        '3672010013': '36.72.04.1003', // Kubangsari
+        // Citangkil
+        '3672011006': '36.72.08.1002', // Deringo / Dringo
+        '3672011007': '36.72.08.1003', // Lebak Denok
+        '3672011008': '36.72.08.1004', // Taman Baru
+        '3672011009': '36.72.08.1007', // Citangkil
+        '3672011010': '36.72.08.1005', // Kebonsari
+        '3672011011': '36.72.08.1001', // Warnasari
+        '3672011012': '36.72.08.1006', // Samangraya
+        // Pulomerak
+        '3672020011': '36.72.03.1003', // Mekarsari
+        '3672020012': '36.72.03.1001', // Tamansari
+        '3672020013': '36.72.03.1002', // Lebakgede
+        '3672020014': '36.72.03.1004', // Suralaya
+        // Purwakarta
+        '3672021001': '36.72.07.1001', // Ramanuju
+        '3672021002': '36.72.07.1003', // Kebon Dalem
+        '3672021003': '36.72.07.1004', // Purwakarta
+        '3672021004': '36.72.07.1005', // Tegal Bunder
+        '3672021005': '36.72.07.1006', // Pabean
+        '3672021006': '36.72.07.1002', // Kotabumi
+        // Gerogol
+        '3672022007': '36.72.06.1001', // Kotasari
+        '3672022008': '36.72.06.1002', // Grogol
+        '3672022009': '36.72.06.1003', // Rawa Arum
+        '3672022010': '36.72.06.1004', // Gerem
+        // Cilegon
+        '3672030001': '36.72.02.1001', // Bagendung
+        '3672030002': '36.72.02.1002', // Ciwedus
+        '3672030003': '36.72.02.1003', // Bendungan
+        '3672030004': '36.72.02.1005', // Ciwaduk
+        '3672030005': '36.72.02.1004', // Ketileng
+        // Jombang
+        '3672031001': '36.72.05.1002', // Jombang Wetan
+        '3672031002': '36.72.05.1003', // Masigit
+        '3672031003': '36.72.05.1004', // Panggung Rawi
+        '3672031004': '36.72.05.1005', // Gedong Dalem
+        '3672031005': '36.72.05.1001', // Sukmajaya
+        // Cibeber
+        '3672040001': '36.72.01.1003', // Bulakan
+        '3672040002': '36.72.01.1004', // Cikerai
+        '3672040003': '36.72.01.1006', // Kalitimbang
+        '3672040004': '36.72.01.1005', // Karang Asem
+        '3672040005': '36.72.01.1001', // Cibeber
+        '3672040006': '36.72.01.1002', // Kedaleman
+      };
+
       const matchDesaGeom = (rawKodeKemendagri: string, rawKodeBps: string, namaDesaExcel: string, namaKecExcel?: string) => {
+        const cleanKmd = String(rawKodeKemendagri || '').replace(/\./g, '').trim();
+        const cleanBps = String(rawKodeBps || '').replace(/\./g, '').trim();
+        const cDesa = cleanName(namaDesaExcel);
+        const cKec = cleanName(namaKecExcel || '');
+
         let matchedGeom = null;
-        // 1. Cocokkan berdasarkan Kode Desa BPS (wajib >= 10 digit agar tidak tertukar dengan kode kecamatan 6 digit)
-        if (rawKodeBps) {
-          const cleanBps = rawKodeBps.replace(/\./g, '').trim();
-          if (cleanBps.length >= 10) {
-            matchedGeom = geomList.find(g => {
-              const gBps = (g.kode_bps || '').replace(/\./g, '').trim();
-              const gKmd = (g.kode_kemendagri || '').replace(/\./g, '').trim();
-              return (gBps.length >= 10 && gBps === cleanBps) || (gKmd.length >= 10 && gKmd === cleanBps);
-            });
-          }
+
+        // STRATEGY 1: Kecamatan + Desa Name EXACT (Paling aman & akurat karena nama desa dalam 1 kecamatan pasti unik)
+        if (cDesa && cKec) {
+          matchedGeom = geomList.find(g => {
+            const gKec = cleanName(g.nama_kecamatan);
+            const gDesa = cleanName(g.nama_desa);
+            return gKec === cKec && gDesa === cDesa;
+          });
+          if (matchedGeom) return matchedGeom;
         }
-        // 2. Cocokkan berdasarkan Kode Desa Kemendagri (wajib >= 10 digit)
-        if (!matchedGeom && rawKodeKemendagri) {
-          const cleanKmd = rawKodeKemendagri.replace(/\./g, '').trim();
-          if (cleanKmd.length >= 10) {
-            matchedGeom = geomList.find(g => {
-              const gBps = (g.kode_bps || '').replace(/\./g, '').trim();
-              const gKmd = (g.kode_kemendagri || '').replace(/\./g, '').trim();
-              return (gBps.length >= 10 && gBps === cleanKmd) || (gKmd.length >= 10 && gKmd === cleanKmd);
-            });
-          }
-        }
-        // 3. Cocokkan berdasarkan Nama Desa/Kelurahan (prioritaskan yang kecamatannya juga cocok)
-        if (!matchedGeom && namaDesaExcel) {
-          const cleanedExcelName = cleanName(namaDesaExcel);
-          const cleanedKecName = namaKecExcel ? cleanName(namaKecExcel) : '';
-          if (cleanedKecName) {
-            matchedGeom = geomList.find(g =>
-              cleanName(g.nama_desa) === cleanedExcelName &&
-              g.nama_kecamatan &&
-              cleanName(g.nama_kecamatan) === cleanedKecName
-            );
-          }
-          if (!matchedGeom) {
-            matchedGeom = geomList.find(g => cleanName(g.nama_desa) === cleanedExcelName);
-          }
-        }
-        // 4. Fuzzy matching nama desa
-        if (!matchedGeom && namaDesaExcel) {
-          const cleanedExcelName = cleanName(namaDesaExcel);
+
+        // STRATEGY 2: Kecamatan + Desa Name FUZZY (Toleransi 1 atau 2 huruf, e.g. Deringo <-> Dringo)
+        if (cDesa && cKec) {
+          const kecGeoms = geomList.filter(g => {
+            const gKec = cleanName(g.nama_kecamatan);
+            return gKec === cKec || getLevenshtein(gKec, cKec) <= 2;
+          });
           let bestMatch = null;
-          let bestScore = 0;
-          for (const g of geomList) {
-            const cleanedGeomName = cleanName(g.nama_desa);
-            const dist = getLevenshtein(cleanedExcelName, cleanedGeomName);
-            const maxLen = Math.max(cleanedExcelName.length, cleanedGeomName.length);
-            const score = 1 - dist / maxLen;
-            if (score > bestScore && dist <= 2 && score >= 0.75) {
-              bestScore = score;
+          let minDistance = 999;
+          for (const g of kecGeoms) {
+            const gDesa = cleanName(g.nama_desa);
+            const dist = getLevenshtein(cDesa, gDesa);
+            if (dist <= 2 && dist < minDistance) {
+              minDistance = dist;
               bestMatch = g;
             }
           }
-          if (bestMatch) matchedGeom = bestMatch;
+          if (bestMatch) return bestMatch;
         }
-        return matchedGeom;
+
+        // STRATEGY 3: BPS 10-digit dictionary lookup (jika ada di kamus pemetaan resmi)
+        if (cleanBps && bspToKmdMap[cleanBps]) {
+          const mappedKmd = bspToKmdMap[cleanBps].replace(/\./g, '');
+          matchedGeom = geomList.find(g => {
+            const gKmd = String(g.kode_kemendagri || '').replace(/\./g, '').trim();
+            const gBps = String(g.kode_bps || '').replace(/\./g, '').trim();
+            return gKmd === mappedKmd || gBps === mappedKmd;
+          });
+          if (matchedGeom) return matchedGeom;
+        }
+
+        // STRATEGY 4: Match by Kemendagri code (10 digit) + validasi tidak bertentangan dengan nama kecamatan
+        if (cleanKmd.length >= 10) {
+          const match = geomList.find(g => {
+            const gKmd = String(g.kode_kemendagri || '').replace(/\./g, '').trim();
+            const gBps = String(g.kode_bps || '').replace(/\./g, '').trim();
+            return gKmd === cleanKmd || gBps === cleanKmd;
+          });
+          if (match) {
+            const gKec = cleanName(match.nama_kecamatan);
+            const gDesa = cleanName(match.nama_desa);
+            const kecMatches = !cKec || gKec === cKec || getLevenshtein(gKec, cKec) <= 2;
+            const desaMatches = !cDesa || gDesa === cDesa || getLevenshtein(gDesa, cDesa) <= 2;
+            if (kecMatches || desaMatches) {
+              return match;
+            }
+          }
+        }
+
+        // STRATEGY 5: Match by Desa Name exact across entire kabupaten (jika nama unik di kabupaten)
+        if (cDesa) {
+          const candidates = geomList.filter(g => cleanName(g.nama_desa) === cDesa);
+          if (candidates.length === 1) return candidates[0];
+        }
+
+        // STRATEGY 6: Match by BPS code + validasi kecamatan sama
+        if (cleanBps.length >= 10) {
+          const match = geomList.find(g => {
+            const gBps = String(g.kode_bps || '').replace(/\./g, '').trim();
+            const gKmd = String(g.kode_kemendagri || '').replace(/\./g, '').trim();
+            return gBps === cleanBps || gKmd === cleanBps;
+          });
+          if (match) {
+            const gKec = cleanName(match.nama_kecamatan);
+            if (!cKec || gKec === cKec || getLevenshtein(gKec, cKec) <= 2) {
+              return match;
+            }
+          }
+        }
+
+        // STRATEGY 7: Fuzzy match by Desa Name alone across all geometries (Levenshtein <= 2)
+        if (cDesa) {
+          let bestMatch = null;
+          let minDistance = 999;
+          for (const g of geomList) {
+            const gDesa = cleanName(g.nama_desa);
+            const dist = getLevenshtein(cDesa, gDesa);
+            if (dist <= 2 && dist < minDistance) {
+              minDistance = dist;
+              bestMatch = g;
+            }
+          }
+          if (bestMatch) return bestMatch;
+        }
+
+        return null;
       };
 
       if (isMultiSheetForm0) {
@@ -480,9 +594,11 @@ export async function POST(req: NextRequest) {
           const c3 = cleanCode(row?.[3]);
           const nameKey = cleanName(String(row?.[5] || ''));
           const kecKey = cleanName(String(row?.[1] || ''));
+          // Prioritaskan kombinasi nama kecamatan + nama desa karena konsisten di semua sheet 0.1 s.d. 0.6
+          if (nameKey && kecKey) return `${kecKey}_${nameKey}`;
           if (c4.length >= 10) return c4;
           if (c3.length >= 10) return c3;
-          if (nameKey) return `${kecKey || c3 || c4}_${nameKey}`;
+          if (nameKey) return `${c3 || c4}_${nameKey}`;
           return '';
         };
 
@@ -493,7 +609,7 @@ export async function POST(req: NextRequest) {
           if (!row || row.length < 4) continue;
           const key = getRowKey(row);
           if (!key) continue;
-          const pop = getFloat(row[46]);
+          const pop = getFloat(row[46]) || getFloat(row[45]) || getFloat(row[42]) || getFloat(row[50]) || 0;
           totalPopKab += pop;
           mapData[key] = {
             nama_kecamatan: String(row[1] || '').trim(),

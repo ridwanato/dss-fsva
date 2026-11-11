@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
-import { GKG_CONVERSION } from '@/lib/fsva/constants';
+import { GKG_CONVERSION, getGkgConversionFactor } from '@/lib/fsva/constants';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
@@ -64,8 +64,8 @@ export async function GET(req: NextRequest) {
       const key = `${row.kode_bps}_${row.nama_kabupaten}`;
       const calc = resultMap.get(key) || {};
       const geom = row.geometries || {};
-      const provName = row.provinsi_kode || geom.nama_provinsi || 'Indonesia';
-      const gkgConv = GKG_CONVERSION[provName] ?? GKG_CONVERSION['Indonesia'];
+      const provName = row.provinsi_kode || geom.nama_provinsi || row.kode_bps || 'Indonesia';
+      const gkgConv = getGkgConversionFactor(provName);
 
       return {
         nama_kabupaten: row.nama_kabupaten || geom.nama_kabupaten || '',

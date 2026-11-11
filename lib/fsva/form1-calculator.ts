@@ -1,7 +1,7 @@
 import {
   GKG_CONVERSION, COMMODITY_CONVERSION, PADI_SUSUT,
   BERAS_SUSUT, KOMODITAS_SUSUT, JAGUNG_KONSUMSI_FACTOR,
-  NUTRITION_STANDARDS, CV_HARGA_WEIGHTS
+  NUTRITION_STANDARDS, CV_HARGA_WEIGHTS, getGkgConversionFactor
 } from './constants'
 
 export interface RawIndicatorInput {
@@ -66,7 +66,7 @@ export interface CalculatedIndicators {
 function calculateNCPR(input: RawIndicatorInput): number {
   if (input.jumlah_penduduk <= 0) return 99; // Hindari division by zero
   
-  const c = GKG_CONVERSION[input.provinsi] ?? GKG_CONVERSION['Indonesia']
+  const c = getGkgConversionFactor(input.provinsi)
 
   // Padi → Beras konsumsi
   const P = input.produksi_padi * 1000 // ton → kg

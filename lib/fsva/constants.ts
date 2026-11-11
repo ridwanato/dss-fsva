@@ -129,6 +129,70 @@ export const GKG_CONVERSION: Record<string, number> = {
   'Gorontalo':          0.6199,
 }
 
+// Mapping 2-digit Kode Wilayah Kemendagri / BPS ke Nama Provinsi
+export const PROVINCE_CODE_TO_NAME: Record<string, string> = {
+  '11': 'Aceh',
+  '12': 'Sumatera Utara',
+  '13': 'Sumatera Barat',
+  '14': 'Riau',
+  '15': 'Jambi',
+  '16': 'Sumatera Selatan',
+  '17': 'Bengkulu',
+  '18': 'Lampung',
+  '19': 'Kep. Bangka Belitung',
+  '21': 'Kep. Riau',
+  '31': 'DKI Jakarta',
+  '32': 'Jawa Barat',
+  '33': 'Jawa Tengah',
+  '34': 'DI Yogyakarta',
+  '35': 'Jawa Timur',
+  '36': 'Banten',
+  '51': 'Bali',
+  '52': 'Nusa Tenggara Barat',
+  '53': 'Nusa Tenggara Timur',
+  '61': 'Kalimantan Barat',
+  '62': 'Kalimantan Tengah',
+  '63': 'Kalimantan Selatan',
+  '64': 'Kalimantan Timur',
+  '65': 'Kalimantan Utara',
+  '71': 'Sulawesi Utara',
+  '72': 'Sulawesi Tengah',
+  '73': 'Sulawesi Selatan',
+  '74': 'Sulawesi Tenggara',
+  '75': 'Gorontalo',
+  '76': 'Sulawesi Barat',
+  '81': 'Maluku',
+  '82': 'Maluku Utara',
+  '91': 'Papua Barat',
+  '94': 'Papua',
+}
+
+// Helper cerdas lookup faktor konversi GKG: mendukung nama provinsi, 2 digit kode provinsi, atau kode desa/kecamatan
+export function getGkgConversionFactor(provinsiOrCode?: string): number {
+  if (!provinsiOrCode) return GKG_CONVERSION['Indonesia'];
+
+  const trimmed = provinsiOrCode.trim();
+  // 1. Direct match by exact province name
+  if (GKG_CONVERSION[trimmed] !== undefined) return GKG_CONVERSION[trimmed];
+
+  // 2. Lookup by 2-digit code (e.g. "36" or "36.72" or "3672010001")
+  const cleanCode = trimmed.replace(/\./g, '').substring(0, 2);
+  const provFromCode = PROVINCE_CODE_TO_NAME[cleanCode];
+  if (provFromCode && GKG_CONVERSION[provFromCode] !== undefined) {
+    return GKG_CONVERSION[provFromCode];
+  }
+
+  // 3. Case-insensitive / partial match
+  const lower = trimmed.toLowerCase();
+  for (const [key, val] of Object.entries(GKG_CONVERSION)) {
+    if (key.toLowerCase() === lower || lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) {
+      return val;
+    }
+  }
+
+  return GKG_CONVERSION['Indonesia'];
+}
+
 // Konversi komoditas setara beras
 // Angka konversi setara beras berdasarkan nilai energi dan %BDD
 // Sumber: Rumus 11 Juknis (Buku Panduan NBM 2025)

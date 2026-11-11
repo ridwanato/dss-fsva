@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const provinsi = row.provinsi_kode || row.geometries?.nama_provinsi || 'Indonesia';
+      const provinsi = row.provinsi_kode || row.geometries?.nama_provinsi || row.kode_bps || 'Indonesia';
       const kName = row.nama_kabupaten || row.geometries?.nama_kabupaten || 'DAERAH';
       const fallbackPopKab = kabPopMap[kName] || row.jumlah_penduduk || 1;
       
